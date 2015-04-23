@@ -1,3 +1,5 @@
+An implementation of the recommended practices for analyzing alchemical free energy calculations, as described in Klimovich et al., JCAMD 29:397-411 (2015).
+
 To run the analysis on the example files, execute the script with the command:
 
 `python ../alchemical_analysis.py -a Sire -d data/ -p actual_grad_ -q dat -u kcal`
