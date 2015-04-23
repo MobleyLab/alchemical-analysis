@@ -1,9 +1,6 @@
 Script: `alchemical_analysis.py`
 
-An illustration of MBAR applied to alchemical free energy
-calculations, and comparison of MBAR to a number of other free energy
-methods described in Paliwal and Shirts, J. Chem. Theory Comp, v. 7,
-4115-4134 (2011).
+An implementation of the recommended practices for analyzing alchemical free energy calculations, as described in Klimovich et al., JCAMD 29:397-411 (2015).
 
 The dataset contained in the data/ directory is obtained from a series
 of alchemical intermediates for computing the hydration free energy of
