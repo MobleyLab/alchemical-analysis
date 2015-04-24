@@ -1,3 +1,5 @@
+An implementation of the recommended practices for analyzing alchemical free energy calculations, as described in Klimovich et al., JCAMD 29:397-411 (2015).
+
 There are five subdirectories in `data/` named `ti00[1-5]`, each containing `ti00[1-5].out.bz2` (which are copies of the `ti001.out`, with `clambda` edited then compressed with bzip2 )
 and `ti00[1-5].en` (copies of `ti001.en`).
 
