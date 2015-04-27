@@ -34,7 +34,7 @@ def grepPy(f, s):
 def tailPy(f, nlines, LENB=1024):
    f.seek(0, 2)
    sizeb = f.tell()
-   n_togo = nlines
+   n_togo = nlines+1
    i = 1
    excerpt = []
    while n_togo > 0 and sizeb > 0:
@@ -48,7 +48,7 @@ def tailPy(f, nlines, LENB=1024):
       n_togo -= ll
       sizeb -= LENB
       i += 1
-   return ''.join(excerpt).splitlines()[-nlines:]
+   return ''.join(excerpt[::-1]).splitlines()[-nlines:]
 
 def grepFromSection(f, section, *stringhe, **kwargs):
    """From section 'section' of file 'f' extract the values of strings 'stringhe'."""
