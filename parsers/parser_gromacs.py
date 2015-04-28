@@ -103,7 +103,7 @@ def readDataGromacs(P):
             dhdlt[state, :, :nsnapshots[state]] = data[read_dhdl_sta : read_dhdl_end, :]
   
             if not bSelective_MBAR:
-               r1, r2 = (read_dhdl_end, read_dhdl_end+K)
+               r1, r2 = (read_dhdl_end, read_dhdl_end+ndE[state])
                if bPV:
                   u_klt[state, s1:s2, :nsnapshots[state]] = P.beta * ( data[r1:r2, :] + data[-1,:] )
                else:
