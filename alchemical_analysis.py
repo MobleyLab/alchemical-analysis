@@ -1,11 +1,24 @@
 #!/bin/env python
 
-# Originally written by Michael Shirts as:
-# Example illustrating the use of MBAR for computing the hydration free energy of OPLS 3-methylindole
-# in TIP3P water through alchemical free energy simulations.
-
-# Adapted by P. Klimovich and D. Mobley, March 2011, to be slightly more general.
-# Additionally adapted by Michael Shirts and P. Klimovich, May 2013, Dec 2014.
+######################################################################
+# Alchemical Analysis: An open tool implementing some recommended practices for analyzing alchemical free energy calculations
+# Copyright 2011-2015 UC Irvine and the Authors
+#
+# Authors: Pavel Klimovich, Michael Shirts and David Mobley
+#
+#This library is free software; you can redistribute it and/or
+#modify it under the terms of the GNU Lesser General Public
+#License as published by the Free Software Foundation; either
+#version 2.1 of the License, or (at your option) any later version.
+#
+#This library is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#Lesser General Public License for more details.
+#
+#You should have received a copy of the GNU Lesser General Public
+#License along with this library; if not, see <http://www.gnu.org/licenses/>.
+######################################################################
 
 #===================================================================================================
 # IMPORTS
