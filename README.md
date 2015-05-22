@@ -1,6 +1,37 @@
+##Alchemical Analysis: An open tool implementing some recommended practices for analyzing alchemical free energy calculations
+
+Analyze alchemical free energy calculations conducted in GROMACS, AMBER or SIRE using recommended best practices from Klimovich et al., JCAMD 29:397-411 (2015).
+
+This tool handles analysis via a slate of free energy methods, including BAR, MBAR, TI, and the Zwanzig relationship (exponential averaging) among others, and provides a good deal of analysis of computed free energies and convergence in order to help you assess the quality of your results.
+
+If you have problems with this tool, please use the [github issue tracker](https://github.com/mobleylab/alchemical-analysis/issues).
+
+#### Citation [![DOI for Citing Alchemical Analysis](https://img.shields.io/badge/DOI-10.007%2Fs10822--015--9840--9-blue.svg)](http://dx.doi.org/10.1007/s10822-015-9840-9)
+
+Alchemical Analysis is research software. If you make use of it in work which you publish, please cite it. The BibTex reference is
+
+```
+@article{Klimovich:2015er,
+author = {Klimovich, Pavel V and Shirts, Michael R and Mobley, David L},
+title = {Guidelines for the analysis of free energy calculations},
+journal = {J Comput Aided Mol Des},
+year = {2015},
+volume = {29},
+number = {5},
+pages = {397--411},
+doi = {10.1007/s10822-015-9840-9}
+}
+```
+
+#### Prerequisites
+
+Alchemical Analysis requires the `pymbar` module (we recommend installation via conda, but other options are also available).
+
+#### Usage
+
 Script: `alchemical_analysis.py`
 
-An implementation of the recommended practices for analyzing alchemical free energy calculations, as described in Klimovich et al., JCAMD 29:397-411 (2015). This is based on earlier work illustrating how to apply MBAR to alchemical free energy calculations (and a comparison with other methods) as in Paliwal and Shirts, J. Chem. Theory Comp, v. 7, 4115-4134 (2011).
+This implements recommended practices for analyzing alchemical free energy calculations, as described in Klimovich et al., JCAMD 29:397-411 (2015). This was motivated in part by earlier work illustrating how to apply MBAR to alchemical free energy calculations (and a comparison with other methods) in Paliwal and Shirts, J. Chem. Theory Comp, v. 7, 4115-4134 (2011).
 
 See description in `gromacs/README.md`, `sire/README.md`, and `amber/README.md`.
 
@@ -77,3 +108,8 @@ Help for `alchemical_analysis.py` (obtained with `python alchemical_analysis.py 
                         The initial MBAR free energy guess; either 'BAR' or
                         'zeroes'. Default: 'BAR'.
 ```
+
+
+#### License
+
+GNU LGPL version 2.1. See the supplied license file for additional details. 
