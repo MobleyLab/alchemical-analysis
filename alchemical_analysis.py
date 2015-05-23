@@ -101,6 +101,11 @@ def getMethods(string):
 
 def checkUnitsAndMore(units):
 
+   # If using Gromacs we can read in the temperature directly from dhdl.xvg
+   if P.software.title() == 'Gromacs':
+      import parsers.parser_gromacs
+      P.temperature = parsers.parser_gromacs.readTempGromacs(P)
+
    kB = 1.3806488*6.02214129/1000.0 # Boltzmann's constant (kJ/mol/K).
    beta = 1./(kB*P.temperature)
 

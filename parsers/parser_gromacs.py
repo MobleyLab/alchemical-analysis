@@ -6,10 +6,6 @@ from collections import Counter # for counting elements in an array
 
 import unixlike                 # some implemented unixlike commands
 
-#===================================================================================================
-# FUNCTIONS: This is the Gromacs dhdl.xvg file parser.
-#===================================================================================================
-
 def readDataGromacs(P):
    """Read in .xvg files; return nsnapshots, lv, dhdlt, and u_klt."""
    
@@ -280,3 +276,28 @@ def readDataGromacs(P):
       f.iter_loadtxt(nf)
 
    return nsnapshots, lv, dhdlt, u_klt
+
+#===================================================================================================
+# FUNCTIONS: This reads in just the temperature from one of the dhdl.xvg files
+#===================================================================================================
+
+def readTempGromacs(P):
+
+    datafile_tuple = P.datafile_directory, P.prefix, P.suffix
+    filename = glob( '%s/%s*%s' % datafile_tuple )[1]
+
+    skip_lines = 0  # Number of lines from the top that are to be skipped.
+ 
+    print "Reading temperature from %s..." % filename
+    with open(filename,'r') as infile:
+        for line in infile:
+            if line.startswith('@'):
+                elements = unixlike.trPy(line).split()
+                if 'subtitle' in elements:
+                    temp = float(elements[4])
+                    print "Temperature is %g K." % temp
+                    return temp
+            skip_lines += 1
+
+    print "Error reading in temperature. Using default."
+    return P.temperature
