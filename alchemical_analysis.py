@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 ######################################################################
 # Alchemical Analysis: An open tool implementing some recommended practices for analyzing alchemical free energy calculations
