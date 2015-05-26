@@ -26,9 +26,11 @@ from collections import Counter # for counting elements in an array
 
 import unixlike                 # some implemented unixlike commands
 
-#===================================================================================================
-# FUNCTIONS: This is the Gromacs dhdl.xvg file parser.
-#===================================================================================================
+import sys
+
+#===================================================================================================       
+# FUNCTIONS: This is the Gromacs dhdl.xvg file parser.     
+#===================================================================================================       
 
 def readDataGromacs(P):
    """Read in .xvg files; return nsnapshots, lv, dhdlt, and u_klt."""
@@ -300,3 +302,41 @@ def readDataGromacs(P):
       f.iter_loadtxt(nf)
 
    return nsnapshots, lv, dhdlt, u_klt
+
+#===================================================================================================
+# FUNCTIONS: This reads in just the temperature from the dhdl.xvg files
+#===================================================================================================
+
+def readTempGromacs(P):
+
+    datafile_tuple = P.datafile_directory, P.prefix, P.suffix
+
+    temperature = []
+    print "Reading temperature from all .xvg files..."
+ 
+    # Cycles through all .xvg files (not currently sorted). Opens them, then
+    # gets the temperature from the file.
+    for filename in glob( '%s/%s*%s' % datafile_tuple ):
+        skip_lines = 0  # Number of lines from the top that are to be skipped.
+        with open(filename,'r') as infile:
+            for line in infile:
+                if line.startswith('@'):
+                    elements = unixlike.trPy(line).split()
+                    if "T" in elements:
+                        temperature.append(float(elements[4]))
+                skip_lines += 1
+
+    # If there were no temperatures in any of the files, use the default
+    if len(temperature) == 0:
+        print "Temperature not present in xvg files. Using %g K." % P.temperature
+        return P.temperature
+
+    # Check that all of the temperatures are the same. If not, script should
+    # not run.
+    if all(x==temperature[0] for x in temperature):
+        print "Temperature is %g K." % float(temperature[0])
+        return temperature[0]
+    else:
+        print "ERROR: Temperature is not the same in all .xvg files."
+        sys.exit(0)
+
