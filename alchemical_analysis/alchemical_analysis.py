@@ -116,8 +116,8 @@ def checkUnitsAndMore(units):
 
    # If using Gromacs we can read in the temperature directly from dhdl.xvg
    if P.software.title() == 'Gromacs':
-      import parsers.parser_gromacs
-      P.temperature = parsers.parser_gromacs.readTempGromacs(P)
+      import parser_gromacs
+      P.temperature = parser_gromacs.readTempGromacs(P)
 
    kB = 1.3806488*6.02214129/1000.0 # Boltzmann's constant (kJ/mol/K).
    beta = 1./(kB*P.temperature)
@@ -1085,12 +1085,33 @@ def plotCFM(u_kln, N_k, num_bins=100):
 #===================================================================================================
 
 def main():
+
+   global dhdlt
+   global u_klt
+   global P
+   global K
+   global n_components
+   global pymbar
+   global dhdl
+   global N_k
+   global lv
+   global dlam
+   global ave_dhdl
+   global std_dhdl
+   global lchange
+   global cubspl
+   global mapl
+   global u_kln
+   global Deltaf_ij
+   global dDeltaf_ij
+   global df_allk
+   global ddf_allk
+
    # Timing.
    stime = ttt_time.time()
    print "Started on %s" % ttt_time.asctime()
 
    # Simulation profile P (to be stored in 'results.pickle') will amass information about the simulation.
-   global P
    P = parser.parse_args()[0]
 
    P.methods = getMethods(P.methods.upper())
@@ -1105,21 +1126,21 @@ def main():
       from matplotlib.font_manager import FontProperties as FP
 
    if P.software.title() == 'Gromacs':
-      import parsers.parser_gromacs
-      nsnapshots, lv, dhdlt, u_klt = parsers.parser_gromacs.readDataGromacs(P)
+      import parser_gromacs
+      nsnapshots, lv, dhdlt, u_klt = parser_gromacs.readDataGromacs(P)
    elif P.software.title() == 'Sire':
-      import parsers.parser_sire
-      nsnapshots, lv, dhdlt, u_klt = parsers.parser_sire.readDataSire(P)
+      import parser_sire
+      nsnapshots, lv, dhdlt, u_klt = parser_sire.readDataSire(P)
    elif P.software.title() == 'Amber':
-      import parsers.parser_amber
-      lv, ave_dhdl, std_dhdl = parsers.parser_amber.readDataAmber(P)
+      import parser_amber
+      lv, ave_dhdl, std_dhdl = parser_amber.readDataAmber(P)
    else:
       from inspect import currentframe, getframeinfo
       lineno = getframeinfo(currentframe()).lineno
       print "\n\n%s\n Looks like there is no yet proper parser to process your files. \n Please modify lines %d and %d of this script.\n%s\n\n" % (78*"*", lineno+3, lineno+4, 78*"*")
       #### LINES TO BE MODIFIED
-      import parsers.YOUR_OWN_FILE_PARSER
-      nsnapshots, lv, dhdlt, u_klt = parsers.YOUR_OWN_FILE_PARSER.yourDataParser(*args, **kwargs)
+      import YOUR_OWN_FILE_PARSER
+      nsnapshots, lv, dhdlt, u_klt = YOUR_OWN_FILE_PARSER.yourDataParser(*args, **kwargs)
       #### All the four are numpy arrays.
       #### lv           is the array of lambda vectors.
       #### nsnapshots   is the number of equilibrated snapshots per each state.
