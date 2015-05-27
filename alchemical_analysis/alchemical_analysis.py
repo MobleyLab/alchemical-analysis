@@ -1084,13 +1084,13 @@ def plotCFM(u_kln, N_k, num_bins=100):
 # MAIN
 #===================================================================================================
 
-if __name__ == "__main__":
-
+def main():
    # Timing.
    stime = ttt_time.time()
    print "Started on %s" % ttt_time.asctime()
 
    # Simulation profile P (to be stored in 'results.pickle') will amass information about the simulation.
+   global P
    P = parser.parse_args()[0]
 
    P.methods = getMethods(P.methods.upper())
@@ -1154,6 +1154,10 @@ if __name__ == "__main__":
          plotCFM(u_kln, N_k, 50)
 
    print "\nTime spent: %s hours, %s minutes, and %s seconds.\nFinished on %s" % timeStatistics(stime)
+
+if __name__ == "__main__":
+   main()
+
 #===================================================================================================
 #                                   End of the script 
 #===================================================================================================
