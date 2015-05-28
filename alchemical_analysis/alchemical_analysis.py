@@ -1106,6 +1106,9 @@ def main():
    global dDeltaf_ij
    global df_allk
    global ddf_allk
+   global nsnapshots
+   global pl
+   global FP
 
    # Timing.
    stime = ttt_time.time()
