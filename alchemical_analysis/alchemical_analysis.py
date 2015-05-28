@@ -1109,6 +1109,7 @@ def main():
    global nsnapshots
    global pl
    global FP
+   global matplotlib
 
    # Timing.
    stime = ttt_time.time()
