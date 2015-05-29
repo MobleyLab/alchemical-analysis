@@ -1,7 +1,11 @@
-"""Alchemical Analysis
+"""Alchemical Analysis: An open tool implementing some recommended practices for analyzing alchemical free energy calculations
+# Copyright 2011-2015 UC Irvine and the Authors
 
 See:
 https://github.com/MobleyLab/alchemical-analysis
+
+For the code in setup.py, particular thanks go to:
+- James "Wes" Barnett
 """
 
 # Always prefer setuptools over distutils
@@ -22,7 +26,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.1.0',
+    version='1.0.1',
 
     description='Alchemical Analysis',
     long_description=long_description,
