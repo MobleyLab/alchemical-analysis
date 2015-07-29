@@ -1,3 +1,28 @@
+######################################################################
+#
+# Alchemical Analysis: An open tool implementing some recommended practices
+# for analyzing alchemical free energy calculations
+# Copyright 2011-2015 UC Irvine and the Authors
+#
+# Authors: Pavel Klimovich, Hannes H Loeffler, Michael Shirts and David Mobley
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, see <http://www.gnu.org/licenses/>.
+#
+######################################################################
+
+
+
 import os, re, glob
 from collections import defaultdict
 
@@ -79,7 +104,7 @@ def uncorrelateAmber(dhdl_k, uncorr_threshold):
    if int(round(N_k * g - g) ) > N - 1:
       N_k -= 1
 
-   if N_k < uncorr_threshold: # Return the original array if N_k is too low.
+   if N_k < uncorr_threshold:
       print('WARNING:\nOnly %s uncorrelated samples found;\n'
             'proceeding with analysis using correlated samples...' % N_k)
       return dhdl_k
@@ -161,7 +186,13 @@ def readDataAmber(P):
       nstlim = 0
       dt = 0 
 
-      # FIXME: optimise this with unixlike
+      # FIXME: change strategy:
+      #        MDEN: file is not in sync with  MDCRD and MDVEL but one step
+      #          behind, manual says that's why it is rarely written,
+      #          instantenous values(?)
+      #        MDOUT: writes DV/DL every ntpr steps, instantenous values
+      #          setting ntave=N computes averages over the last N steps
+      #          (ene_avg_sampling should not be set)
       with open(filename, 'rb') as out:
          for line in out:
             if ' MDEN:' in line:        # pmemd adds another space...
