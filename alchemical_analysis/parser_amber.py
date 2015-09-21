@@ -4,7 +4,8 @@
 # for analyzing alchemical free energy calculations
 # Copyright 2011-2015 UC Irvine and the Authors
 #
-# Authors: Pavel Klimovich, Hannes H Loeffler, Michael Shirts and David Mobley
+# Authors: Pavel Klimovich, Michael Shirts and David Mobley
+# Authors of this module: Hannes H Loeffler, Pavel Klimovich
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -30,11 +31,101 @@ import numpy
 
 
 
-DVDL_COMPS = ('BOND', 'ANGLE', 'DIHED', '1-4 NB', '1-4 EEL', 'VDWAALS', 'EELEC',
-              'RESTRAINT')
-RE_FP_NUM= '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?'
-MAX_N_AVER = 100000                     # FIXME: arbitrary
-N_AVER = 10                             # FIXME: arbitrary
+#DVDL_COMPS = ('BOND', 'ANGLE', 'DIHED', '1-4 NB', '1-4 EEL', 'VDWAALS', 'EELEC',
+#              'RESTRAINT')
+_FP_RE = r'[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?'
+
+
+class SectionParser(object):
+    """
+    A simple parser to extract data values from sections.
+    """
+
+    def __init__(self, filename):
+        self.filename = filename
+        self.fh = None
+        self.lineno = 0
+        self.last_pos = 0
+
+
+    def skip_after(self, pattern):
+        """Skip until after a line that matches pattern."""
+
+        for line in self:
+            match = re.search(pattern, line)
+
+            if match:
+                break
+
+
+    def extract_section(self, start, end, fields, limit = None):
+        """
+        Extract data values (int, float) in fields from a section
+        marked with start and end.  To not read farther than limit.
+        """
+
+        inside = False
+        result = []
+
+        for line in self:
+            if limit and re.search(limit, line):
+                break
+
+            if re.search(start, line):
+                inside = True
+
+            if inside:
+                if re.search(end, line):
+                    break
+
+                for field in fields:
+                    # FIXME: assumes only integers and floats
+                    match = re.search('%s\s+=\s+(\*+|%s|\d+)'
+                                     % (field, _FP_RE), line)
+                    if match:
+                        if re.search('\*+', match.group(1) ):
+                            raise ValueError('Cannot parse value: %s' %
+                                             match.group(1))
+                        elif re.search('%s' % _FP_RE, match.group(1) ):
+                            result.append(float(match.group(1) ) )
+                        else:
+                            result.append(int(match.group(1) ) )
+
+        return result
+
+
+    def pushback(self):
+       """Reposition one line back."""
+       self.lineno -= 1
+       self.fh.seek(self.last_pos)
+
+
+    def __iter__(self):
+        return self
+
+
+    def next(self):
+        self.lineno += 1
+        curr_pos = self.fh.tell()
+
+        # FIXME: just a bad hack?
+        if curr_pos == os.fstat(self.fh.fileno()).st_size:
+            raise StopIteration
+
+        self.last_pos = curr_pos
+
+        # NOTE: can't mix next() with seek()
+        return self.fh.readline()
+
+
+    def __enter__(self):
+        self.fh = open(self.filename, 'rb')
+
+        return self
+
+
+    def __exit__(self, typ, value, traceback):
+        self.fh.close()
 
 
 class OnlineAvVar(object):
@@ -54,6 +145,38 @@ class OnlineAvVar(object):
 
       self.mean += delta / self.step
       #self.M2 += delta * (x - self.mean)
+
+
+def process_mbar_lambdas(sp):
+   """Extract the lambda points used to compute MBAR energies."""
+
+   mbar_nlambda = 0
+   in_mbar = False
+   mbar_lambdas = []
+            
+   for line in sp:
+      if line.startswith('    MBAR - lambda values considered:'):
+         in_mbar = True
+         continue
+
+      if in_mbar:
+         if line.startswith('    Extra'):
+            break
+
+         if 'total' in line:
+            data = line.split()
+            mbar_nlambda = data[0]
+            mbar_lambdas.extend(data[2:])
+         else:
+            mbar_lambdas.extend(line.split())
+
+   # FIXME: report error more appropriately
+   if len(mbar_lambdas) != int(mbar_nlambda):
+      raise ValueError
+
+
+   return mbar_lambdas
+
 
 def getG(A_n, mintime = 3):
    """Computes 'g', the statistical inefficiency, as defined in eq (20)
@@ -90,6 +213,7 @@ def getG(A_n, mintime = 3):
 
    return g if g > 1 else 1
 
+
 def uncorrelateAmber(dhdl_k, uncorr_threshold):
    """Retain every 'g'th sample of the original array 'dhdl_k'."""
 
@@ -112,6 +236,7 @@ def uncorrelateAmber(dhdl_k, uncorr_threshold):
    indices = numpy.rint(g*numpy.arange(N_k)).astype(int)
 
    return dhdl_k[indices]
+
 
 def _extrapol(x, y, scheme):
    """Simple extrapolation scheme."""
@@ -159,162 +284,74 @@ def readDataAmber(P):
                        "prefix '%s' and suffix '%s': check your inputs."
                        % datafile_tuple)
 
-   dvdl = defaultdict(list)
-   comps = {}
-   comp_lines = []
-   ncomp = len(DVDL_COMPS)
-   nwarn = 0
+   dvdl_all = defaultdict(list)
+   mbar_all = defaultdict(list)
 
    for filename in filenames:
-      print 'Loading in data from %s... ' % filename,
+      print 'Loading in data from %s... ' % filename
 
-      data = []
-      Ecomps = []
+      mbar_data = []
+      dvdl_data = []
 
-      for cmp in DVDL_COMPS:
-         Ecomps.append(OnlineAvVar() )
+      # FIXME: extract components from ntave data
+      with SectionParser(filename) as sp:
+         # NOTE: some sections may not exist
+         sp.skip_after('^   2.  CONTROL  DATA  FOR  THE  RUN')
+         ntpr, = sp.extract_section('^Nature and format of output:', '^$',
+                                    ['ntpr'])
+         nstlim, dt = sp.extract_section('Molecular dynamics:', '^$',
+                                         ['nstlim', 'dt'])
 
-      ctrl_data = False
-      in_dvdl = False
-      in_comps = False
-      finished = False
-      reduced = False
-      old_nsteps = ''
-      mden_file = ''
-      tot_nsteps = 0
-      ndvdl = 0
-      nstlim = 0
-      dt = 0 
+         try:
+            ifsc, clambda = sp.extract_section('^Free energy options:', '^$',
+                                               ['ifsc', 'clambda'])
+         except ValueError:
+            raise
 
-      # FIXME: change strategy:
-      #        MDEN: file is not in sync with  MDCRD and MDVEL but one step
-      #          behind, manual says that's why it is rarely written,
-      #          instantenous values(?)
-      #        MDOUT: writes DV/DL every ntpr steps, instantenous values
-      #          setting ntave=N computes averages over the last N steps
-      #          (ene_avg_sampling should not be set)
-      with open(filename, 'rb') as out:
-         for line in out:
-            if ' MDEN:' in line:        # pmemd adds another space...
-               mden_file = line.split()[2]
+         try:
+            have_mbar, mbar_ndata = sp.extract_section('^FEP MBAR options:', '^$',
+                                                       ['ifmbar',
+                                                        'bar_intervall'],
+                                                       '^---')
+            mbar_ndata = int(nstlim / mbar_ndata)
+         except ValueError:
+            have_mbar = False
+            mbar_ndata = 0
 
-            if line == '   2.  CONTROL  DATA  FOR  THE  RUN\n':
-               ctrl_data = True
 
-            if ctrl_data:
-               if line.startswith('     clambda ='):
-                  clambda = float(line.split()[2][:-1])
+         if have_mbar:
+            mbar_lambdas = process_mbar_lambdas(sp)
+            mbar_nlambda = len(mbar_lambdas)
+            mbar_lambda_idx = mbar_lambdas.index('%6.4f' % clambda)
 
-               if 'nstlim  =' in line:
-                  nstlim = float(line.split()[2][:-1])
+         sp.skip_after('^   4.  RESULTS')
 
-               if 'dt      =' in line:
-                  dt = float(line.split()[5][:-1])
+         mbar = []
 
-            if line.startswith('Summary of dvdl values over'):
-               in_dvdl = True
-               continue
+         nenergy = int(nstlim / ntpr)
+         nensec = 0
+         old_nstep = -1
 
-            if in_dvdl:
-               if line.startswith('End of dvdl summary'):
-                  in_dvdl = False
-                  continue
+         for line in sp:
+            if have_mbar and line.startswith('MBAR Energy analysis'):
+               sp.pushback()
+               mbar = sp.extract_section('^MBAR', '^ ---', mbar_lambdas)
+               Eref = mbar[mbar_lambda_idx]
+               mbar_data.append([E - Eref for E in mbar])
 
-               data.append(float(line) )
-               ndvdl += 1
+            if line.startswith(' NSTEP'):
+               sp.pushback()
+               nstep, dvdl = sp.extract_section('^ NSTEP', '^ ---',
+                                                ['NSTEP', 'DV/DL'])
 
-            if 'DV/DL, AVERAGES OVER' in line:
-               nsteps = re.search('OVER\s+(.*?)\s+STEPS', line).group(1)
-
-               if nsteps == old_nsteps or not old_nsteps:
-                  in_comps = True
-
-                  # Fortran format may be exceeded
-                  try:
-                     tot_nsteps += int(nsteps)
-                  except ValueError:
-                     pass
-               else:
-                  in_comps = False
-
-               old_nsteps = nsteps
-               continue
-
-            if in_comps and 'DV/DL  =' in line:
-               in_comps = False
-               lines = ''.join(comp_lines)
-
-               # NOTE: assumes all terms are present
-               for i, ene_comp in enumerate(DVDL_COMPS):
-                  E = re.search('%s\s*=\s*(%s)' % (ene_comp, RE_FP_NUM), lines)
-                  Ecomps[i].accumulate(float(E.group(1) ) )
-
-               comp_lines = []
-
-            if in_comps:
-               comp_lines.append(line)
-
-            if line == '   5.  TIMINGS\n':
-               finished = True
-               break
-
-      if not ndvdl:
-         print ('no DV/DL summary found!')
-         mden_file = os.path.join(os.path.split(filename)[0], mden_file)
-
-         with open(mden_file, 'rb') as en:
-            print 'Loading in data from %s... ' % mden_file,
-
-            for line in en:
-               if line.startswith('L9') and not 'dV/dlambda' in line:
-                  try:
-                     data.append(float(line.split()[5]) )
-                  except IndexError:
-                     print ('WARNING: %s does not contain gradients' %
-                            mden_file)
-                     nwarn += 1
-                     next
-
-                  ndvdl += 1
-
-      print '%i data points' % ndvdl
-
-      # FIXME: check for exceeded Fortran format
-      if tot_nsteps < nstlim and tot_nsteps > 0:
-         print ('WARNING: DV/DL components for %i steps only' % tot_nsteps)
-         nwarn += 1
-
-      if not finished:
-         print ('WARNING: prematurely terminated run')
-         nwarn += 1
-         next
-
-      # reduce data and store in numpy array to save on memory
-      ndata = len(data)
-
-      # FIXME: arbitrary sizes
-      if ndata > MAX_N_AVER:
-         reduced = True
-         res = []
-         overhang = ndata % N_AVER
-
-         for i in range(0, ndata - overhang, N_AVER):
-            res.append(reduce(lambda x, y: (x+y), data[i:i+N_AVER]) / N_AVER)
-
-         # FIXME: not really a clean way
-         if overhang:
-            res.append(reduce(lambda x, y: (x+y), data[i+N_AVER:]) / overhang)
-
-         del(data)
-      else:
-         res = data   
+               # NOTE: skip averages and RMS for now
+               if nstep != old_nstep:
+                  dvdl_data.append(dvdl)
+                  nensec += 1
+                  old_nstep = nstep
       
-      dvdl[clambda] = numpy.append(dvdl[clambda], res)
-
-      comps[clambda] = [Es.mean for Es in Ecomps]
-
-   if reduced:
-      print '\nSome or all data have been reduced\n'
+      dvdl_all[clambda] = numpy.append(dvdl_all[clambda], dvdl_data)
+      mbar_all[clambda] = numpy.append(mbar_all[clambda], mbar_data)
 
    lv = []
    ave = []
@@ -322,18 +359,14 @@ def readDataAmber(P):
 
    start_from = int(P.equiltime / float(dt) )
 
-   if reduced:
-      start_from = int(start_from / N_AVER)
-
-
    print('\nThe average and standard error of the mean in raw data units:\n'
          '(first %i data points ignored)' % start_from)
    print ('%6s %12s %12s %12s %12s %12s' %
           ('State', 'Lambda', 'N', '(Total N)', '<dv/dl>', 'SEM') )
 
-   # FIXME: do not store data again!
-   for i, clambda in enumerate(sorted(dvdl.keys() ) ):
-      dhdl_k = dvdl[clambda][start_from:]
+   # FIXME: do not store data again?
+   for i, clambda in enumerate(sorted(dvdl_all.keys() ) ):
+      dhdl_k = dvdl_all[clambda][start_from:]
       N = dhdl_k.size
 
       if P.uncorr_threshold:
@@ -350,6 +383,10 @@ def readDataAmber(P):
       ave.append(ave_dhdl)
       std.append(std_dhdl)
 
+   print
+
+
+   # sander does not sample end-points...
    y0, y1 = _extrapol(lv, ave, 'polyfit')
 
    if y0:
@@ -365,26 +402,7 @@ def readDataAmber(P):
       std.append(0.0)
 
 
-   if old_nsteps:
-      print "\nThe DV/DL components:"
-
-      fmt = 'Lambda ' + '%10s' * ncomp
-      print (fmt % DVDL_COMPS)
-
-      fmt = '%7.5f' + ' %9.3f' * ncomp
-
-      for clambda in sorted(comps.keys() ):
-         l = (clambda,) + tuple(comps[clambda])
-         print fmt % l
-
-      print
-
    K = len(lv)
-
-   if nwarn:
-      print('\nWARNING: %i warning%s been issued, check integrity of '
-            'data and files\n' % (nwarn, ' has' if nwarn == 1 else 's have') )
-
 
    return (numpy.array(lv).reshape(K, 1),
            P.beta * numpy.array(ave).reshape(K, 1),
