@@ -31,8 +31,8 @@ import numpy
 
 
 
-#DVDL_COMPS = ('BOND', 'ANGLE', 'DIHED', '1-4 NB', '1-4 EEL', 'VDWAALS', 'EELEC',
-#              'RESTRAINT')
+DVDL_COMPS = ['BOND', 'ANGLE', 'DIHED', '1-4 NB', '1-4 EEL', 'VDWAALS', 'EELEC',
+              'RESTRAINT']
 _FP_RE = r'[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?'
 
 
@@ -43,7 +43,8 @@ class SectionParser(object):
 
     def __init__(self, filename):
         self.filename = filename
-        self.fh = None
+        self.fh = open(self.filename, 'rb')
+        self.filesize = os.fstat(self.fh.fileno()).st_size
         self.lineno = 0
         self.last_pos = 0
 
@@ -80,11 +81,11 @@ class SectionParser(object):
 
                 for field in fields:
                     # FIXME: assumes only integers and floats
-                    match = re.search('%s\s+=\s+(\*+|%s|\d+)'
+                    match = re.search(' %s\s+=\s+(\*+|%s|\d+)'
                                      % (field, _FP_RE), line)
                     if match:
                         if re.search('\*+', match.group(1) ):
-                            raise ValueError('Cannot parse value: %s' %
+                            raise SystemExit('Cannot parse value: %s' %
                                              match.group(1))
                         elif re.search('%s' % _FP_RE, match.group(1) ):
                             result.append(float(match.group(1) ) )
@@ -109,7 +110,7 @@ class SectionParser(object):
         curr_pos = self.fh.tell()
 
         # FIXME: just a bad hack?
-        if curr_pos == os.fstat(self.fh.fileno()).st_size:
+        if curr_pos == self.filesize:
             raise StopIteration
 
         self.last_pos = curr_pos
@@ -119,8 +120,6 @@ class SectionParser(object):
 
 
     def __enter__(self):
-        self.fh = open(self.filename, 'rb')
-
         return self
 
 
@@ -284,14 +283,24 @@ def readDataAmber(P):
                        "prefix '%s' and suffix '%s': check your inputs."
                        % datafile_tuple)
 
-   dvdl_all = defaultdict(list)
    mbar_all = defaultdict(list)
-
+   dvdl_all = defaultdict(list)
+   dvdl_comps_all = {}
+   ncomp = len(DVDL_COMPS)
+   
    for filename in filenames:
       print 'Loading in data from %s... ' % filename
 
+      in_comps = False
+      curr_data = None
+
       mbar_data = []
       dvdl_data = []
+      dvdl_comp_data = []
+
+      for cmp in DVDL_COMPS:
+         dvdl_comp_data.append(OnlineAvVar() )
+
 
       # FIXME: extract components from ntave data
       with SectionParser(filename) as sp:
@@ -319,6 +328,7 @@ def readDataAmber(P):
             mbar_ndata = 0
 
 
+         have_mbar = False
          if have_mbar:
             mbar_lambdas = process_mbar_lambdas(sp)
             mbar_nlambda = len(mbar_lambdas)
@@ -331,6 +341,7 @@ def readDataAmber(P):
          nenergy = int(nstlim / ntpr)
          nensec = 0
          old_nstep = -1
+         old_comp_nstep = -1
 
          for line in sp:
             if have_mbar and line.startswith('MBAR Energy analysis'):
@@ -339,19 +350,36 @@ def readDataAmber(P):
                Eref = mbar[mbar_lambda_idx]
                mbar_data.append([E - Eref for E in mbar])
 
+            if 'DV/DL, AVERAGES OVER' in line:
+                in_comps = True
+
             if line.startswith(' NSTEP'):
                sp.pushback()
-               nstep, dvdl = sp.extract_section('^ NSTEP', '^ ---',
-                                                ['NSTEP', 'DV/DL'])
 
-               # NOTE: skip averages and RMS for now
-               if nstep != old_nstep:
-                  dvdl_data.append(dvdl)
-                  nensec += 1
-                  old_nstep = nstep
-      
-      dvdl_all[clambda] = numpy.append(dvdl_all[clambda], dvdl_data)
+               if in_comps:
+                   result = sp.extract_section('^ NSTEP', '^ ---',
+                                               ['NSTEP'] + DVDL_COMPS)
+
+                   if result[0] != old_comp_nstep:
+                       for i, E in enumerate(DVDL_COMPS):
+                           dvdl_comp_data[i].accumulate(float(result[i+1]) )
+
+                       old_comp_nstep = result[0]
+
+                   in_comps = False
+               else:
+                   nstep, dvdl = sp.extract_section('^ NSTEP', '^ ---',
+                                                    ['NSTEP', 'DV/DL'])
+
+                   if nstep != old_nstep:
+                       dvdl_data.append(dvdl)
+                       nensec += 1
+                       old_nstep = nstep
+
       mbar_all[clambda] = numpy.append(mbar_all[clambda], mbar_data)
+      dvdl_all[clambda] = numpy.append(dvdl_all[clambda], dvdl_data)
+      dvdl_comps_all[clambda] = [Es.mean for Es in dvdl_comp_data]
+
 
    lv = []
    ave = []
@@ -400,6 +428,20 @@ def readDataAmber(P):
       lv.append(1.0)
       ave.append(y1)
       std.append(0.0)
+
+
+   print "\nThe DV/DL components (averages over all gradients!):"
+
+   fmt = 'Lambda ' + '%10s' * ncomp
+   print (fmt % tuple(DVDL_COMPS) )
+
+   fmt = '%7.5f' + ' %9.3f' * ncomp
+
+   for clambda in sorted(dvdl_comps_all.keys() ):
+       l = (clambda,) + tuple(dvdl_comps_all[clambda])
+       print fmt % l
+
+   print
 
 
    K = len(lv)
