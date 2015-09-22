@@ -289,10 +289,10 @@ def readDataAmber(P):
    ncomp = len(DVDL_COMPS)
    
    for filename in filenames:
-      print 'Loading in data from %s... ' % filename
+      print('Loading in data from %s... ' % filename),
 
       in_comps = False
-      curr_data = None
+      finished = False
 
       mbar_data = []
       dvdl_data = []
@@ -315,7 +315,8 @@ def readDataAmber(P):
             ifsc, clambda = sp.extract_section('^Free energy options:', '^$',
                                                ['ifsc', 'clambda'])
          except ValueError:
-            raise
+            raise SystemExit('File %s does not contain a free energy section' %
+                             filename)
 
          try:
             have_mbar, mbar_ndata = sp.extract_section('^FEP MBAR options:', '^$',
@@ -328,11 +329,16 @@ def readDataAmber(P):
             mbar_ndata = 0
 
 
-         have_mbar = False
          if have_mbar:
             mbar_lambdas = process_mbar_lambdas(sp)
+            clambda_str = '%6.4f' % clambda
+
+            if clambda_str not in mbar_lambdas:
+               raise SystemExit('Lambda %s not contained in MBAR lambdas: %s' %
+                                (clambda_str, ', '.join(mbar_lambdas) ) )
+
             mbar_nlambda = len(mbar_lambdas)
-            mbar_lambda_idx = mbar_lambdas.index('%6.4f' % clambda)
+            mbar_lambda_idx = mbar_lambdas.index(clambda_str)
 
          sp.skip_after('^   4.  RESULTS')
 
@@ -340,6 +346,7 @@ def readDataAmber(P):
 
          nenergy = int(nstlim / ntpr)
          nensec = 0
+         nenav = 0
          old_nstep = -1
          old_comp_nstep = -1
 
@@ -364,6 +371,7 @@ def readDataAmber(P):
                        for i, E in enumerate(DVDL_COMPS):
                            dvdl_comp_data[i].accumulate(float(result[i+1]) )
 
+                       nenav += 1
                        old_comp_nstep = result[0]
 
                    in_comps = False
@@ -376,6 +384,20 @@ def readDataAmber(P):
                        nensec += 1
                        old_nstep = nstep
 
+            if line == '   5.  TIMINGS\n':
+               finished = True
+               break
+
+      print('%i data points, %i DV/DL averages' % (nensec, nenav) )
+
+      if not finished:
+         print('WARNING: prematurely terminated run\n')
+         next
+           
+      if not nensec:
+          raise SystemExit('File %s does not contain DV/DL data' %
+                           filename)
+
       mbar_all[clambda] = numpy.append(mbar_all[clambda], mbar_data)
       dvdl_all[clambda] = numpy.append(dvdl_all[clambda], dvdl_data)
       dvdl_comps_all[clambda] = [Es.mean for Es in dvdl_comp_data]
@@ -385,10 +407,14 @@ def readDataAmber(P):
    ave = []
    std = []
 
-   start_from = int(P.equiltime / float(dt) )
+   start_from = int(round(P.equiltime / (ntpr * float(dt) ) ) )
 
-   print('\nThe average and standard error of the mean in raw data units:\n'
-         '(first %i data points ignored)' % start_from)
+   print('\nThe average and standard error of the mean in raw data units:')
+
+   if start_from:
+       print('(first %s ignored)' %
+             ('%i data points' % start_from if start_from > 1 else 'data point') )
+
    print ('%6s %12s %12s %12s %12s %12s' %
           ('State', 'Lambda', 'N', '(Total N)', '<dv/dl>', 'SEM') )
 
@@ -411,20 +437,20 @@ def readDataAmber(P):
       ave.append(ave_dhdl)
       std.append(std_dhdl)
 
-   print
+   print('\n')
 
 
    # sander does not sample end-points...
    y0, y1 = _extrapol(lv, ave, 'polyfit')
 
    if y0:
-      print 'Note: adding missing lambda = 0.0: %f' % y0
+      print('Note: adding missing lambda = 0.0: %f' % y0)
       lv.insert(0, 0.0)
       ave.insert(0, y0)
       std.insert(0, 0.0)
 
    if y1:
-      print 'Note: adding missing lambda = 1.0: %f' % y1
+      print('Note: adding missing lambda = 1.0: %f' % y1)
       lv.append(1.0)
       ave.append(y1)
       std.append(0.0)
