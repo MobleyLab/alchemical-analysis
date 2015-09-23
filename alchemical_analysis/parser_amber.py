@@ -62,7 +62,7 @@ class SectionParser(object):
     def extract_section(self, start, end, fields, limit = None):
         """
         Extract data values (int, float) in fields from a section
-        marked with start and end.  To not read farther than limit.
+        marked with start and end.  Do not read farther than limit.
         """
 
         inside = False
@@ -80,7 +80,10 @@ class SectionParser(object):
                     break
 
                 for field in fields:
-                    # FIXME: assumes only integers and floats
+                    # FIXME: a) assumes fields are only integers and floats
+                    #        b) return fields in order of requested fields and not
+                    #           in order of occurance in input (accumulate and
+                    #           then parse?)
                     match = re.search(' %s\s+=\s+(\*+|%s|\d+)'
                                      % (field, _FP_RE), line)
                     if match:
@@ -302,7 +305,6 @@ def readDataAmber(P):
          dvdl_comp_data.append(OnlineAvVar() )
 
 
-      # FIXME: extract components from ntave data
       with SectionParser(filename) as sp:
          # NOTE: some sections may not exist
          sp.skip_after('^   2.  CONTROL  DATA  FOR  THE  RUN')
@@ -409,7 +411,7 @@ def readDataAmber(P):
 
    start_from = int(round(P.equiltime / (ntpr * float(dt) ) ) )
 
-   print('\nThe average and standard error of the mean in raw data units:')
+   print('\nThe average and standard error of the mean (kcal/mol):')
 
    if start_from:
        print('(first %s ignored)' %
@@ -437,7 +439,7 @@ def readDataAmber(P):
       ave.append(ave_dhdl)
       std.append(std_dhdl)
 
-   print('\n')
+   print
 
 
    # sander does not sample end-points...
@@ -456,18 +458,47 @@ def readDataAmber(P):
       std.append(0.0)
 
 
-   print "\nThe DV/DL components (averages over all gradients!):"
+   print("\nThe DV/DL components from gradients of "
+         "_every_single_ step (kcal/mol):")
+
+   ene_comp = []
+   x_comp = sorted(dvdl_comps_all.keys() )
+
+   for en in sorted(dvdl_comps_all.items() ):
+      ene_comp.append(en[1:])
 
    fmt = 'Lambda ' + '%10s' * ncomp
-   print (fmt % tuple(DVDL_COMPS) )
+   print(fmt % tuple(DVDL_COMPS) )
 
    fmt = '%7.5f' + ' %9.3f' * ncomp
 
-   for clambda in sorted(dvdl_comps_all.keys() ):
-       l = (clambda,) + tuple(dvdl_comps_all[clambda])
-       print fmt % l
 
-   print
+   for clambda in x_comp:
+       l = (clambda,) + tuple(dvdl_comps_all[clambda])
+       print(fmt % l)
+
+   print('   TI ='),
+
+   for ene in numpy.transpose(ene_comp):
+      y_comp = ene[0]
+
+      if not all(y_comp):
+         print(' %8.3f' % 0.0),
+         continue
+
+      y0, y1 = _extrapol(x_comp, y_comp, 'polyfit')
+
+      if y0:
+         x_comp.insert(0, 0.0)
+         y_comp.insert(0, y0)
+
+      if y1:
+         x_comp.append(1.0)
+         y_comp.append(y1)
+
+      print(' %8.3f' % numpy.trapz(y_comp, x_comp) ),
+      
+   print('\n')
 
 
    K = len(lv)
