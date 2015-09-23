@@ -439,8 +439,6 @@ def readDataAmber(P):
       ave.append(ave_dhdl)
       std.append(std_dhdl)
 
-   print
-
 
    # sander does not sample end-points...
    y0, y1 = _extrapol(lv, ave, 'polyfit')
@@ -479,26 +477,28 @@ def readDataAmber(P):
 
    print('   TI ='),
 
-   for ene in numpy.transpose(ene_comp):
-      y_comp = ene[0]
 
-      if not all(y_comp):
+   for ene in numpy.transpose(ene_comp):
+      x_ene = x_comp
+      y_ene = ene[0]
+
+      if not all(y_ene):
          print(' %8.3f' % 0.0),
          continue
 
-      y0, y1 = _extrapol(x_comp, y_comp, 'polyfit')
+      y0, y1 = _extrapol(x_comp, y_ene, 'polyfit')
 
       if y0:
-         x_comp.insert(0, 0.0)
-         y_comp.insert(0, y0)
+         x_ene = [0.0] + x_ene
+         y_ene = numpy.insert(y_ene, 0, y0)
 
       if y1:
-         x_comp.append(1.0)
-         y_comp.append(y1)
+         x_ene = x_ene + [1.0]
+         y_ene = numpy.append(y_ene, y1)
 
-      print(' %8.3f' % numpy.trapz(y_comp, x_comp) ),
+      print(' %8.3f' % numpy.trapz(y_ene, x_ene) ),
       
-   print('\n')
+   print('\n\n')
 
 
    K = len(lv)
