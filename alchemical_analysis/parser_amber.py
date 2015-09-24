@@ -58,11 +58,13 @@ class SectionParser(object):
             if match:
                 break
 
+        return self.fh.tell() != self.filesize
+
 
     def extract_section(self, start, end, fields, limit = None):
         """
         Extract data values (int, float) in fields from a section
-        marked with start and end.  Do not read farther than limit.
+        marked with start and end.  Do not read further than limit.
         """
 
         inside = False
@@ -86,22 +88,29 @@ class SectionParser(object):
                     #           then parse?)
                     match = re.search(' %s\s+=\s+(\*+|%s|\d+)'
                                      % (field, _FP_RE), line)
+
                     if match:
-                        if re.search('\*+', match.group(1) ):
-                            raise SystemExit('Cannot parse value: %s' %
-                                             match.group(1))
-                        elif re.search('%s' % _FP_RE, match.group(1) ):
-                            result.append(float(match.group(1) ) )
+                        m = match.group(1)
+
+                        if '*' in m:    # Fortran format overflow
+                            raise SystemExit('Cannot parse value %s in %s' %
+                                             (m, field) )
+                        # NOTE: check if this is a sufficient test for int
+                        elif not '.' in m and re.search('\d+', m):
+                            result.append(int(m) )
                         else:
-                            result.append(int(match.group(1) ) )
+                            result.append(float(m) )
+
+        if not result:
+            result = [None] * len(fields)
 
         return result
 
 
     def pushback(self):
-       """Reposition one line back."""
-       self.lineno -= 1
-       self.fh.seek(self.last_pos)
+        """Reposition to one line back.  Works only once, see next()."""
+        self.lineno -= 1
+        self.fh.seek(self.last_pos)
 
 
     def __iter__(self):
@@ -112,7 +121,6 @@ class SectionParser(object):
         self.lineno += 1
         curr_pos = self.fh.tell()
 
-        # FIXME: just a bad hack?
         if curr_pos == self.filesize:
             raise StopIteration
 
@@ -131,53 +139,47 @@ class SectionParser(object):
 
 
 class OnlineAvVar(object):
-   '''Online algorithm to compute mean and variance.'''
+    '''Online algorithm to compute mean (and variance).'''
 
-   def __init__(self):
-      self.step = 0
-      self.mean = 0.0
-      #self.M2 = 0.0
+    def __init__(self):
+        self.step = 0
+        self.mean = 0.0
+        #self.M2 = 0.0
 
-   def accumulate(self, x):
-      '''Accumulate data points to compute mean and variance on-the-fly.'''
+    def accumulate(self, x):
+        '''Accumulate data points to compute mean and variance on-the-fly.'''
 
-      self.step += 1
+        self.step += 1
 
-      delta = x - self.mean
+        delta = x - self.mean
 
-      self.mean += delta / self.step
-      #self.M2 += delta * (x - self.mean)
+        self.mean += delta / self.step
+        #self.M2 += delta * (x - self.mean)
 
 
 def process_mbar_lambdas(sp):
-   """Extract the lambda points used to compute MBAR energies."""
+    """Extract the lambda points used to compute MBAR energies."""
 
-   mbar_nlambda = 0
-   in_mbar = False
-   mbar_lambdas = []
+    in_mbar = False
+    mbar_lambdas = []
             
-   for line in sp:
-      if line.startswith('    MBAR - lambda values considered:'):
-         in_mbar = True
-         continue
+    for line in sp:
+        if line.startswith('    MBAR - lambda values considered:'):
+            in_mbar = True
+            continue
 
-      if in_mbar:
-         if line.startswith('    Extra'):
-            break
+        if in_mbar:
+            if line.startswith('    Extra'):
+                break
 
-         if 'total' in line:
-            data = line.split()
-            mbar_nlambda = data[0]
-            mbar_lambdas.extend(data[2:])
-         else:
-            mbar_lambdas.extend(line.split())
-
-   # FIXME: report error more appropriately
-   if len(mbar_lambdas) != int(mbar_nlambda):
-      raise ValueError
+            if 'total' in line:
+                data = line.split()
+                mbar_lambdas.extend(data[2:])
+            else:
+                mbar_lambdas.extend(line.split())
 
 
-   return mbar_lambdas
+    return mbar_lambdas
 
 
 def getG(A_n, mintime = 3):
@@ -217,7 +219,7 @@ def getG(A_n, mintime = 3):
 
 
 def uncorrelateAmber(dhdl_k, uncorr_threshold):
-   """Retain every 'g'th sample of the original array 'dhdl_k'."""
+   """Retain every g'th sample of the original array 'dhdl_k'."""
 
    g = getG(dhdl_k)
 
@@ -279,7 +281,7 @@ def readDataAmber(P):
    P.lv_names = ['']
 
    datafile_tuple = P.datafile_directory, P.prefix, P.suffix
-   filenames = glob.glob('%s/%s*%s' % datafile_tuple) # will be sorted later
+   filenames = glob.glob('%s/%s*%s' % datafile_tuple)
 
    if not len(filenames):
       raise SystemExit("\nERROR!\nNo files found within directory '%s' with "
@@ -288,7 +290,7 @@ def readDataAmber(P):
 
    mbar_all = defaultdict(list)
    dvdl_all = defaultdict(list)
-   dvdl_comps_all = {}
+   dvdl_comps_all = defaultdict(list)
    ncomp = len(DVDL_COMPS)
    
    for filename in filenames:
@@ -306,32 +308,36 @@ def readDataAmber(P):
 
 
       with SectionParser(filename) as sp:
-         # NOTE: some sections may not exist
-         sp.skip_after('^   2.  CONTROL  DATA  FOR  THE  RUN')
+         if not sp.skip_after('^   2.  CONTROL  DATA  FOR  THE  RUN'):
+            print('WARNING: no control data found, ignoring file')
+            continue
+
          ntpr, = sp.extract_section('^Nature and format of output:', '^$',
                                     ['ntpr'])
          nstlim, dt = sp.extract_section('Molecular dynamics:', '^$',
                                          ['nstlim', 'dt'])
 
-         try:
-            ifsc, clambda = sp.extract_section('^Free energy options:', '^$',
-                                               ['ifsc', 'clambda'])
-         except ValueError:
-            raise SystemExit('File %s does not contain a free energy section' %
-                             filename)
+         # FIXME: file may end just after 2. CONTROL DATA so vars will be all None
 
-         try:
-            have_mbar, mbar_ndata = sp.extract_section('^FEP MBAR options:', '^$',
-                                                       ['ifmbar',
-                                                        'bar_intervall'],
-                                                       '^---')
-            mbar_ndata = int(nstlim / mbar_ndata)
-         except ValueError:
-            have_mbar = False
-            mbar_ndata = 0
+         # NOTE: some sections may not have been created
+         ifsc, clambda = sp.extract_section('^Free energy options:', '^$',
+                                            ['ifsc', 'clambda'], '^---')
 
+         if clambda == None:
+            print('WARNING: no free energy section found, ignoring file')
+            continue
+
+         mbar_ndata = 0
+         have_mbar, mbar_ndata = sp.extract_section('^FEP MBAR options:', '^$',
+                                                   ['ifmbar',
+                                                    'bar_intervall'],
+                                                   '^---')
+
+         # FIXME: don't do MBAR until we have sorted out all problems with it
+         have_mbar = False
 
          if have_mbar:
+            mbar_ndata = int(nstlim / mbar_ndata)
             mbar_lambdas = process_mbar_lambdas(sp)
             clambda_str = '%6.4f' % clambda
 
@@ -342,7 +348,9 @@ def readDataAmber(P):
             mbar_nlambda = len(mbar_lambdas)
             mbar_lambda_idx = mbar_lambdas.index(clambda_str)
 
-         sp.skip_after('^   4.  RESULTS')
+         if not sp.skip_after('^   4.  RESULTS'):
+            print('WARNING: no results found, ignoring file\n')
+            continue
 
          mbar = []
 
@@ -405,6 +413,10 @@ def readDataAmber(P):
       dvdl_comps_all[clambda] = [Es.mean for Es in dvdl_comp_data]
 
 
+   if not dvdl_all:
+       raise SystemExit('No DV/DL data found')
+
+
    lv = []
    ave = []
    std = []
@@ -417,8 +429,8 @@ def readDataAmber(P):
        print('(first %s ignored)' %
              ('%i data points' % start_from if start_from > 1 else 'data point') )
 
-   print ('%6s %12s %12s %12s %12s %12s' %
-          ('State', 'Lambda', 'N', '(Total N)', '<dv/dl>', 'SEM') )
+   print ('%6s %12s %8s %12s %12s' %
+          ('State', 'Lambda', 'N_k/N', '<dv/dl>', 'SEM') )
 
    # FIXME: do not store data again?
    for i, clambda in enumerate(sorted(dvdl_all.keys() ) ):
@@ -432,8 +444,8 @@ def readDataAmber(P):
       ave_dhdl = numpy.average(dhdl_k)
       std_dhdl = numpy.std(dhdl_k) / numpy.sqrt(N_k - 1)
 
-      print('%6s %12.5f %12s %12s %12.6f %12.6f' %
-            (i, clambda, N_k, '(' + str(N) + ')', ave_dhdl, std_dhdl) )
+      print('%6s %12.5f %8.4f %12.6f %12.6f' %
+            (i, clambda, float(N_k) / float(N), ave_dhdl, std_dhdl) )
 
       lv.append(clambda)
       ave.append(ave_dhdl)

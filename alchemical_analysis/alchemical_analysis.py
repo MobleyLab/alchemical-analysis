@@ -27,12 +27,12 @@
 ## Not a built-in module. Will be called from main, whenever needed. ##
 ## import pymbar      Multistate Bennett Acceptance Ratio estimator. ##
 
+import sys
 import numpy
 import pickle                       # for full-precision data storage
 from   optparse import OptionParser # for parsing command-line options
 import os                           # for os interface
 import time as ttt_time             # for timing
-import pdb                          # for debugging
 
 #===================================================================================================
 # INPUT OPTIONS
@@ -624,8 +624,10 @@ def totalEnergies():
          print str_align.replace('I', ' ').format(i)
    else:
       printLine('%9s:  ' % segments[-1], str_dat, dFs[-1], ddFs[-1])
+
    # Store results.
    outfile = open(os.path.join(P.output_directory, 'results.txt'), 'w')
+   outfile.write('# Command line was: %s\n\n' % ' '.join(sys.argv) )
    outfile.writelines(outtext)
    outfile.close()
 
@@ -1114,6 +1116,7 @@ def main():
    # Timing.
    stime = ttt_time.time()
    print "Started on %s" % ttt_time.asctime()
+   print 'Command line was: %s\n' % ' '.join(sys.argv)
 
    # Simulation profile P (to be stored in 'results.pickle') will amass information about the simulation.
    P = parser.parse_args()[0]
