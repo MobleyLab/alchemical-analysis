@@ -47,6 +47,7 @@ parser.add_option('-g', '--breakdown', dest = 'breakdown', help = 'Plotting the 
 parser.add_option('-i', '--threshold', dest = 'uncorr_threshold', help = 'Proceed with correlated samples if the number of uncorrelated samples is found to be less than this number. If 0 is given, the time series analysis will not be performed at all. Default: 50.', default = 50, type=int)
 parser.add_option('-k', '--koff', dest = 'bSkipLambdaIndex', help = 'Give a string of lambda indices separated by \'-\' and they will be removed from the analysis. (Another approach is to have only the files of interest present in the directory). Default: None.', default = '')
 parser.add_option('-m', '--methods', dest = 'methods', help = 'A list of the methods to esitimate the free energy with. Default: [TI, TI-CUBIC, DEXP, IEXP, BAR, MBAR]. To add/remove methods to the above list provide a string formed of the method strings preceded with +/-. For example, \'-ti_cubic+gdel\' will turn methods into [TI, DEXP, IEXP, BAR, MBAR, GDEL]. \'ti_cubic+gdel\', on the other hand, will call [TI-CUBIC, GDEL]. \'all\' calls the full list of supported methods [TI, TI-CUBIC, DEXP, IEXP, GINS, GDEL, BAR, UBAR, RBAR, MBAR].', default = '')
+parser.add_option('-n', '--uncorr', dest = 'uncorr', help = 'The observable to be used for the autocorrelation analysis; either \'dhdl\' (default) or \'dE\'. In the latter case the energy differences dE_{i,i+1} (dE_{i,i-1} for the last lambda) are used.', default = 'dhdl')
 parser.add_option('-o', '--out', dest = 'output_directory', help = 'Directory in which the output files produced by this script will be stored. Default: Same as datafile_directory.', default = '')
 parser.add_option('-p', '--prefix', dest = 'prefix', help = 'Prefix for datafile sets, i.e.\'dhdl\' (default).', default = 'dhdl')
 parser.add_option('-q', '--suffix', dest = 'suffix', help = 'Suffix for datafile sets, i.e. \'xvg\' (default).', default = 'xvg')
@@ -170,28 +171,63 @@ def uncorrelate(sta, fin, do_dhdl=False):
    if do_dhdl:
       dhdl = numpy.zeros([K,n_components,max(fin-sta)], float) #dhdl is value for dhdl for each component in the file at each time.
       print "\n\nNumber of correlated and uncorrelated samples:\n\n%6s %12s %12s %12s\n" % ('State', 'N', 'N_k', 'N/N_k')
-   for k in range(K):
-      # Sum up over the energy components; notice, that only the relevant data is being used in the third dimension.
-      dhdl_sum = numpy.sum(dhdlt[k,:,sta[k]:fin[k]], axis=0)
-      # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
-      # (alternatively, could use the energy differences -- here, we will use total dhdl).
-      g[k] = pymbar.timeseries.statisticalInefficiency(dhdl_sum)
-      indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dhdl_sum, g=g[k])) # indices of uncorrelated samples
-      N = len(indices) # number of uncorrelated samples
-      # Handle case where we end up with too few.
-      if N < P.uncorr_threshold:
+
+   UNCORR_OBSERVABLE = {'Gromacs':P.uncorr, 'Amber':'dhdl', 'Sire':'dhdl'}[P.software.title()]
+
+   if UNCORR_OBSERVABLE == 'dhdl':
+
+      for k in range(K):
+         # Sum up over the energy components; notice, that only the relevant data is being used in the third dimension.
+         dhdl_sum = numpy.sum(dhdlt[k,:,sta[k]:fin[k]], axis=0)
+         # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
+         # (alternatively, could use the energy differences -- here, we will use total dhdl).
+         g[k] = pymbar.timeseries.statisticalInefficiency(dhdl_sum)
+         indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dhdl_sum, g=g[k])) # indices of uncorrelated samples
+         N = len(indices) # number of uncorrelated samples
+         # Handle case where we end up with too few.
+         if N < P.uncorr_threshold:
+            if do_dhdl:
+               print "WARNING: Only %s uncorrelated samples found at lambda number %s; proceeding with analysis using correlated samples..." % (N, k)
+            indices = sta[k] + numpy.arange(len(dhdl_sum))
+            N = len(indices)
+         N_k[k] = N # Store the number of uncorrelated samples from state k.
+         if not (u_klt is None):
+            for l in range(K):
+               u_kln[k,l,0:N] = u_klt[k,l,indices]
          if do_dhdl:
-            print "WARNING: Only %s uncorrelated samples found at lambda number %s; proceeding with analysis using correlated samples..." % (N, k)
-         indices = sta[k] + numpy.arange(len(dhdl_sum))
-         N = len(indices)
-      N_k[k] = N # Store the number of uncorrelated samples from state k.
-      if not (u_klt is None):
-         for l in range(K):
-            u_kln[k,l,0:N] = u_klt[k,l,indices]
-      if do_dhdl:
-         print "%6s %12s %12s %12.2f" % (k, fin[k], N_k[k], g[k])
-         for n in range(n_components):
-            dhdl[k,n,0:N] = dhdlt[k,n,indices]
+            print "%6s %12s %12s %12.2f" % (k, fin[k], N_k[k], g[k])
+            for n in range(n_components):
+               dhdl[k,n,0:N] = dhdlt[k,n,indices]
+
+   if UNCORR_OBSERVABLE == 'dE':
+
+      for k in range(K):
+         ## Sum up over the energy components; notice, that only the relevant data is being used in the third dimension.
+         #dhdl_sum = numpy.sum(dhdlt[k,:,sta[k]:fin[k]], axis=0)
+         # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
+         # (alternatively, could use the energy differences -- here, we will use total dhdl).
+
+         dE = u_klt[k,k+1,sta[k]:fin[k]] if not k==K-1 else u_klt[k,k-1,sta[k]:fin[k]]
+
+         g[k] = pymbar.timeseries.statisticalInefficiency(dE)
+         indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dE, g=g[k])) # indices of uncorrelated samples
+         N = len(indices) # number of uncorrelated samples
+         # Handle case where we end up with too few.
+         if N < P.uncorr_threshold:
+            if do_dhdl:
+               print "WARNING: Only %s uncorrelated samples found at lambda number %s; proceeding with analysis using correlated samples..." % (N, k)
+            indices = sta[k] + numpy.arange(len(dhdl_sum))
+            N = len(indices)
+         N_k[k] = N # Store the number of uncorrelated samples from state k.
+         if not (u_klt is None):
+            for l in range(K):
+               u_kln[k,l,0:N] = u_klt[k,l,indices]
+         if do_dhdl:
+            print "%6s %12s %12s %12.2f" % (k, fin[k], N_k[k], g[k])
+            for n in range(n_components):
+               dhdl[k,n,0:N] = dhdlt[k,n,indices]
+
+
    if do_dhdl:
       return (dhdl, N_k, u_kln)
    return (N_k, u_kln)
