@@ -86,6 +86,7 @@ class SectionParser(object):
                     #        b) return fields in order of requested fields and not
                     #           in order of occurance in input (accumulate and
                     #           then parse?)
+                    #        c) section may be incomplete
                     match = re.search(' %s\s+=\s+(\*+|%s|\d+)'
                                      % (field, _FP_RE), line)
 
@@ -130,12 +131,16 @@ class SectionParser(object):
         return self.fh.readline()
 
 
+    def close(self):
+        self.fh.close()
+
+
     def __enter__(self):
         return self
 
 
     def __exit__(self, typ, value, traceback):
-        self.fh.close()
+        self.close()
 
 
 class OnlineAvVar(object):
@@ -405,8 +410,9 @@ def readDataAmber(P):
          next
            
       if not nensec:
-          raise SystemExit('File %s does not contain DV/DL data' %
-                           filename)
+          print('WARNING: File %s does not contain any DV/DL data\n' %
+                filename)
+          continue
 
       mbar_all[clambda] = numpy.append(mbar_all[clambda], mbar_data)
       dvdl_all[clambda] = numpy.append(dvdl_all[clambda], dvdl_data)
@@ -429,8 +435,8 @@ def readDataAmber(P):
        print('(first %s ignored)' %
              ('%i data points' % start_from if start_from > 1 else 'data point') )
 
-   print ('%6s %12s %8s %12s %12s' %
-          ('State', 'Lambda', 'N_k/N', '<dv/dl>', 'SEM') )
+   print ('%6s %12s %12s %12s %12s %8s' %
+          ('State', 'Lambda', '<dv/dl>', 'SEM', 'N', 'N_k/N') )
 
    # FIXME: do not store data again?
    for i, clambda in enumerate(sorted(dvdl_all.keys() ) ):
@@ -444,8 +450,8 @@ def readDataAmber(P):
       ave_dhdl = numpy.average(dhdl_k)
       std_dhdl = numpy.std(dhdl_k) / numpy.sqrt(N_k - 1)
 
-      print('%6s %12.5f %8.4f %12.6f %12.6f' %
-            (i, clambda, float(N_k) / float(N), ave_dhdl, std_dhdl) )
+      print('%6s %12.5f %12.6f %12.6f %12i %8.4f ' %
+            (i, clambda, ave_dhdl, std_dhdl, N, float(N_k) / float(N)) )
 
       lv.append(clambda)
       ave.append(ave_dhdl)
