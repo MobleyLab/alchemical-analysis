@@ -68,7 +68,7 @@ class SectionParser(object):
         """
 
         inside = False
-        result = []
+        lines = []
 
         for line in self:
             if limit and re.search(limit, line):
@@ -81,29 +81,31 @@ class SectionParser(object):
                 if re.search(end, line):
                     break
 
-                for field in fields:
-                    # FIXME: a) assumes fields are only integers and floats
-                    #        b) return fields in order of requested fields and not
-                    #           in order of occurance in input (accumulate and
-                    #           then parse?)
-                    #        c) section may be incomplete
-                    match = re.search(' %s\s+=\s+(\*+|%s|\d+)'
-                                     % (field, _FP_RE), line)
+                lines.append(line.rstrip('\n') )
 
-                    if match:
-                        m = match.group(1)
 
-                        if '*' in m:    # Fortran format overflow
-                            raise SystemExit('Cannot parse value %s in %s' %
-                                             (m, field) )
-                        # NOTE: check if this is a sufficient test for int
-                        elif not '.' in m and re.search('\d+', m):
-                            result.append(int(m) )
-                        else:
-                            result.append(float(m) )
+        line = ''.join(lines)
+        result = []
 
-        if not result:
-            result = [None] * len(fields)
+        for field in fields:
+            match = re.search(' %s\s+=\s+(\*+|%s|\d+)'
+                              % (field, _FP_RE), line)
+
+            if match:
+                m = match.group(1)
+
+                # FIXME: assumes fields are only integers and floats
+                if '*' in m:    # Fortran format overflow
+                    raise SystemExit('Cannot parse value %s in %s' %
+                                     (m, field) )
+                # NOTE: check if this is a sufficient test for int
+                elif not '.' in m and re.search('\d+', m):
+                    result.append(int(m) )
+                else:
+                    result.append(float(m) )
+            else:                       # section may be incomplete
+                result.append(None)
+
 
         return result
 
@@ -325,8 +327,8 @@ def readDataAmber(P):
          # FIXME: file may end just after 2. CONTROL DATA so vars will be all None
 
          # NOTE: some sections may not have been created
-         ifsc, clambda = sp.extract_section('^Free energy options:', '^$',
-                                            ['ifsc', 'clambda'], '^---')
+         clambda, ifsc = sp.extract_section('^Free energy options:', '^$',
+                                            ['clambda', 'ifsc'], '^---')
 
          if clambda == None:
             print('WARNING: no free energy section found, ignoring file')
@@ -364,6 +366,7 @@ def readDataAmber(P):
          nenav = 0
          old_nstep = -1
          old_comp_nstep = -1
+         incomplete = False
 
          for line in sp:
             if have_mbar and line.startswith('MBAR Energy analysis'):
@@ -382,26 +385,38 @@ def readDataAmber(P):
                    result = sp.extract_section('^ NSTEP', '^ ---',
                                                ['NSTEP'] + DVDL_COMPS)
 
-                   if result[0] != old_comp_nstep:
+                   for r in result:
+                       if r == None:
+                           incomplete = True
+
+                   if result[0] != old_comp_nstep and not incomplete:
                        for i, E in enumerate(DVDL_COMPS):
                            dvdl_comp_data[i].accumulate(float(result[i+1]) )
 
                        nenav += 1
                        old_comp_nstep = result[0]
+                       incomplete = False
 
                    in_comps = False
                else:
                    nstep, dvdl = sp.extract_section('^ NSTEP', '^ ---',
                                                     ['NSTEP', 'DV/DL'])
 
-                   if nstep != old_nstep:
+                   for r in nstep, dvdl:
+                       if r == None:
+                           incomplete = True
+
+                   if nstep != old_nstep and not incomplete:
                        dvdl_data.append(dvdl)
                        nensec += 1
                        old_nstep = nstep
+                       incomplete = False
+
 
             if line == '   5.  TIMINGS\n':
-               finished = True
-               break
+                finished = True
+                break
+
 
       print('%i data points, %i DV/DL averages' % (nensec, nenav) )
 
