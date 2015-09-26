@@ -1140,7 +1140,8 @@ def main():
       nsnapshots, lv, dhdlt, u_klt = parser_sire.readDataSire(P)
    elif P.software.title() == 'Amber':
       import parser_amber
-      lv, ave_dhdl, std_dhdl = parser_amber.readDataAmber(P)
+      #lv, ave_dhdl, std_dhdl = parser_amber.readDataAmber(P)
+      nsnapshots, lv, dhdlt, u_klt = parser_amber.readDataAmber(P)
    else:
       from inspect import currentframe, getframeinfo
       lineno = getframeinfo(currentframe()).lineno
@@ -1155,8 +1156,8 @@ def main():
       #### u_klt[k,m,t] is the reduced potential energy of snapshot t of state k evaluated at state m
 
    K, n_components = lv.shape
-   if not P.software.title() == 'Amber':
-      dhdl, N_k, u_kln = uncorrelate(sta=numpy.zeros(K, int), fin=nsnapshots, do_dhdl=True)
+#  if not P.software.title() == 'Amber':
+   dhdl, N_k, u_kln = uncorrelate(sta=numpy.zeros(K, int), fin=nsnapshots, do_dhdl=True)
 
    # Estimate free energy difference with MBAR -- all states at once.
    if 'MBAR' in P.methods:

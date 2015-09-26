@@ -298,6 +298,7 @@ def readDataAmber(P):
    mbar_all = defaultdict(list)
    dvdl_all = defaultdict(list)
    dvdl_comps_all = defaultdict(list)
+   nsnapshots = []
    ncomp = len(DVDL_COMPS)
    
    for filename in filenames:
@@ -440,53 +441,37 @@ def readDataAmber(P):
 
    lv = []
    ave = []
-   std = []
-
    start_from = int(round(P.equiltime / (ntpr * float(dt) ) ) )
-
-   print('\nThe average and standard error of the mean (kcal/mol):')
-
-   if start_from:
-       print('(first %s ignored)' %
-             ('%i data points' % start_from if start_from > 1 else 'data point') )
-
-   print ('%6s %12s %12s %12s %12s %8s' %
-          ('State', 'Lambda', '<dv/dl>', 'SEM', 'N', 'N_k/N') )
 
    # FIXME: do not store data again?
    for i, clambda in enumerate(sorted(dvdl_all.keys() ) ):
       dhdl_k = dvdl_all[clambda][start_from:]
-      N = dhdl_k.size
-
-      if P.uncorr_threshold:
-         dhdl_k = uncorrelateAmber(dhdl_k, P.uncorr_threshold)
-
-      N_k = dhdl_k.size
-      ave_dhdl = numpy.average(dhdl_k)
-      std_dhdl = numpy.std(dhdl_k) / numpy.sqrt(N_k - 1)
-
-      print('%6s %12.5f %12.6f %12.6f %12i %8.4f ' %
-            (i, clambda, ave_dhdl, std_dhdl, N, float(N_k) / float(N)) )
-
       lv.append(clambda)
-      ave.append(ave_dhdl)
-      std.append(std_dhdl)
+      ave.append(numpy.average(dhdl_k) )
+      nsnapshots.append(dhdl_k.size - start_from)
+
+   K = len(lv)
+   maxn  = max(nsnapshots)
+
+   # AMBER has currently only one global lambda value
+   dhdlt = numpy.zeros([K, 1, int(maxn)], float)
+   u_klt = None #numpy.zeros([K, K, int(maxn)], numpy.float64)
+
+   for k, clambda in enumerate(sorted(dvdl_all.keys() ) ):
+      dhdlt[k][0] = dvdl_all[clambda][start_from:]
 
 
+   # FIXME: clean this up and provide fake gradient entries (few enough?)
    # sander does not sample end-points...
    y0, y1 = _extrapol(lv, ave, 'polyfit')
 
    if y0:
       print('Note: adding missing lambda = 0.0: %f' % y0)
       lv.insert(0, 0.0)
-      ave.insert(0, y0)
-      std.insert(0, 0.0)
 
    if y1:
       print('Note: adding missing lambda = 1.0: %f' % y1)
       lv.append(1.0)
-      ave.append(y1)
-      std.append(0.0)
 
 
    print("\nThe DV/DL components from gradients of "
@@ -534,8 +519,9 @@ def readDataAmber(P):
    print('\n\n')
 
 
-   K = len(lv)
+   return (numpy.array(nsnapshots), numpy.array(lv).reshape(K, 1),
+           dhdlt, u_klt)
 
-   return (numpy.array(lv).reshape(K, 1),
-           P.beta * numpy.array(ave).reshape(K, 1),
-           P.beta * numpy.array(std).reshape(K, 1) )
+#  return (numpy.array(lv).reshape(K, 1),
+#          P.beta * numpy.array(ave).reshape(K, 1),
+#          P.beta * numpy.array(std).reshape(K, 1) )
