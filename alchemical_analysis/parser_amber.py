@@ -24,7 +24,7 @@
 
 
 
-import os, re, glob
+import os, re, glob, random
 from collections import defaultdict
 
 import numpy
@@ -34,6 +34,8 @@ import numpy
 DVDL_COMPS = ['BOND', 'ANGLE', 'DIHED', '1-4 NB', '1-4 EEL', 'VDWAALS', 'EELEC',
               'RESTRAINT']
 _FP_RE = r'[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?'
+_RND_SCALE = 1e-15
+_RND_SCALE_HALF = 1e-15/2
 
 
 class SectionParser(object):
@@ -187,66 +189,6 @@ def process_mbar_lambdas(sp):
 
 
     return mbar_lambdas
-
-
-def getG(A_n, mintime = 3):
-   """Computes 'g', the statistical inefficiency, as defined in eq (20)
-      in J D Chodera, W C Swope, J W Pitera, C Seok, and K A Dill.
-      Use of the weighted histogram analysis method for the analysis
-      of simulated and parallel tempering simulations.
-      JCTC 3(1):26-41, 2007."""
-
-   N = A_n.size
-   dA_n = A_n - A_n.mean()
-
-   g = denominator = N * dA_n.var() / 2
-
-   if g == 0:
-      raise SystemExit('The variance is 0; cannot proceed.')
-
-   for t in range(1, mintime + 1):
-      N_t = N - t
-      g += N_t * (dA_n[0:N_t] * dA_n[t:N]).mean()
-
-   t += 1
-
-   while t < N  - 1:
-      N_t = N - t
-      C = (dA_n[0:N_t] * dA_n[t:N]).mean()
-
-      if C <= 0:
-         break
-
-      g += C * N_t
-      t += 1
-
-   g /= denominator
-
-   return g if g > 1 else 1
-
-
-def uncorrelateAmber(dhdl_k, uncorr_threshold):
-   """Retain every g'th sample of the original array 'dhdl_k'."""
-
-   g = getG(dhdl_k)
-
-   if g == 1:
-      return dhdl_k
-
-   N = dhdl_k.size  # Number of correlated samples.
-   N_k = 1 + int(N / g) # Number of uncorrelated samples.
-
-   if int(round(N_k * g - g) ) > N - 1:
-      N_k -= 1
-
-   if N_k < uncorr_threshold:
-      print('WARNING:\nOnly %s uncorrelated samples found;\n'
-            'proceeding with analysis using correlated samples...' % N_k)
-      return dhdl_k
-
-   indices = numpy.rint(g*numpy.arange(N_k)).astype(int)
-
-   return dhdl_k[indices]
 
 
 def _extrapol(x, y, scheme):
@@ -464,11 +406,15 @@ def readDataAmber(P):
 
    if y0:
       print('Note: adding missing lambda = 0.0: %f' % y0)
+      K += 1
       lv.insert(0, 0.0)
+      nsnapshots.insert(0, maxn)
 
    if y1:
       print('Note: adding missing lambda = 1.0: %f' % y1)
+      K += 1
       lv.append(1.0)
+      nsnapshots.append(maxn)
 
 
    print("\nThe DV/DL components from gradients of "
@@ -501,18 +447,31 @@ def readDataAmber(P):
          print(' %8.3f' % 0.0),
          continue
 
-      y0, y1 = _extrapol(x_comp, y_ene, 'polyfit')
+      ya, yb = _extrapol(x_comp, y_ene, 'polyfit')
 
-      if y0:
+      if ya:
          x_ene = [0.0] + x_ene
-         y_ene = numpy.insert(y_ene, 0, y0)
+         y_ene = numpy.insert(y_ene, 0, ya)
 
-      if y1:
+      if yb:
          x_ene = x_ene + [1.0]
-         y_ene = numpy.append(y_ene, y1)
+         y_ene = numpy.append(y_ene, yb)
 
       print(' %8.3f' % numpy.trapz(y_ene, x_ene) ),
-      
+
+   # FIMXE: obviously we need a little bit of noise to get statistics...
+   if y0:
+      f = []
+      for i in range(maxn):
+        f.append(y0 + _RND_SCALE * random.random() - _RND_SCALE_HALF)
+      dhdlt = numpy.insert(dhdlt, 0, f, 0)
+
+   if y1:
+      f = []
+      for i in range(maxn):
+        f.append(y0 + _RND_SCALE * random.random() - _RND_SCALE_HALF)
+      dhdlt = numpy.append(dhdlt, [[f]], 0)
+
    print('\n\n')
 
 
