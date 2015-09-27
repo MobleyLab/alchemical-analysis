@@ -430,8 +430,8 @@ def readDataAmber(P):
                 filename)
           continue
 
-      mbar_all[clambda] = numpy.append(mbar_all[clambda], mbar_data)
-      dvdl_all[clambda] = numpy.append(dvdl_all[clambda], dvdl_data)
+      mbar_all[clambda].extend(mbar_data)
+      dvdl_all[clambda].extend(dvdl_data)
       dvdl_comps_all[clambda] = [Es.mean for Es in dvdl_comp_data]
 
 
@@ -439,30 +439,27 @@ def readDataAmber(P):
        raise SystemExit('No DV/DL data found')
 
 
-   lv = []
    ave = []
    start_from = int(round(P.equiltime / (ntpr * float(dt) ) ) )
 
-   # FIXME: do not store data again?
-   for i, clambda in enumerate(sorted(dvdl_all.keys() ) ):
-      dhdl_k = dvdl_all[clambda][start_from:]
-      lv.append(clambda)
-      ave.append(numpy.average(dhdl_k) )
-      nsnapshots.append(dhdl_k.size - start_from)
-
-   K = len(lv)
-   maxn  = max(nsnapshots)
-
-   # AMBER has currently only one global lambda value
+   lv = sorted(dvdl_all.keys() )
+   K = len(dvdl_all.keys() )
+   nsnapshots = [len(e) for e in dvdl_all.values()]
+   maxn = max(nsnapshots) - start_from
    dhdlt = numpy.zeros([K, 1, int(maxn)], float)
    u_klt = None #numpy.zeros([K, K, int(maxn)], numpy.float64)
 
-   for k, clambda in enumerate(sorted(dvdl_all.keys() ) ):
-      dhdlt[k][0] = dvdl_all[clambda][start_from:]
+   for i, clambda in enumerate(lv):
+      vals = dvdl_all[clambda][start_from:]
+      ave.append(numpy.average(vals) )
+
+      # AMBER has currently only one global lambda value, hence 2nd dim = 0
+      dhdlt[i][0][:len(vals)] = numpy.array(vals)
 
 
-   # FIXME: clean this up and provide fake gradient entries (few enough?)
-   # sander does not sample end-points...
+   # FIXME: clean this up and provide fake gradient entries in dhdlt
+   #        also lv and nsnapshots
+   #        sander does not sample end-points...
    y0, y1 = _extrapol(lv, ave, 'polyfit')
 
    if y0:
@@ -522,6 +519,3 @@ def readDataAmber(P):
    return (numpy.array(nsnapshots), numpy.array(lv).reshape(K, 1),
            dhdlt, u_klt)
 
-#  return (numpy.array(lv).reshape(K, 1),
-#          P.beta * numpy.array(ave).reshape(K, 1),
-#          P.beta * numpy.array(std).reshape(K, 1) )
