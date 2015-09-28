@@ -24,7 +24,7 @@
 
 
 
-import os, re, glob, random
+import os, re, glob
 from collections import defaultdict
 
 import numpy
@@ -34,8 +34,8 @@ import numpy
 DVDL_COMPS = ['BOND', 'ANGLE', 'DIHED', '1-4 NB', '1-4 EEL', 'VDWAALS', 'EELEC',
               'RESTRAINT']
 _FP_RE = r'[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?'
-_RND_SCALE = 1e-15
-_RND_SCALE_HALF = 1e-15/2
+_RND_SCALE = 1e-3
+_RND_SCALE_HALF = _RND_SCALE / 2.0
 
 
 class SectionParser(object):
@@ -386,8 +386,8 @@ def readDataAmber(P):
 
    lv = sorted(dvdl_all.keys() )
    K = len(dvdl_all.keys() )
-   nsnapshots = [len(e) for e in dvdl_all.values()]
-   maxn = max(nsnapshots) - start_from
+   nsnapshots = [len(e) - start_from for e in dvdl_all.values()]
+   maxn = max(nsnapshots)
    dhdlt = numpy.zeros([K, 1, int(maxn)], float)
    u_klt = None #numpy.zeros([K, K, int(maxn)], numpy.float64)
 
@@ -461,15 +461,11 @@ def readDataAmber(P):
 
    # FIMXE: obviously we need a little bit of noise to get statistics...
    if y0:
-      f = []
-      for i in range(maxn):
-        f.append(y0 + _RND_SCALE * random.random() - _RND_SCALE_HALF)
+      f = y0 + _RND_SCALE * numpy.random.rand(maxn) - _RND_SCALE_HALF
       dhdlt = numpy.insert(dhdlt, 0, f, 0)
 
    if y1:
-      f = []
-      for i in range(maxn):
-        f.append(y0 + _RND_SCALE * random.random() - _RND_SCALE_HALF)
+      f = y1 + _RND_SCALE * numpy.random.rand(maxn) - _RND_SCALE_HALF
       dhdlt = numpy.append(dhdlt, [[f]], 0)
 
    print('\n\n')
