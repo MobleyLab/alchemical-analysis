@@ -69,7 +69,7 @@ def getMethods(string):
 
    all_methods = ['TI','TI-CUBIC','DEXP','IEXP','GINS','GDEL','BAR','UBAR','RBAR','MBAR']
    methods     = ['TI','TI-CUBIC','DEXP','IEXP','BAR','MBAR']
-   if (numpy.array(['Sire', 'Amber']) == P.software.title()).any():
+   if (numpy.array(['Sire']) == P.software.title()).any():
       methods = ['TI','TI-CUBIC']
    if not string:
       return methods
@@ -1135,12 +1135,13 @@ def main():
    if P.software.title() == 'Gromacs':
       import parser_gromacs
       nsnapshots, lv, dhdlt, u_klt = parser_gromacs.readDataGromacs(P)
+      print u_klt.shape
+      print u_klt
    elif P.software.title() == 'Sire':
       import parser_sire
       nsnapshots, lv, dhdlt, u_klt = parser_sire.readDataSire(P)
    elif P.software.title() == 'Amber':
       import parser_amber
-      #lv, ave_dhdl, std_dhdl = parser_amber.readDataAmber(P)
       nsnapshots, lv, dhdlt, u_klt = parser_amber.readDataAmber(P)
    else:
       from inspect import currentframe, getframeinfo

@@ -98,8 +98,9 @@ class SectionParser(object):
 
                 # FIXME: assumes fields are only integers and floats
                 if '*' in m:    # Fortran format overflow
-                    raise SystemExit('Cannot parse value %s in %s' %
-                                     (m, field) )
+                    #raise SystemExit('Cannot parse value %s in %s' %
+                    #                 (m, field) )
+                    result.append(None)
                 # NOTE: check if this is a sufficient test for int
                 elif not '.' in m and re.search('\d+', m):
                     result.append(int(m) )
@@ -242,6 +243,7 @@ def readDataAmber(P):
    dvdl_comps_all = defaultdict(list)
    nsnapshots = []
    ncomp = len(DVDL_COMPS)
+   global_have_mbar = True
    
    for filename in filenames:
       print('Loading in data from %s... ' % filename),
@@ -249,7 +251,7 @@ def readDataAmber(P):
       in_comps = False
       finished = False
 
-      mbar_data = []
+      mbar_data = defaultdict(list)
       dvdl_data = []
       dvdl_comp_data = []
 
@@ -262,11 +264,17 @@ def readDataAmber(P):
             print('WARNING: no control data found, ignoring file')
             continue
 
+         # NOTE: section massed be search for in order!
          ntpr, = sp.extract_section('^Nature and format of output:', '^$',
                                     ['ntpr'])
+
          nstlim, dt = sp.extract_section('Molecular dynamics:', '^$',
                                          ['nstlim', 'dt'])
 
+         # FIXME: check if temp0, dt, etc. are consistent between files
+         P.temperature, = sp.extract_section('temperature regulation:', '^$',
+                                             ['temp0'])
+         
          # FIXME: file may end just after 2. CONTROL DATA so vars will be all None
 
          # NOTE: some sections may not have been created
@@ -284,7 +292,7 @@ def readDataAmber(P):
                                                    '^---')
 
          # FIXME: don't do MBAR until we have sorted out all problems with it
-         have_mbar = False
+         #have_mbar = False
 
          if have_mbar:
             mbar_ndata = int(nstlim / mbar_ndata)
@@ -292,11 +300,13 @@ def readDataAmber(P):
             clambda_str = '%6.4f' % clambda
 
             if clambda_str not in mbar_lambdas:
-               raise SystemExit('Lambda %s not contained in MBAR lambdas: %s' %
-                                (clambda_str, ', '.join(mbar_lambdas) ) )
-
-            mbar_nlambda = len(mbar_lambdas)
-            mbar_lambda_idx = mbar_lambdas.index(clambda_str)
+               print('\nWARNING: lambda %s not contained in set of MBAR lambdas: '
+                     '%s\nNot using MBAR.\n' %
+                     (clambda_str, ', '.join(mbar_lambdas) ) )
+               global_have_mbar = False
+            else:
+               mbar_nlambda = len(mbar_lambdas)
+               mbar_lambda_idx = mbar_lambdas.index(clambda_str)
 
          if not sp.skip_after('^   4.  RESULTS'):
             print('WARNING: no results found, ignoring file\n')
@@ -315,8 +325,17 @@ def readDataAmber(P):
             if have_mbar and line.startswith('MBAR Energy analysis'):
                sp.pushback()
                mbar = sp.extract_section('^MBAR', '^ ---', mbar_lambdas)
+
+               if not all(mbar):
+                   print('\nWARNING: some MBAR energies cannot be read. '
+                         'Not using MBAR.\n')
+                   global_have_mbar = False
+                   continue
+
                Eref = mbar[mbar_lambda_idx]
-               mbar_data.append([E - Eref for E in mbar])
+
+               for l, E in zip(mbar_lambdas, mbar):
+                   mbar_data[float(l)].append(E - Eref)
 
             if 'DV/DL, AVERAGES OVER' in line:
                 in_comps = True
@@ -372,10 +391,9 @@ def readDataAmber(P):
                 filename)
           continue
 
-      mbar_all[clambda].extend(mbar_data)
+      mbar_all[clambda].append(mbar_data)
       dvdl_all[clambda].extend(dvdl_data)
       dvdl_comps_all[clambda] = [Es.mean for Es in dvdl_comp_data]
-
 
    if not dvdl_all:
        raise SystemExit('No DV/DL data found')
@@ -385,11 +403,12 @@ def readDataAmber(P):
    start_from = int(round(P.equiltime / (ntpr * float(dt) ) ) )
 
    lv = sorted(dvdl_all.keys() )
+   mbar = sorted(mbar_all.keys() )
    K = len(dvdl_all.keys() )
    nsnapshots = [len(e) - start_from for e in dvdl_all.values()]
    maxn = max(nsnapshots)
    dhdlt = numpy.zeros([K, 1, int(maxn)], float)
-   u_klt = None #numpy.zeros([K, K, int(maxn)], numpy.float64)
+   u_klt = numpy.zeros([K, K, int(maxn)], numpy.float64)
 
    for i, clambda in enumerate(lv):
       vals = dvdl_all[clambda][start_from:]
@@ -398,10 +417,13 @@ def readDataAmber(P):
       # AMBER has currently only one global lambda value, hence 2nd dim = 0
       dhdlt[i][0][:len(vals)] = numpy.array(vals)
 
+      if have_mbar and global_have_mbar:
+         for mbar in mbar_all[clambda]:
+            for j, Es in enumerate(sorted(mbar.keys() ) ):
+               u_klt[i][j] = mbar[Es]
 
-   # FIXME: clean this up and provide fake gradient entries in dhdlt
-   #        also lv and nsnapshots
-   #        sander does not sample end-points...
+
+   # sander does not sample end-points...
    y0, y1 = _extrapol(lv, ave, 'polyfit')
 
    if y0:
@@ -472,5 +494,5 @@ def readDataAmber(P):
 
 
    return (numpy.array(nsnapshots), numpy.array(lv).reshape(K, 1),
-           dhdlt, u_klt)
+           dhdlt, P.beta * u_klt)
 
