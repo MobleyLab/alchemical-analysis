@@ -291,14 +291,13 @@ def readDataAmber(P):
                                                     'bar_intervall'],
                                                    '^---')
 
-         # FIXME: don't do MBAR until we have sorted out all problems with it
-         #have_mbar = False
-
          if have_mbar:
             mbar_ndata = int(nstlim / mbar_ndata)
             mbar_lambdas = process_mbar_lambdas(sp)
             clambda_str = '%6.4f' % clambda
 
+            # FIXME: lambda is contained in mbar_lambdas but mbar_lambdas has
+            #        additional entries
             if clambda_str not in mbar_lambdas:
                print('\nWARNING: lambda %s not contained in set of MBAR lambdas: '
                      '%s\nNot using MBAR.\n' %
