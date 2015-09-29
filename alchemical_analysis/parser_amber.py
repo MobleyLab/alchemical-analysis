@@ -474,7 +474,7 @@ def readDataAmber(P):
 
         if have_mbar and global_have_mbar:
             for j, Es in enumerate(mbar_all[clambda]):
-                u_klt[i][j][:len(Es)] = Es
+                u_klt[i][j][:len(Es)] = Es[start_from:]
 
     if have_mbar:
         u_klt = P.beta * u_klt
