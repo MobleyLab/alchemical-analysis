@@ -1,4 +1,4 @@
-######################################################################
+#ve#####################################################################
 #
 # Alchemical Analysis: An open tool implementing some recommended practices
 # for analyzing alchemical free energy calculations
@@ -254,6 +254,7 @@ def readDataAmber(P):
 
     ncomp = len(DVDL_COMPS)
     global_have_mbar = True
+    pmemd = False
 
     for filename in filenames:
         print('Loading in data from %s... ' % filename),
@@ -269,6 +270,17 @@ def readDataAmber(P):
 
 
         with SectionParser(filename) as sp:
+            lineno = 0
+
+            for line in sp:
+                lineno += 1
+
+                if lineno > 5:
+                    break
+
+            if 'PMEMD' in line:
+                pmemd = True
+            
             if not sp.skip_after('^   2.  CONTROL  DATA  FOR  THE  RUN'):
                 print('WARNING: no control data found, ignoring file')
                 continue
@@ -303,6 +315,11 @@ def readDataAmber(P):
                                                        'bar_intervall'],
                                                       '^---')
 
+            # sander is just too cumbersome with MBAR, e.g. terminator is not
+            # '^---', no end-points, etc
+            if not pmemd:
+                have_mbar = False
+
             if have_mbar:
                 mbar_ndata = int(nstlim / mbar_ndata)
                 mbar_lambdas = process_mbar_lambdas(sp)
@@ -316,7 +333,7 @@ def readDataAmber(P):
                               'MBAR lambdas: %s\nNot using MBAR.\n' %
                               (clambda_str, ', '.join(mbar_lambdas) ) )
 
-                    global_have_mbar = False
+                    global_have_mbar = have_mbar = False
                 else:
                     mbar_nlambda = len(mbar_lambdas)
                     mbar_lambda_idx = mbar_lambdas.index(clambda_str)
@@ -348,7 +365,7 @@ def readDataAmber(P):
                             print('\nWARNING: some MBAR energies cannot be '
                                   'read. Not using MBAR.\n')
 
-                        global_have_mbar = False
+                        global_have_mbar = have_mbar = False
                         continue
 
                     Eref = mbar[mbar_lambda_idx]
@@ -441,8 +458,12 @@ def readDataAmber(P):
     K = len(dvdl_all.keys() )
     nsnapshots = [len(e) - start_from for e in dvdl_all.values()]
     maxn = max(nsnapshots)
-    dhdlt = numpy.zeros([K, 1, int(maxn)], float)
-    u_klt = numpy.zeros([K, mbar_ndata, int(maxn)], numpy.float64)
+    dhdlt = numpy.zeros([K, 1, maxn], float)
+
+    if have_mbar:
+        u_klt = numpy.zeros([K, mbar_ndata, int(maxn)], numpy.float64)
+    else:
+        u_klt = None
 
     for i, clambda in enumerate(lv):
         vals = dvdl_all[clambda][start_from:]
@@ -454,6 +475,9 @@ def readDataAmber(P):
         if have_mbar and global_have_mbar:
             for j, Es in enumerate(mbar_all[clambda]):
                 u_klt[i][j][:len(Es)] = Es
+
+    if have_mbar:
+        u_klt = P.beta * u_klt
 
 
     # sander does not sample end-points...
@@ -528,5 +552,5 @@ def readDataAmber(P):
 
 
     return (numpy.array(nsnapshots), numpy.array(lv).reshape(K, 1),
-            dhdlt, P.beta * u_klt)
+            dhdlt, u_klt)
 
