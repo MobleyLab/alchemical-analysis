@@ -453,7 +453,7 @@ def readDataAmber(P):
 
         if have_mbar and global_have_mbar:
             for j, Es in enumerate(mbar_all[clambda]):
-                u_klt[i][j] = Es
+                u_klt[i][j][:len(Es)] = Es
 
 
     # sander does not sample end-points...
