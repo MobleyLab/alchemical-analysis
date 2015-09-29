@@ -397,7 +397,7 @@ def readDataAmber(P):
                     finished = True
                     break
 
-        # -- end of parsing current file
+        # -- end of parsing current file --
 
         print('%i data points, %i DV/DL averages' % (nensec, nenav) )
 
@@ -411,22 +411,19 @@ def readDataAmber(P):
             continue
 
         if have_mbar:
-            for i in range(mbar_nlambda):
-                try:
-                    mbar_all[clambda][i].extend(mbar_data[i])
-                except KeyError:
-                    mbar_all[clambda] = []
+            if clambda not in mbar_all:
+                mbar_all[clambda] = []
 
-                    for foo in range(mbar_nlambda):
-                        mbar_all[clambda].append([])
+                for foo in range(mbar_nlambda):
+                    mbar_all[clambda].append([])
 
-                    mbar_all[clambda][i].extend(mbar_data[i])
+            for mbar, data in zip(mbar_all[clambda], mbar_data):
+                mbar.extend(data)
 
         dvdl_all[clambda].extend(dvdl_data)
         dvdl_comps_all[clambda] = [Es.mean for Es in dvdl_comp_data]
 
-
-    # -- all file parsing finished
+    # -- all file parsing finished --
 
     if not dvdl_all:
         raise SystemExit('No DV/DL data found')
