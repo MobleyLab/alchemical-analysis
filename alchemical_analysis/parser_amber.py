@@ -1,4 +1,14 @@
-#ve#####################################################################
+"""
+This is the AMBER parser for Alchemical Analysis.  The code can handle both
+sander and pmemd output.  TI gradients will be read from the instantaneous
+DV/DL entries at every ntpr.  MBAR values are collected too but assumed to be
+occuring at the same frequence as the energy output.  BAR/MBAR will be switched
+off when the current lambda is not in the set of MBAR lambdas and when the code
+detects an overflow (value is all '*') in the energy output.  Component
+gradients are collected from the average outputs.
+"""
+
+######################################################################
 #
 # Alchemical Analysis: An open tool implementing some recommended practices
 # for analyzing alchemical free energy calculations
@@ -23,16 +33,16 @@
 ######################################################################
 
 
-
-import os, re, glob
+import os
+import re
+import glob
 from collections import defaultdict
 
-import numpy
+import numpy as np
 
 
-
-DVDL_COMPS = ['BOND', 'ANGLE', 'DIHED', '1-4 NB', '1-4 EEL', 'VDWAALS', 'EELEC',
-              'RESTRAINT']
+DVDL_COMPS = ['BOND', 'ANGLE', 'DIHED', '1-4 NB', '1-4 EEL', 'VDWAALS',
+              'EELEC', 'RESTRAINT']
 _FP_RE = r'[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?'
 _RND_SCALE = 1e-3
 _RND_SCALE_HALF = _RND_SCALE / 2.0
@@ -45,11 +55,10 @@ class SectionParser(object):
 
     def __init__(self, filename):
         self.filename = filename
-        self.fh = open(self.filename, 'rb')
-        self.filesize = os.fstat(self.fh.fileno()).st_size
+        self.fileh = open(self.filename, 'rb')
+        self.filesize = os.fstat(self.fileh.fileno()).st_size
         self.lineno = 0
         self.last_pos = 0
-
 
     def skip_after(self, pattern):
         """Skip until after a line that matches pattern."""
@@ -60,10 +69,9 @@ class SectionParser(object):
             if match:
                 break
 
-        return self.fh.tell() != self.filesize
+        return self.fileh.tell() != self.filesize
 
-
-    def extract_section(self, start, end, fields, limit = None):
+    def extract_section(self, start, end, fields, limit=None):
         """
         Extract data values (int, float) in fields from a section
         marked with start and end.  Do not read further than limit.
@@ -83,49 +91,43 @@ class SectionParser(object):
                 if re.search(end, line):
                     break
 
-                lines.append(line.rstrip('\n') )
-
+                lines.append(line.rstrip('\n'))
 
         line = ''.join(lines)
         result = []
 
         for field in fields:
-            match = re.search(' %s\s+=\s+(\*+|%s|\d+)'
+            match = re.search(r' %s\s+=\s+(\*+|%s|\d+)'
                               % (field, _FP_RE), line)
 
             if match:
-                m = match.group(1)
+                value = match.group(1)
 
                 # FIXME: assumes fields are only integers and floats
-                if '*' in m:    # Fortran format overflow
-                    #raise SystemExit('Cannot parse value %s in %s' %
-                    #                 (m, field) )
+                if '*' in value:            # Fortran format overflow
                     result.append(None)
                 # NOTE: check if this is a sufficient test for int
-                elif not '.' in m and re.search('\d+', m):
-                    result.append(int(m) )
+                elif '.' not in value and re.search(r'\d+', value):
+                    result.append(int(value))
                 else:
-                    result.append(float(m) )
+                    result.append(float(value))
             else:                       # section may be incomplete
                 result.append(None)
 
-
         return result
-
 
     def pushback(self):
         """Reposition to one line back.  Works only once, see next()."""
         self.lineno -= 1
-        self.fh.seek(self.last_pos)
-
+        self.fileh.seek(self.last_pos)
 
     def __iter__(self):
         return self
 
-
     def next(self):
+        """Read next line of filehandle and remember current position."""
         self.lineno += 1
-        curr_pos = self.fh.tell()
+        curr_pos = self.fileh.tell()
 
         if curr_pos == self.filesize:
             raise StopIteration
@@ -133,16 +135,14 @@ class SectionParser(object):
         self.last_pos = curr_pos
 
         # NOTE: can't mix next() with seek()
-        return self.fh.readline()
-
+        return self.fileh.readline()
 
     def close(self):
-        self.fh.close()
-
+        """Close the filehandle."""
+        self.fileh.close()
 
     def __enter__(self):
         return self
-
 
     def __exit__(self, typ, value, traceback):
         self.close()
@@ -154,20 +154,20 @@ class OnlineAvVar(object):
     def __init__(self):
         self.step = 0
         self.mean = 0.0
-        #self.M2 = 0.0
+        # self.M2 = 0.0
 
-    def accumulate(self, x):
+    def accumulate(self, val):
         '''Accumulate data points to compute mean and variance on-the-fly.'''
 
         self.step += 1
 
-        delta = x - self.mean
+        delta = val - self.mean
 
         self.mean += delta / self.step
-        #self.M2 += delta * (x - self.mean)
+        # self.M2 += delta * (val - self.mean)
 
 
-def process_mbar_lambdas(sp):
+def process_mbar_lambdas(secp):
     """
     Extract the lambda points used to compute MBAR energies from
     AMBER MDOUT.
@@ -176,7 +176,7 @@ def process_mbar_lambdas(sp):
     in_mbar = False
     mbar_lambdas = []
 
-    for line in sp:
+    for line in secp:
         if line.startswith('    MBAR - lambda values considered:'):
             in_mbar = True
             continue
@@ -190,7 +190,6 @@ def process_mbar_lambdas(sp):
                 mbar_lambdas.extend(data[2:])
             else:
                 mbar_lambdas.extend(line.split())
-
 
     return mbar_lambdas
 
@@ -206,17 +205,17 @@ def _extrapol(x, y, scheme):
             y0 = (x[0] * y[1] - x[1] * y[0]) / (x[0] - x[1])
 
         if 1.0 not in x:
-            y1 = ( ( (x[-2] - 1.0) * y[-1] + ((1.0 - x[-1]) * y[-2]) ) /
-                   (x[-2] - x[-1]) )
+            y1 = (((x[-2] - 1.0) * y[-1] + ((1.0 - x[-1]) * y[-2])) /
+                  (x[-2] - x[-1]))
     elif scheme == 'polyfit':
-        nf = len(x)
+        nval = len(x)
 
-        if nf < 6:
-            deg = nf - 1
+        if nval < 6:
+            deg = nval - 1
         else:
             deg = 6
 
-        coeffs = numpy.polyfit(x, y, deg)
+        coeffs = np.polyfit(x, y, deg)
 
         if 0.0 not in x:
             y0 = coeffs[-1]
@@ -248,7 +247,7 @@ def readDataAmber(P):
 
     dvdl_all = defaultdict(list)
     dvdl_comps_all = defaultdict(list)
-    mbar_all = {} #defaultdict(list)
+    mbar_all = {}
 
     nsnapshots = []
 
@@ -265,14 +264,14 @@ def readDataAmber(P):
         dvdl_data = []
         dvdl_comp_data = []
 
-        for cmp in DVDL_COMPS:
-            dvdl_comp_data.append(OnlineAvVar() )
+        for _ in DVDL_COMPS:
+            dvdl_comp_data.append(OnlineAvVar())
 
-
-        with SectionParser(filename) as sp:
+        with SectionParser(filename) as secp:
             lineno = 0
+            line = ''
 
-            for line in sp:
+            for line in secp:
                 lineno += 1
 
                 if lineno > 5:
@@ -280,40 +279,39 @@ def readDataAmber(P):
 
             if 'PMEMD' in line:
                 pmemd = True
-            
-            if not sp.skip_after('^   2.  CONTROL  DATA  FOR  THE  RUN'):
+
+            if not secp.skip_after('^   2.  CONTROL  DATA  FOR  THE  RUN'):
                 print('WARNING: no control data found, ignoring file')
                 continue
 
             # NOTE: sections must be searched for in order!
-            ntpr, = sp.extract_section('^Nature and format of output:', '^$',
-                                       ['ntpr'])
+            ntpr, = secp.extract_section('^Nature and format of output:', '^$',
+                                         ['ntpr'])
 
-            nstlim, dt = sp.extract_section('Molecular dynamics:', '^$',
-                                            ['nstlim', 'dt'])
+            nstlim, dt = secp.extract_section('Molecular dynamics:', '^$',
+                                              ['nstlim', 'dt'])
 
             # FIXME: check if temp0, dt, etc. are consistent between files
-            P.temperature, = sp.extract_section('temperature regulation:',
-                                                '^$',
-                                                ['temp0'])
+            P.temperature, = secp.extract_section('temperature regulation:',
+                                                  '^$', ['temp0'])
 
             # FIXME: file may end just after "2. CONTROL DATA" so vars will
             #        be all None
 
             # NOTE: some sections may not have been created
-            clambda, ifsc = sp.extract_section('^Free energy options:', '^$',
-                                               ['clambda', 'ifsc'], '^---')
+            clambda, = secp.extract_section('^Free energy options:', '^$',
+                                            ['clambda'], '^---')
 
-            if clambda == None:
+            if clambda is None:
                 print('WARNING: no free energy section found, ignoring file')
                 continue
 
             mbar_ndata = 0
-            have_mbar, mbar_ndata = sp.extract_section('^FEP MBAR options:',
-                                                       '^$',
-                                                      ['ifmbar',
-                                                       'bar_intervall'],
-                                                      '^---')
+            have_mbar, mbar_ndata = secp.extract_section('^FEP MBAR options:',
+                                                         '^$',
+                                                         ['ifmbar',
+                                                          'bar_intervall'],
+                                                         '^---')
 
             # sander is just too cumbersome with MBAR, e.g. terminator is not
             # '^---', no end-points, etc
@@ -322,7 +320,7 @@ def readDataAmber(P):
 
             if have_mbar:
                 mbar_ndata = int(nstlim / mbar_ndata)
-                mbar_lambdas = process_mbar_lambdas(sp)
+                mbar_lambdas = process_mbar_lambdas(secp)
                 clambda_str = '%6.4f' % clambda
 
                 # FIXME: case when lambda is contained in mbar_lambdas but
@@ -330,66 +328,66 @@ def readDataAmber(P):
                 if clambda_str not in mbar_lambdas:
                     if global_have_mbar:
                         print('\nWARNING: lambda %s not contained in set of '
-                              'MBAR lambdas: %s\nNot using MBAR.\n' %
-                              (clambda_str, ', '.join(mbar_lambdas) ) )
+                              'MBAR lambdas: %s\nNot using MBAR.' %
+                              (clambda_str, ', '.join(mbar_lambdas)))
 
                     global_have_mbar = have_mbar = False
                 else:
                     mbar_nlambda = len(mbar_lambdas)
                     mbar_lambda_idx = mbar_lambdas.index(clambda_str)
                     mbar_data = []
-                    
-                    for foo in range(mbar_nlambda):
+
+                    for _ in range(mbar_nlambda):
                         mbar_data.append([])
             else:
                 global_have_mbar = False
 
-            if not sp.skip_after('^   4.  RESULTS'):
+            if not secp.skip_after('^   4.  RESULTS'):
                 print('WARNING: no results found, ignoring file\n')
                 continue
 
-            nenergy = int(nstlim / ntpr)
             nensec = 0
             nenav = 0
             old_nstep = -1
             old_comp_nstep = -1
             incomplete = False
 
-            for line in sp:
+            for line in secp:
                 if have_mbar and line.startswith('MBAR Energy analysis'):
-                    sp.pushback()
-                    mbar = sp.extract_section('^MBAR', '^ ---', mbar_lambdas)
+                    secp.pushback()
+                    mbar = secp.extract_section('^MBAR', '^ ---', mbar_lambdas)
 
                     if not all(mbar):
                         if global_have_mbar:
                             print('\nWARNING: some MBAR energies cannot be '
-                                  'read. Not using MBAR.\n')
+                                  'read. Not using MBAR.')
 
                         global_have_mbar = have_mbar = False
                         continue
 
-                    Eref = mbar[mbar_lambda_idx]
+                    E_ref = mbar[mbar_lambda_idx]
 
                     for lmbda, E in enumerate(mbar):
-                        mbar_data[lmbda].append(E - Eref)
+                        mbar_data[lmbda].append(E - E_ref)
 
                 if 'DV/DL, AVERAGES OVER' in line:
                     in_comps = True
 
                 if line.startswith(' NSTEP'):
-                    sp.pushback()
+                    secp.pushback()
 
                     if in_comps:
-                        result = sp.extract_section('^ NSTEP', '^ ---',
-                                                    ['NSTEP'] + DVDL_COMPS)
+                        result = secp.extract_section('^ NSTEP', '^ ---',
+                                                      ['NSTEP'] + DVDL_COMPS)
 
-                        for r in result:
-                            if r == None:
+                        for res in result:
+                            if res is None:
                                 incomplete = True
 
                         if result[0] != old_comp_nstep and not incomplete:
                             for i, E in enumerate(DVDL_COMPS):
-                                dvdl_comp_data[i].accumulate(float(result[i+1]) )
+                                dvdl_comp_data[i].accumulate(
+                                    float(result[i+1]))
 
                             nenav += 1
                             old_comp_nstep = result[0]
@@ -397,11 +395,11 @@ def readDataAmber(P):
 
                         in_comps = False
                     else:
-                        nstep, dvdl = sp.extract_section('^ NSTEP', '^ ---',
-                                                         ['NSTEP', 'DV/DL'])
+                        nstep, dvdl = secp.extract_section('^ NSTEP', '^ ---',
+                                                           ['NSTEP', 'DV/DL'])
 
-                        for r in nstep, dvdl:
-                            if r == None:
+                        for res in nstep, dvdl:
+                            if res is None:
                                 incomplete = True
 
                         if nstep != old_nstep and not incomplete:
@@ -416,11 +414,11 @@ def readDataAmber(P):
 
         # -- end of parsing current file --
 
-        print('%i data points, %i DV/DL averages' % (nensec, nenav) )
+        print('%i data points, %i DV/DL averages' % (nensec, nenav))
 
         if not finished:
             print('WARNING: prematurely terminated run\n')
-            next
+            continue
 
         if not nensec:
             print('WARNING: File %s does not contain any DV/DL data\n' %
@@ -431,14 +429,14 @@ def readDataAmber(P):
             if clambda not in mbar_all:
                 mbar_all[clambda] = []
 
-                for foo in range(mbar_nlambda):
+                for _ in range(mbar_nlambda):
                     mbar_all[clambda].append([])
 
             for mbar, data in zip(mbar_all[clambda], mbar_data):
                 mbar.extend(data)
 
         dvdl_all[clambda].extend(dvdl_data)
-        dvdl_comps_all[clambda] = [Es.mean for Es in dvdl_comp_data]
+        dvdl_comps_all[clambda] = [Enes.mean for Enes in dvdl_comp_data]
 
     # -- all file parsing finished --
 
@@ -446,79 +444,80 @@ def readDataAmber(P):
         raise SystemExit('No DV/DL data found')
 
     if not global_have_mbar:
-        print('\nWARNING: MBAR has been switched off.')
+        if 'BAR' in P.methods:
+            P.methods.remove('BAR')
 
+        if 'MBAR' in P.methods:
+            P.methods.remove('MBAR')
+
+        print('\nWARNING: BAR/MBAR has been switched off.')
 
     ave = []
-    start_from = int(round(P.equiltime / (ntpr * float(dt) ) ) )
+    start_from = int(round(P.equiltime / (ntpr * float(dt))))
 
     # FIXME: compute maximum number of MBAR energy sections
-    lv = sorted(dvdl_all.keys() )
-    mbar = sorted(mbar_all.keys() )
-    K = len(dvdl_all.keys() )
+    lvals = sorted(dvdl_all.keys())
+    mbar = sorted(mbar_all.keys())
+    K = len(dvdl_all.keys())
     nsnapshots = [len(e) - start_from for e in dvdl_all.values()]
     maxn = max(nsnapshots)
-    dhdlt = numpy.zeros([K, 1, maxn], float)
+    dhdlt = np.zeros([K, 1, maxn], float)
 
     if have_mbar:
-        u_klt = numpy.zeros([K, mbar_ndata, int(maxn)], numpy.float64)
+        u_klt = np.zeros([K, mbar_ndata, int(maxn)], np.float64)
     else:
         u_klt = None
 
-    for i, clambda in enumerate(lv):
+    for i, clambda in enumerate(lvals):
         vals = dvdl_all[clambda][start_from:]
-        ave.append(numpy.average(vals) )
+        ave.append(np.average(vals))
 
         # AMBER has currently only one global lambda value, hence 2nd dim = 0
-        dhdlt[i][0][:len(vals)] = numpy.array(vals)
+        dhdlt[i][0][:len(vals)] = np.array(vals)
 
         if have_mbar and global_have_mbar:
-            for j, Es in enumerate(mbar_all[clambda]):
-                u_klt[i][j][:len(Es)] = Es[start_from:]
+            for j, ene in enumerate(mbar_all[clambda]):
+                u_klt[i][j][:len(ene)] = ene[start_from:]
 
     if have_mbar:
         u_klt = P.beta * u_klt
 
-
     # sander does not sample end-points...
-    y0, y1 = _extrapol(lv, ave, 'polyfit')
+    y0, y1 = _extrapol(lvals, ave, 'polyfit')
 
     if y0:
         print('Note: adding missing lambda = 0.0: %f' % y0)
         K += 1
-        lv.insert(0, 0.0)
+        lvals.insert(0, 0.0)
         nsnapshots.insert(0, maxn)
 
     if y1:
         print('Note: adding missing lambda = 1.0: %f' % y1)
         K += 1
-        lv.append(1.0)
+        lvals.append(1.0)
         nsnapshots.append(maxn)
-
 
     print("\nThe DV/DL components from gradients of "
           "_every_single_ step (kcal/mol):")
 
     ene_comp = []
-    x_comp = sorted(dvdl_comps_all.keys() )
+    x_comp = sorted(dvdl_comps_all.keys())
 
-    for en in sorted(dvdl_comps_all.items() ):
-        ene_comp.append(en[1:])
+    for comp in sorted(dvdl_comps_all.items()):
+        ene_comp.append(comp[1:])
 
     fmt = 'Lambda ' + '%10s' * ncomp
-    print(fmt % tuple(DVDL_COMPS) )
+    print(fmt % tuple(DVDL_COMPS))
 
     fmt = '%7.5f' + ' %9.3f' * ncomp
 
-
     for clambda in x_comp:
-        l = (clambda,) + tuple(dvdl_comps_all[clambda])
-        print(fmt % l)
+        lstr = (clambda,) + tuple(dvdl_comps_all[clambda])
+        print(fmt % lstr)
 
     print('   TI ='),
 
-
-    for ene in numpy.transpose(ene_comp):
+    for ene in np.transpose(ene_comp):
         x_ene = x_comp
         y_ene = ene[0]
 
@@ -530,27 +529,25 @@ def readDataAmber(P):
 
         if ya:
             x_ene = [0.0] + x_ene
-            y_ene = numpy.insert(y_ene, 0, ya)
+            y_ene = np.insert(y_ene, 0, ya)
 
         if yb:
             x_ene = x_ene + [1.0]
-            y_ene = numpy.append(y_ene, yb)
+            y_ene = np.append(y_ene, yb)
 
-        print(' %8.3f' % numpy.trapz(y_ene, x_ene) ),
+        print(' %8.3f' % np.trapz(y_ene, x_ene)),
 
     # FIMXE: we need a little bit of noise to get the statistics, otherwise
     #        covariance will be zero and error termination
     if y0:
-        f = y0 + _RND_SCALE * numpy.random.rand(maxn) - _RND_SCALE_HALF
-        dhdlt = numpy.insert(dhdlt, 0, f, 0)
+        frand = y0 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
+        dhdlt = np.insert(dhdlt, 0, frand, 0)
 
     if y1:
-        f = y1 + _RND_SCALE * numpy.random.rand(maxn) - _RND_SCALE_HALF
-        dhdlt = numpy.append(dhdlt, [[f]], 0)
+        frand = y1 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
+        dhdlt = np.append(dhdlt, [[frand]], 0)
 
     print('\n\n')
 
-
-    return (numpy.array(nsnapshots), numpy.array(lv).reshape(K, 1),
+    return (np.array(nsnapshots), np.array(lvals).reshape(K, 1),
             dhdlt, u_klt)
-
