@@ -1135,8 +1135,6 @@ def main():
    if P.software.title() == 'Gromacs':
       import parser_gromacs
       nsnapshots, lv, dhdlt, u_klt = parser_gromacs.readDataGromacs(P)
-      print u_klt.shape
-      print u_klt
    elif P.software.title() == 'Sire':
       import parser_sire
       nsnapshots, lv, dhdlt, u_klt = parser_sire.readDataSire(P)
