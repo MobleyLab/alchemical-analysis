@@ -450,7 +450,7 @@ def readDataAmber(P):
         if 'MBAR' in P.methods:
             P.methods.remove('MBAR')
 
-        print('\nWARNING: BAR/MBAR has been switched off.')
+        print('\nWARNING: BAR/MBAR have been switched off.')
 
     ave = []
     start_from = int(round(P.equiltime / (ntpr * float(dt))))
@@ -463,7 +463,7 @@ def readDataAmber(P):
     maxn = max(nsnapshots)
     dhdlt = np.zeros([K, 1, maxn], float)
 
-    if have_mbar:
+    if have_mbar and global_have_mbar:
         u_klt = np.zeros([K, mbar_ndata, int(maxn)], np.float64)
     else:
         u_klt = None
@@ -475,11 +475,11 @@ def readDataAmber(P):
         # AMBER has currently only one global lambda value, hence 2nd dim = 0
         dhdlt[i][0][:len(vals)] = np.array(vals)
 
-        if have_mbar and global_have_mbar:
+        if u_klt is not None:
             for j, ene in enumerate(mbar_all[clambda]):
                 u_klt[i][j][:len(ene)] = ene[start_from:]
 
-    if have_mbar:
+    if u_klt is not None:
         u_klt = P.beta * u_klt
 
     # sander does not sample end-points...
