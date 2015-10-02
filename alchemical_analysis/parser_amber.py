@@ -456,15 +456,17 @@ def readDataAmber(P):
     start_from = int(round(P.equiltime / (ntpr * float(dt))))
 
     # FIXME: compute maximum number of MBAR energy sections
-    lvals = sorted(dvdl_all.keys())
-    mbar = sorted(mbar_all.keys())
-    K = len(dvdl_all.keys())
+    lvals = sorted(dvdl_all)
+    K = len(dvdl_all)
     nsnapshots = [len(e) - start_from for e in dvdl_all.values()]
     maxn = max(nsnapshots)
-    dhdlt = np.zeros([K, 1, maxn], float)
+
+    # AMBER has currently only one global lambda value, hence 2nd dim = 1
+    dhdlt = np.zeros([K, 1, maxn], np.float64)
 
     if have_mbar and global_have_mbar:
-        u_klt = np.zeros([K, mbar_ndata, int(maxn)], np.float64)
+        assert K == len(mbar_all)
+        u_klt = np.zeros([K, K, maxn], np.float64)
     else:
         u_klt = None
 
@@ -472,12 +474,13 @@ def readDataAmber(P):
         vals = dvdl_all[clambda][start_from:]
         ave.append(np.average(vals))
 
-        # AMBER has currently only one global lambda value, hence 2nd dim = 0
         dhdlt[i][0][:len(vals)] = np.array(vals)
 
         if u_klt is not None:
             for j, ene in enumerate(mbar_all[clambda]):
-                u_klt[i][j][:len(ene)] = ene[start_from:]
+                enes = ene[start_from:]
+                l_enes = len(enes)
+                u_klt[i][j][:l_enes] = enes
 
     if u_klt is not None:
         u_klt = P.beta * u_klt
