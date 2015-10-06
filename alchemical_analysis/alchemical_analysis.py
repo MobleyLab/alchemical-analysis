@@ -401,7 +401,7 @@ def getSplines(lchange):
 
 def estimatePairs():
 
-   print ("Estimating the free energy change with %s..." % ', '.join(P.methods)).replace(', MBAR', '')
+   print ("\nEstimating the free energy change with %s..." % ', '.join(P.methods)).replace(', MBAR', '')
    df_allk = list(); ddf_allk = list()
    
    for k in range(K-1):

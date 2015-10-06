@@ -228,6 +228,52 @@ def _extrapol(x, y, scheme):
     return y0, y1
 
 
+def _print_comps(dvdl_comps_all, ncomp):
+    """Print out per force field term free energy components."""
+    
+    print("\nThe correlated DV/DL components from "
+          "_every_single_ step (kcal/mol):")
+
+    ene_comp = []
+    x_comp = sorted(dvdl_comps_all.keys())
+
+    for comp in sorted(dvdl_comps_all.items()):
+        ene_comp.append(comp[1:])
+
+    fmt = 'Lambda ' + '%10s' * ncomp
+    print(fmt % tuple(DVDL_COMPS))
+
+    fmt = '%7.5f' + ' %9.3f' * ncomp
+
+    outstr = {}
+
+    for clambda in x_comp:
+        lstr = (clambda,) + tuple(dvdl_comps_all[clambda])
+        print(fmt % lstr)
+
+    print('   TI ='),
+
+    for ene in np.transpose(ene_comp):
+        x_ene = x_comp
+        y_ene = ene[0]
+
+        if not all(y_ene):
+            print(' %8.3f' % 0.0),
+            continue
+
+        ya, yb = _extrapol(x_comp, y_ene, 'polyfit')
+
+        if ya:
+            x_ene = [0.0] + x_ene
+            y_ene = np.insert(y_ene, 0, ya)
+
+        if yb:
+            x_ene = x_ene + [1.0]
+            y_ene = np.append(y_ene, yb)
+
+        print(' %8.3f' % np.trapz(y_ene, x_ene)),
+
+
 def readDataAmber(P):
     """
     Parse free energy gradients and MBAR data from AMBER MDOUT file based on
@@ -490,67 +536,37 @@ def readDataAmber(P):
 
     if y0:
         print('Note: adding missing lambda = 0.0: %f' % y0)
+
         K += 1
         lvals.insert(0, 0.0)
         nsnapshots.insert(0, maxn)
+        ave.insert(0, y0)
 
-    if y1:
-        print('Note: adding missing lambda = 1.0: %f' % y1)
-        K += 1
-        lvals.append(1.0)
-        nsnapshots.append(maxn)
-
-    print("\nThe DV/DL components from gradients of "
-          "_every_single_ step (kcal/mol):")
-
-    ene_comp = []
-    x_comp = sorted(dvdl_comps_all.keys())
-
-    for comp in sorted(dvdl_comps_all.items()):
-        ene_comp.append(comp[1:])
-
-    fmt = 'Lambda ' + '%10s' * ncomp
-    print(fmt % tuple(DVDL_COMPS))
-
-    fmt = '%7.5f' + ' %9.3f' * ncomp
-
-    for clambda in x_comp:
-        lstr = (clambda,) + tuple(dvdl_comps_all[clambda])
-        print(fmt % lstr)
-
-    print('   TI ='),
-
-    for ene in np.transpose(ene_comp):
-        x_ene = x_comp
-        y_ene = ene[0]
-
-        if not all(y_ene):
-            print(' %8.3f' % 0.0),
-            continue
-
-        ya, yb = _extrapol(x_comp, y_ene, 'polyfit')
-
-        if ya:
-            x_ene = [0.0] + x_ene
-            y_ene = np.insert(y_ene, 0, ya)
-
-        if yb:
-            x_ene = x_ene + [1.0]
-            y_ene = np.append(y_ene, yb)
-
-        print(' %8.3f' % np.trapz(y_ene, x_ene)),
-
-    # FIMXE: we need a little bit of noise to get the statistics, otherwise
-    #        covariance will be zero and error termination
-    if y0:
+        # we need a little bit of noise to get the statistics, otherwise
+        # covariance will be zero and error termination
         frand = y0 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
         dhdlt = np.insert(dhdlt, 0, frand, 0)
 
     if y1:
+        print('Note: adding missing lambda = 1.0: %f' % y1)
+
+        K += 1
+        lvals.append(1.0)
+        nsnapshots.append(maxn)#
+        ave.append(y1)
+
         frand = y1 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
         dhdlt = np.append(dhdlt, [[frand]], 0)
 
+    print("\nThe gradients from the correlated samples (kcal/mol):")
+
+    for clambda, dvdl in zip(lvals, ave):
+        print('%7.5f %9.3f' % (clambda, dvdl) )
+
+    print('   TI = %9.3f' % np.trapz(ave, lvals))
+
+    _print_comps(dvdl_comps_all, ncomp)
+
     print('\n\n')
 
-    return (np.array(nsnapshots), np.array(lvals).reshape(K, 1),
-            dhdlt, u_klt)
+    return (np.array(nsnapshots), np.array(lvals).reshape(K, 1), dhdlt, u_klt)
