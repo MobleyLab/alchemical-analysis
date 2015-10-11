@@ -1155,7 +1155,6 @@ def main():
       #### u_klt[k,m,t] is the reduced potential energy of snapshot t of state k evaluated at state m
 
    K, n_components = lv.shape
-#  if not P.software.title() == 'Amber':
    dhdl, N_k, u_kln = uncorrelate(sta=numpy.zeros(K, int), fin=nsnapshots, do_dhdl=True)
 
    # Estimate free energy difference with MBAR -- all states at once.

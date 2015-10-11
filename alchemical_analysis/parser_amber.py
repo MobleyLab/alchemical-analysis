@@ -55,7 +55,13 @@ class SectionParser(object):
 
     def __init__(self, filename):
         self.filename = filename
-        self.fileh = open(self.filename, 'rb')
+
+        if (filename[-2:] == 'gz'):
+          import gzip
+          self.fileh = gzip.GzipFile(self.filename, 'rb')
+        else:
+          self.fileh = open(self.filename, 'rb')
+
         self.filesize = os.fstat(self.fileh.fileno()).st_size
         self.lineno = 0
         self.last_pos = 0
