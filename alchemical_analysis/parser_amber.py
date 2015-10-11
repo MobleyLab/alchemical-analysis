@@ -48,6 +48,16 @@ _RND_SCALE = 1e-3
 _RND_SCALE_HALF = _RND_SCALE / 2.0
 
 
+def _pre_gen(it, first):
+    """A generator that returns first first if it exists."""
+
+    if first:
+        yield first
+
+    while it:
+        yield it.next()
+
+
 class SectionParser(object):
     """
     A simple parser to extract data values from sections.
@@ -77,7 +87,7 @@ class SectionParser(object):
 
         return self.fileh.tell() != self.filesize
 
-    def extract_section(self, start, end, fields, limit=None):
+    def extract_section(self, start, end, fields, limit=None, extra=''):
         """
         Extract data values (int, float) in fields from a section
         marked with start and end.  Do not read further than limit.
@@ -86,7 +96,7 @@ class SectionParser(object):
         inside = False
         lines = []
 
-        for line in self:
+        for line in _pre_gen(self, extra):
             if limit and re.search(limit, line):
                 break
 
@@ -406,8 +416,8 @@ def readDataAmber(P):
 
             for line in secp:
                 if have_mbar and line.startswith('MBAR Energy analysis'):
-                    secp.pushback()
-                    mbar = secp.extract_section('^MBAR', '^ ---', mbar_lambdas)
+                    mbar = secp.extract_section('^MBAR', '^ ---', mbar_lambdas,
+                                                extra=line)
 
                     if not all(mbar):
                         if global_have_mbar:
@@ -426,11 +436,10 @@ def readDataAmber(P):
                     in_comps = True
 
                 if line.startswith(' NSTEP'):
-                    secp.pushback()
-
                     if in_comps:
                         result = secp.extract_section('^ NSTEP', '^ ---',
-                                                      ['NSTEP'] + DVDL_COMPS)
+                                                      ['NSTEP'] + DVDL_COMPS,
+                                                      extra=line)
 
                         for res in result:
                             if res is None:
