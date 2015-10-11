@@ -1,11 +1,15 @@
 """
-This is the AMBER parser for Alchemical Analysis.  The code can handle both
-sander and pmemd output.  TI gradients will be read from the instantaneous
-DV/DL entries at every ntpr.  MBAR values are collected too but assumed to be
-occuring at the same frequence as the energy output.  BAR/MBAR will be switched
-off when the current lambda is not in the set of MBAR lambdas and when the code
-detects an overflow (value is all '*') in the energy output.  Component
-gradients are collected from the average outputs.
+This is the AMBER parser for Alchemical Analysis.
+
+The code can handle both sander and pmemd output.  TI gradients will be read
+from the instantaneous DV/DL entries at every ntpr from the MDOUT file.  MBAR
+values are collected too but assumed to be occuring at the same frequency as
+the energy output (that's how it is done in GROMACS).  BAR/MBAR will be
+switched off when the current lambda is not in the set of MBAR lambdas and
+when the code detects an overflow (value is all '*') in the energy output.
+MBAR is currently switched off for sander output because sander can't sample
+the end-points and the way MBAR lambdas are handled.  Component gradients are
+collected from the average outputs.  Gzip compression is supported too.
 """
 
 ######################################################################
@@ -50,7 +54,6 @@ _RND_SCALE_HALF = _RND_SCALE / 2.0
 
 def _pre_gen(it, first):
     """A generator that returns first first if it exists."""
-
     if first:
         yield first
 
@@ -133,7 +136,10 @@ class SectionParser(object):
         return result
 
     def pushback(self):
-        """Reposition to one line back.  Works only once, see next()."""
+        """
+        Reposition to one line back.  Works only once, see next().
+        The seek() may be very slow for compressed streams!
+        """
         self.lineno -= 1
         self.fileh.seek(self.last_pos)
 
@@ -457,7 +463,8 @@ def readDataAmber(P):
                         in_comps = False
                     else:
                         nstep, dvdl = secp.extract_section('^ NSTEP', '^ ---',
-                                                           ['NSTEP', 'DV/DL'])
+                                                           ['NSTEP', 'DV/DL'],
+                                                           extra=line)
 
                         for res in nstep, dvdl:
                             if res is None:
