@@ -71,11 +71,19 @@ class SectionParser(object):
 
         if (filename[-2:] == 'gz'):
           import gzip
-          self.fileh = gzip.GzipFile(self.filename, 'rb')
+          open_it = gzip.GzipFile
+        elif (filename[-3:] == 'bz2'):
+          import bz2
+          open_it = bz2.BZ2File
         else:
-          self.fileh = open(self.filename, 'rb')
+          open_it = open
 
-        self.filesize = os.fstat(self.fileh.fileno()).st_size
+        try:
+            self.fileh = open_it(self.filename, 'rb')
+            self.filesize = os.stat(filename).st_size
+        except IOError:
+            raise SystemExit('Error opeing file %s' % filename)
+
         self.lineno = 0
         self.last_pos = 0
 
