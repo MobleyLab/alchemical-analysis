@@ -50,6 +50,10 @@ DVDL_COMPS = ['BOND', 'ANGLE', 'DIHED', '1-4 NB', '1-4 EEL', 'VDWAALS',
 _FP_RE = r'[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?'
 _RND_SCALE = 1e-3
 _RND_SCALE_HALF = _RND_SCALE / 2.0
+_MAGIC_CMPR = {
+    '\x1f\x8b\x08': 'gz',
+    '\x42\x5a\x68': 'bz2',
+}
 
 
 def _pre_gen(it, first):
@@ -69,20 +73,23 @@ class SectionParser(object):
     def __init__(self, filename):
         self.filename = filename
 
-        if (filename[-2:] == 'gz'):
-          import gzip
-          open_it = gzip.GzipFile
-        elif (filename[-3:] == 'bz2'):
-          import bz2
-          open_it = bz2.BZ2File
+        ext = os.path.splitext(self.filename)[1]
+
+        # FIXME: check for magic instead?
+        if (ext == '.gz'):
+            import gzip
+            open_it = gzip.GzipFile
+        elif (ext == '.bz2'):
+            import bz2
+            open_it = bz2.BZ2File
         else:
-          open_it = open
+            open_it = open
 
         try:
             self.fileh = open_it(self.filename, 'rb')
-            self.filesize = os.stat(filename).st_size
+            self.filesize = os.stat(self.filename).st_size
         except IOError:
-            raise SystemExit('Error opeing file %s' % filename)
+            raise SystemExit('Error opening file %s' % filename)
 
         self.lineno = 0
         self.last_pos = 0
@@ -130,7 +137,7 @@ class SectionParser(object):
             if match:
                 value = match.group(1)
 
-                # FIXME: assumes fields are only integers and floats
+                # FIXME: assumes fields are only integers or floats
                 if '*' in value:            # Fortran format overflow
                     result.append(None)
                 # NOTE: check if this is a sufficient test for int
