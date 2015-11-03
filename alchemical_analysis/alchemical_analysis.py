@@ -175,6 +175,7 @@ def uncorrelate(sta, fin, do_dhdl=False):
    UNCORR_OBSERVABLE = {'Gromacs':P.uncorr, 'Amber':'dhdl', 'Sire':'dhdl'}[P.software.title()]
 
    if UNCORR_OBSERVABLE == 'dhdl':
+      #Uncorrelate based on dhdl values at a given lambda
 
       for k in range(K):
          # Sum up over the energy components; notice, that only the relevant data is being used in the third dimension.
@@ -200,12 +201,11 @@ def uncorrelate(sta, fin, do_dhdl=False):
                dhdl[k,n,0:N] = dhdlt[k,n,indices]
 
    if UNCORR_OBSERVABLE == 'dE':
+      #Decorrelate based on energy differences between lambdas        
 
       for k in range(K):
-         ## Sum up over the energy components; notice, that only the relevant data is being used in the third dimension.
-         #dhdl_sum = numpy.sum(dhdlt[k,:,sta[k]:fin[k]], axis=0)
+         # Sum up over the energy components as above using only the relevant data; here we use energy differences
          # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
-         # (alternatively, could use the energy differences -- here, we will use total dhdl).
 
          dE = u_klt[k,k+1,sta[k]:fin[k]] if not k==K-1 else u_klt[k,k-1,sta[k]:fin[k]]
 
