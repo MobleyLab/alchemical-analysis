@@ -321,7 +321,9 @@ def readDataAmber(P):
     P.lv_names = ['']
 
     datafile_tuple = P.datafile_directory, P.prefix, P.suffix
-    filenames = glob.glob('%s/%s*%s' % datafile_tuple)
+
+    # FIXME: relies on numerical file names
+    filenames = sorted(glob.glob('%s/%s*%s' % datafile_tuple))
 
     if not len(filenames):
         raise SystemExit("\nERROR!\nNo files found within directory '%s' with "
@@ -364,7 +366,7 @@ def readDataAmber(P):
                 pmemd = True
 
             if not secp.skip_after('^   2.  CONTROL  DATA  FOR  THE  RUN'):
-                print('WARNING: no control data found, ignoring file')
+                print('WARNING: no CONTROL DATA found, ignoring file')
                 continue
 
             # NOTE: sections must be searched for in order!
@@ -401,6 +403,9 @@ def readDataAmber(P):
             if not pmemd:
                 have_mbar = False
 
+            if 'BAR' not in P.methods or 'MBAR' not in P.methods:
+                have_mbar = False
+
             if have_mbar:
                 mbar_ndata = int(nstlim / mbar_ndata)
                 mbar_lambdas = process_mbar_lambdas(secp)
@@ -426,7 +431,7 @@ def readDataAmber(P):
                 global_have_mbar = False
 
             if not secp.skip_after('^   4.  RESULTS'):
-                print('WARNING: no results found, ignoring file\n')
+                print('WARNING: no RESULTS found, ignoring file\n')
                 continue
 
             nensec = 0
@@ -537,6 +542,7 @@ def readDataAmber(P):
 
     ave = []
     start_from = int(round(P.equiltime / (ntpr * float(dt))))
+    print '\nSkipping first %d steps (= %f ps)\n' % (start_from, P.equiltime)
 
     # FIXME: compute maximum number of MBAR energy sections
     lvals = sorted(dvdl_all)
