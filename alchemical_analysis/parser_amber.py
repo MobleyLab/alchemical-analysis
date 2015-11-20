@@ -56,6 +56,18 @@ _MAGIC_CMPR = {
 }
 
 
+class FEData(object):
+    __slots__ = ['clambda', 't0', 'dt', 'T', 'gradients', 'mbar_energies']
+
+    def __init__(self):
+        self.clambda = -1.0
+        self.t0 = -1.0
+        self.dt = -1.0
+        self.T = -1.0
+        self.gradients = []
+        self.mbar_energies = []
+
+
 def _pre_gen(it, first):
     """A generator that returns first first if it exists."""
     if first:
@@ -324,16 +336,16 @@ def readDataAmber(P):
     datafile_tuple = P.datafile_directory, P.prefix, P.suffix
 
     # FIXME: relies on numerical file names
-    filenames = sorted(glob.glob('%s/%s*%s' % datafile_tuple))
+    filenames = glob.glob('%s/%s*%s' % datafile_tuple)
 
     if not len(filenames):
         raise SystemExit("\nERROR!\nNo files found within directory '%s' with "
                          "prefix '%s' and suffix '%s': check your inputs."
                          % datafile_tuple)
 
-    dvdl_all = defaultdict(list)
+    file_data = []
     dvdl_comps_all = defaultdict(list)
-    mbar_all = {}
+    #mbar_all = {}
 
     nsnapshots = []
 
@@ -343,6 +355,8 @@ def readDataAmber(P):
 
     for filename in filenames:
         print('Loading in data from %s... ' % filename),
+
+        file_datum = FEData()
 
         in_comps = False
         finished = False
@@ -378,8 +392,8 @@ def readDataAmber(P):
                                               ['nstlim', 'dt'])
 
             # FIXME: check if temp0, dt, etc. are consistent between files
-            P.temperature, = secp.extract_section('temperature regulation:',
-                                                  '^$', ['temp0'])
+            T, = secp.extract_section('temperature regulation:', '^$', ['temp0'])
+            P.temperature = T
 
             # FIXME: file may end just after "2. CONTROL DATA" so vars will
             #        be all None
@@ -424,10 +438,12 @@ def readDataAmber(P):
                 else:
                     mbar_nlambda = len(mbar_lambdas)
                     mbar_lambda_idx = mbar_lambdas.index(clambda_str)
-                    mbar_data = []
+                    #mbar_data = []
 
+                    #for _ in range(mbar_nlambda):
+                    #    mbar_data.append([])
                     for _ in range(mbar_nlambda):
-                        mbar_data.append([])
+                        file_datum.mbar_energies.append([])
             else:
                 global_have_mbar = False
 
@@ -437,11 +453,14 @@ def readDataAmber(P):
 
             t0, = secp.extract_section('^ begin', '^$', ['coords'])
 
-            #print 't0=%f ps' % t0,
-
             if not secp.skip_after('^   4.  RESULTS'):
                 print('WARNING: no RESULTS found, ignoring file\n')
                 continue
+
+            file_datum.clambda = clambda
+            file_datum.t0 = t0
+            file_datum.dt = dt
+            file_datum.T = T
 
             nensec = 0
             nenav = 0
@@ -465,7 +484,8 @@ def readDataAmber(P):
                     E_ref = mbar[mbar_lambda_idx]
 
                     for lmbda, E in enumerate(mbar):
-                        mbar_data[lmbda].append(E - E_ref)
+                        #mbar_data[lmbda].append(E - E_ref)
+                        file_datum.mbar_energies[lmbda].append(E - E_ref)
 
                 if 'DV/DL, AVERAGES OVER' in line:
                     in_comps = True
@@ -501,6 +521,7 @@ def readDataAmber(P):
 
                         if nstep != old_nstep and not incomplete:
                             dvdl_data.append(dvdl)
+                            file_datum.gradients.append(dvdl)
                             nensec += 1
                             old_nstep = nstep
                             incomplete = False
@@ -522,6 +543,43 @@ def readDataAmber(P):
                   filename)
             continue
 
+        #if have_mbar:
+        #    if clambda not in mbar_all:
+        #        mbar_all[clambda] = []
+
+        #        for _ in range(mbar_nlambda):
+        #            mbar_all[clambda].append([])
+
+        #    for mbar, data in zip(mbar_all[clambda], mbar_data):
+        #        mbar.extend(data)
+
+        file_data.append(file_datum)
+        dvdl_comps_all[clambda] = [Enes.mean for Enes in dvdl_comp_data]
+
+    # -- all file parsing done --
+
+    file_data.sort(key=lambda x: x.t0)
+    file_data.sort(key=lambda x: x.clambda)
+
+    dvdl_all = defaultdict(list)
+    t0_found = defaultdict(list)
+    t0_uniq = defaultdict(set)
+    dt_uniq = set()
+    T_uniq = set()
+    mbar_all = {}
+
+    # FIXME: dvdl_all and mbar_all do not need to be dicts anymore because
+    #        data is ordered now anyway
+    for fd in file_data:
+        clambda = fd.clambda
+
+        dvdl_all[clambda].extend(fd.gradients)
+        t0_found[clambda].append(fd.t0)
+        t0_uniq[clambda].add(fd.t0)
+
+        dt_uniq.add(fd.dt)
+        T_uniq.add(fd.T)
+
         if have_mbar:
             if clambda not in mbar_all:
                 mbar_all[clambda] = []
@@ -529,16 +587,21 @@ def readDataAmber(P):
                 for _ in range(mbar_nlambda):
                     mbar_all[clambda].append([])
 
-            for mbar, data in zip(mbar_all[clambda], mbar_data):
+            for mbar, data in zip(mbar_all[clambda], fd.mbar_energies):
                 mbar.extend(data)
-
-        dvdl_all[clambda].extend(dvdl_data)
-        dvdl_comps_all[clambda] = [Enes.mean for Enes in dvdl_comp_data]
-
-    # -- all file parsing finished --
 
     if not dvdl_all:
         raise SystemExit('No DV/DL data found')
+
+    for found, uniq in zip(t0_found.values(), t0_uniq.values() ):
+        if len(found) != len(uniq):
+            raise SystemExit('Same starting time occurs multiple times')
+
+    if len(dt_uniq) != 1:
+        raise SystemExit('Not all files have the same time step (dt)')
+
+    if len(T_uniq) != 1:
+        raise SystemExit('Not all files have the same temperature')
 
     if not global_have_mbar:
         if 'BAR' in P.methods:
