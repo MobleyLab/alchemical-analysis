@@ -105,7 +105,8 @@ class SectionParser(object):
 
         return self.fileh.tell() != self.filesize
 
-    def extract_section(self, start, end, fields, limit=None, extra=''):
+    def extract_section(self, start, end, fields, limit=None, extra='',
+                        debug=False):
         """
         Extract data values (int, float) in fields from a section
         marked with start and end.  Do not read further than limit.
@@ -430,6 +431,14 @@ def readDataAmber(P):
             else:
                 global_have_mbar = False
 
+            if not secp.skip_after('^   3.  ATOMIC '):
+                print('WARNING: no ATOMIC found, ignoring file\n')
+                continue
+
+            t0, = secp.extract_section('^ begin', '^$', ['coords'])
+
+            #print 't0=%f ps' % t0,
+
             if not secp.skip_after('^   4.  RESULTS'):
                 print('WARNING: no RESULTS found, ignoring file\n')
                 continue
@@ -558,6 +567,23 @@ def readDataAmber(P):
         u_klt = np.zeros([K, K, maxn], np.float64)
     else:
         u_klt = None
+
+    with open(os.path.join(P.output_directory, 'grads.dat'), 'w') as gfile:
+        gfile.write('# gradients for lambdas: %s\n' %
+                    ' '.join('%s' % l for l in lvals) )
+
+        for i in range(maxn):
+            gfile.write('%f ' % (i * dt) )
+
+            for clambda in lvals:
+                try:
+                    val = dvdl_all[clambda][i]
+                except IndexError:
+                    val = 0.0
+
+                gfile.write('%f ' % val)
+
+            gfile.write('\n')
 
     for i, clambda in enumerate(lvals):
         vals = dvdl_all[clambda][start_from:]
