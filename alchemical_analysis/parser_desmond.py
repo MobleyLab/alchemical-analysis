@@ -1,3 +1,8 @@
+###==========================###
+#   Desmond parser module
+#   Module adapted from Gromacs parser
+#   Adapted by Nathan M. Lim
+###==========================###
 import numpy
 import os                       # for os interface
 import re                       # for regular expressions
@@ -23,7 +28,7 @@ def readDataDesmond(P):
          try:
             self.state = l[0] = int(l[0]) # Will be of use for selective MBAR analysis.
          except:
-            print "\nERROR!\nFile's prefix should be followed by a numerical character. Cannot sort the files.\n"
+            print("\nERROR!\nFile's prefix should be followed by a numerical character. Cannot sort the files.\n")
             raise
          return tuple(l)
 
@@ -53,12 +58,14 @@ def readDataDesmond(P):
                      yield item
 
          def slice_data(data, state=state):
+            #Energies stored in:
+            #   Reverse: data[1,:]
+            #   Forward: data[2,:]
+            #Desmond unit input: kcal/mol, conversion factor 4.184kJ/kcal
+            #P.beta from alchemical_analysis.py in kJ/mol/K
+            #Return: u_klt contains energies of adjacent lambdas only
+
             data = data.T
-            ###NML###
-            #Rev Energy data[1,:]
-            #For Energy data[2,:]
-            #Beta is in kJ/mol/K
-            #Input: kcal/mol, Analysis works in kJ/mol (conv: 4.184)
             if state == 0:
                u_klt[state, state+1 , :nsnapshots[state]] = data[ 2 , : ]*4.184*P.beta
             elif state == K:
@@ -68,7 +75,7 @@ def readDataDesmond(P):
                u_klt[state, state+1, :nsnapshots[state]] = data[ 2 , :]*4.184*P.beta
             return
 
-         print "Loading in data from %s (%s) ..." % (self.filename, 'state %d' % state)
+         print("Loading in data from %s (%s) ...") % (self.filename, 'state %d' % state)
          data = numpy.fromiter(iter_func(), dtype=float)
          if not self.len_first == self.len_last:
             data = data[: -self.len_last]
@@ -112,7 +119,7 @@ def readDataDesmond(P):
       equilsnapshots  = int(equiltime/f.snap_size)
       f.skip_lines   += equilsnapshots
       nsnapshots[nf] += unixlike.wcPy(f.filename) - f.skip_lines - 1*bLenConsistency
-      print "First %s ps (%s snapshots) will be discarded due to equilibration from file %s..." % (equiltime, equilsnapshots, f.filename)
+      print("First %s ps (%s snapshots) will be discarded due to equilibration from file %s...") % (equiltime, equilsnapshots, f.filename)
 
    #===================================================================================================
    # Preliminaries: Load in equilibrated data.
