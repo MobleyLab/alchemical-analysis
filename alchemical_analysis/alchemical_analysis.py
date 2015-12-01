@@ -39,7 +39,7 @@ import pdb                          # for debugging
 #===================================================================================================
 
 parser = OptionParser()
-parser.add_option('-a', '--software', dest = 'software', help = 'Package\'s name the data files come from: Gromacs, Sire, or AMBER. Default: Gromacs.', default = 'Gromacs')
+parser.add_option('-a', '--software', dest = 'software', help = 'Package\'s name the data files come from: Gromacs, Sire, Desmond, or AMBER. Default: Gromacs.', default = 'Gromacs')
 parser.add_option('-c', '--cfm', dest = 'bCFM', help = 'The Curve-Fitting-Method-based consistency inspector. Default: False.', default = False, action = 'store_true')
 parser.add_option('-d', '--dir', dest = 'datafile_directory', help = 'Directory in which data files are stored. Default: Current directory.', default = '.')
 parser.add_option('-f', '--forwrev', dest = 'bForwrev', help = 'Plotting the free energy change as a function of time in both directions. The number of time points (an integer) is to be followed the flag. Default: 0', default = 0, type=int)
@@ -172,7 +172,7 @@ def uncorrelate(sta, fin, do_dhdl=False):
       dhdl = numpy.zeros([K,n_components,max(fin-sta)], float) #dhdl is value for dhdl for each component in the file at each time.
       print "\n\nNumber of correlated and uncorrelated samples:\n\n%6s %12s %12s %12s\n" % ('State', 'N', 'N_k', 'N/N_k')
 
-   UNCORR_OBSERVABLE = {'Gromacs':P.uncorr, 'Amber':'dhdl', 'Sire':'dhdl'}[P.software.title()]
+   UNCORR_OBSERVABLE = {'Gromacs':P.uncorr, 'Amber':'dhdl', 'Sire':'dhdl', 'Desmond':'dE'}[P.software.title()]
 
    if UNCORR_OBSERVABLE == 'dhdl':
       #Uncorrelate based on dhdl values at a given lambda
@@ -1168,6 +1168,13 @@ def main():
    elif P.software.title() == 'Amber':
       import parser_amber
       lv, ave_dhdl, std_dhdl = parser_amber.readDataAmber(P)
+   elif P.software.title() == 'Desmond':
+       import parser_desmond
+       #NML: Desmond FEP jobs will always output with these names
+       P.prefix='gibbs'
+       P.suffix='dE'
+       P.methods=['BAR'] #Given only dE of adj Lambdas, limiting to BAR only
+       nsnapshots, lv, u_klt = parser_desmond.readDataDesmond(P)
    else:
       from inspect import currentframe, getframeinfo
       lineno = getframeinfo(currentframe()).lineno
@@ -1182,9 +1189,10 @@ def main():
       #### u_klt[k,m,t] is the reduced potential energy of snapshot t of state k evaluated at state m
 
    K, n_components = lv.shape
-   if not P.software.title() == 'Amber':
+   if (numpy.array(['Sire','Gromacs']) == P.software.title()).any():
       dhdl, N_k, u_kln = uncorrelate(sta=numpy.zeros(K, int), fin=nsnapshots, do_dhdl=True)
-
+   elif P.software.title() == 'Desmond':
+      N_k, u_kln = uncorrelate(sta=numpy.zeros(K, int), fin=nsnapshots, do_dhdl=False)
    # Estimate free energy difference with MBAR -- all states at once.
    if 'MBAR' in P.methods:
       Deltaf_ij, dDeltaf_ij = estimatewithMBAR(u_kln, N_k, P.relative_tolerance, regular_estimate=True)
