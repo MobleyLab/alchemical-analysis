@@ -26,8 +26,6 @@ from collections import Counter # for counting elements in an array
 
 import unixlike                 # some implemented unixlike commands
 
-import sys
-
 #===================================================================================================       
 # FUNCTIONS: This is the Gromacs dhdl.xvg file parser.     
 #===================================================================================================       
@@ -62,6 +60,7 @@ def readDataGromacs(P):
          self.bEnergy    = False
          self.bPV        = False
          self.bExpanded  = False
+         self.temperature= False
  
          print "Reading metadata from %s..." % self.filename
          with open(self.filename,'r') as infile:
@@ -74,6 +73,8 @@ def readDataGromacs(P):
                   self.skip_lines += 1
                   elements = unixlike.trPy(line).split()
                   if not 'legend' in elements:
+                     if 'T' in elements:
+                        self.temperature = elements[4]
                      continue
  
                   if 'Energy' in elements:
@@ -122,20 +123,20 @@ def readDataGromacs(P):
             read_dhdl_end = read_dhdl_sta + n_components
   
             data = data.T
-            dhdlt[state, :, :nsnapshots[state]] = data[read_dhdl_sta : read_dhdl_end, :]
+            dhdlt[state, :, nsnapshots_l[state]:nsnapshots_r[state]] = data[read_dhdl_sta : read_dhdl_end, :]
   
             if not bSelective_MBAR:
-               r1, r2 = (read_dhdl_end, read_dhdl_end+ndE[state])
+               r1, r2 = ( read_dhdl_end, read_dhdl_end + (ndE[state] if not self.bExpanded else K) )
                if bPV:
-                  u_klt[state, s1:s2, :nsnapshots[state]] = P.beta * ( data[r1:r2, :] + data[-1,:] )
+                  u_klt[state, s1:s2, nsnapshots_l[state]:nsnapshots_r[state]] = P.beta * ( data[r1:r2, :] + data[-1,:] )
                else:
-                  u_klt[state, s1:s2, :nsnapshots[state]] = P.beta * data[r1:r2, :]
+                  u_klt[state, s1:s2, nsnapshots_l[state]:nsnapshots_r[state]] = P.beta * data[r1:r2, :]
             else: # can't do slicing; prepare a mask (slicing is thought to be faster/less memory consuming than masking)
                mask_read_uklt = numpy.array( [0]*read_dhdl_end + [1 if (k in sel_states) else 0 for k in range(ndE[0])] + ([0] if bPV else []), bool )
                if bPV:
-                  u_klt[state, s1:s2, :nsnapshots[state]] = P.beta * ( data[mask_read_uklt, :] + data[-1,:] )
+                  u_klt[state, s1:s2, nsnapshots_l[state]:nsnapshots_r[state]] = P.beta * ( data[mask_read_uklt, :] + data[-1,:] )
                else:
-                  u_klt[state, s1:s2, :nsnapshots[state]] = P.beta * data[mask_read_uklt, :]
+                  u_klt[state, s1:s2, nsnapshots_l[state]:nsnapshots_r[state]] = P.beta * data[mask_read_uklt, :]
             return
  
          print "Loading in data from %s (%s) ..." % (self.filename, "all states" if self.bExpanded else 'state %d' % state)
@@ -209,10 +210,23 @@ def readDataGromacs(P):
                raise SystemExit("\nERROR!\nThe lambda gradient components have different names; I cannot combine the data.")
          if not f.bPV == bPV:
             raise SystemExit("\nERROR!\nSome files contain the PV energies, some do not; I cannot combine the files.")
+         if not f.temperature == temperature: # compare against a string, not a float.
+            raise SystemExit("\nERROR!\nTemperature is not the same in all .xvg files.")
    
       else:
    
          P.lv_names = lv_names = f.lv_names
+
+         temperature = f.temperature
+         if temperature:
+            temperature_float = float(temperature)
+            P.beta *= P.temperature/temperature_float
+            P.beta_report *= P.temperature/temperature_float
+            P.temperature = temperature_float
+            print "Temperature is %s K." % temperature
+         else:
+            print "Temperature not present in xvg files. Using %g K." % P.temperature
+
          n_components = len(lv_names)
          bPV = f.bPV
          P.bExpanded = f.bExpanded
@@ -267,7 +281,7 @@ def readDataGromacs(P):
    #===================================================================================================
    
    equiltime = P.equiltime
-   nsnapshots = numpy.zeros(K, int)
+   nsnapshots = numpy.zeros((n_files, K), int)
    
    for nf, f in enumerate(fs):
    
@@ -281,12 +295,12 @@ def readDataGromacs(P):
          f.skip_lines   += equilsnapshots
    
          extract_states  = numpy.genfromtxt(f.filename, dtype=int, skiprows=f.skip_lines, skip_footer=1*bLenConsistency, usecols=1)
-         nsnapshots     += numpy.array(Counter(extract_states).values())
+         nsnapshots[nf] += numpy.array(Counter(extract_states).values())
    
       else:
          equilsnapshots  = int(equiltime/f.snap_size)
          f.skip_lines   += equilsnapshots
-         nsnapshots[nf] += unixlike.wcPy(f.filename) - f.skip_lines - 1*bLenConsistency
+         nsnapshots[nf,nf] += unixlike.wcPy(f.filename) - f.skip_lines - 1*bLenConsistency
    
       print "First %s ps (%s snapshots) will be discarded due to equilibration from file %s..." % (equiltime, equilsnapshots, f.filename)
    
@@ -294,49 +308,14 @@ def readDataGromacs(P):
    # Preliminaries IV: Load in equilibrated data.
    #===================================================================================================   
    
-   maxn  = max(nsnapshots)                                   # maximum number of the equilibrated snapshots from any state
+   maxn  = max(nsnapshots.sum(axis=0))                       # maximum number of the equilibrated snapshots from any state
    dhdlt = numpy.zeros([K,n_components,int(maxn)], float)    # dhdlt[k,n,t] is the derivative of energy component n with respect to state k of snapshot t
    u_klt = numpy.zeros([K,K,int(maxn)], numpy.float64)       # u_klt[k,m,t] is the reduced potential energy of snapshot t of state k evaluated at state m
-   
+
+   nsnapshots = numpy.concatenate((numpy.zeros([1, K], int), nsnapshots))   
    for nf, f in enumerate(fs):
+      nsnapshots_l = nsnapshots[nf]
+      nsnapshots_r = nsnapshots[:nf+2, :].sum(axis=0)
       f.iter_loadtxt(nf)
 
-   return nsnapshots, lv, dhdlt, u_klt
-
-#===================================================================================================
-# FUNCTIONS: This reads in just the temperature from the dhdl.xvg files
-#===================================================================================================
-
-def readTempGromacs(P):
-
-    datafile_tuple = P.datafile_directory, P.prefix, P.suffix
-
-    temperature = []
-    print "Reading temperature from all .xvg files..."
- 
-    # Cycles through all .xvg files (not currently sorted). Opens them, then
-    # gets the temperature from the file.
-    for filename in glob( '%s/%s*%s' % datafile_tuple ):
-        skip_lines = 0  # Number of lines from the top that are to be skipped.
-        with open(filename,'r') as infile:
-            for line in infile:
-                if line.startswith('@'):
-                    elements = unixlike.trPy(line).split()
-                    if "T" in elements:
-                        temperature.append(float(elements[4]))
-                skip_lines += 1
-
-    # If there were no temperatures in any of the files, use the default
-    if len(temperature) == 0:
-        print "Temperature not present in xvg files. Using %g K." % P.temperature
-        return P.temperature
-
-    # Check that all of the temperatures are the same. If not, script should
-    # not run.
-    if all(x==temperature[0] for x in temperature):
-        print "Temperature is %g K." % float(temperature[0])
-        return temperature[0]
-    else:
-        print "ERROR: Temperature is not the same in all .xvg files."
-        sys.exit(0)
-
+   return nsnapshots.sum(axis=0), lv, dhdlt, u_klt
