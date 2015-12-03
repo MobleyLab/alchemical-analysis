@@ -332,10 +332,7 @@ def readDataAmber(P):
 
     # To suppress unwanted calls in __main__.
     P.lv_names = ['']
-
     datafile_tuple = P.datafile_directory, P.prefix, P.suffix
-
-    # FIXME: relies on numerical file names
     filenames = glob.glob('%s/%s*%s' % datafile_tuple)
 
     if not len(filenames):
@@ -345,9 +342,6 @@ def readDataAmber(P):
 
     file_data = []
     dvdl_comps_all = defaultdict(list)
-    #mbar_all = {}
-
-    nsnapshots = []
 
     ncomp = len(DVDL_COMPS)
     global_have_mbar = True
@@ -391,14 +385,14 @@ def readDataAmber(P):
             nstlim, dt = secp.extract_section('Molecular dynamics:', '^$',
                                               ['nstlim', 'dt'])
 
-            # FIXME: check if temp0, dt, etc. are consistent between files
             T, = secp.extract_section('temperature regulation:', '^$', ['temp0'])
             P.temperature = T
 
             # FIXME: file may end just after "2. CONTROL DATA" so vars will
             #        be all None
 
-            # NOTE: some sections may not have been created
+            # NOTE: some sections may not exist in MDOUT when certain flags
+            #       are not set
             clambda, = secp.extract_section('^Free energy options:', '^$',
                                             ['clambda'], '^---')
 
@@ -438,10 +432,7 @@ def readDataAmber(P):
                 else:
                     mbar_nlambda = len(mbar_lambdas)
                     mbar_lambda_idx = mbar_lambdas.index(clambda_str)
-                    #mbar_data = []
 
-                    #for _ in range(mbar_nlambda):
-                    #    mbar_data.append([])
                     for _ in range(mbar_nlambda):
                         file_datum.mbar_energies.append([])
             else:
@@ -484,7 +475,6 @@ def readDataAmber(P):
                     E_ref = mbar[mbar_lambda_idx]
 
                     for lmbda, E in enumerate(mbar):
-                        #mbar_data[lmbda].append(E - E_ref)
                         file_datum.mbar_energies[lmbda].append(E - E_ref)
 
                 if 'DV/DL, AVERAGES OVER' in line:
@@ -543,33 +533,26 @@ def readDataAmber(P):
                   filename)
             continue
 
-        #if have_mbar:
-        #    if clambda not in mbar_all:
-        #        mbar_all[clambda] = []
-
-        #        for _ in range(mbar_nlambda):
-        #            mbar_all[clambda].append([])
-
-        #    for mbar, data in zip(mbar_all[clambda], mbar_data):
-        #        mbar.extend(data)
-
         file_data.append(file_datum)
         dvdl_comps_all[clambda] = [Enes.mean for Enes in dvdl_comp_data]
 
     # -- all file parsing done --
 
+
+    print('\nSorting input data by starting time and lambda')
+
     file_data.sort(key=lambda x: x.t0)
     file_data.sort(key=lambda x: x.clambda)
 
     dvdl_all = defaultdict(list)
+    mbar_all = {}
+
     t0_found = defaultdict(list)
     t0_uniq = defaultdict(set)
     dt_uniq = set()
     T_uniq = set()
-    mbar_all = {}
+    clambda_uniq = set()
 
-    # FIXME: dvdl_all and mbar_all do not need to be dicts anymore because
-    #        data is ordered now anyway
     for fd in file_data:
         clambda = fd.clambda
 
@@ -579,6 +562,7 @@ def readDataAmber(P):
 
         dt_uniq.add(fd.dt)
         T_uniq.add(fd.T)
+        clambda_uniq.add(clambda)
 
         if have_mbar:
             if clambda not in mbar_all:
@@ -590,18 +574,27 @@ def readDataAmber(P):
             for mbar, data in zip(mbar_all[clambda], fd.mbar_energies):
                 mbar.extend(data)
 
+    lvals = sorted(clambda_uniq)
+
     if not dvdl_all:
         raise SystemExit('No DV/DL data found')
 
+    if len(dvdl_all) != len(mbar_lambdas):
+        raise SystemExit('Gradient samples have been found for %i lambdas (%s) '
+                         'but MBAR data has %i (%s).' %
+                         (len(dvdl_all), ', '.join([str(l) for l in lvals]),
+                          len(mbar_lambdas),
+                          ', '.join([str(float(l)) for l in mbar_lambdas]) ) )
+
     for found, uniq in zip(t0_found.values(), t0_uniq.values() ):
         if len(found) != len(uniq):
-            raise SystemExit('Same starting time occurs multiple times')
+            raise SystemExit('Same starting time occurs multiple times.')
 
     if len(dt_uniq) != 1:
-        raise SystemExit('Not all files have the same time step (dt)')
+        raise SystemExit('Not all files have the same time step (dt).')
 
     if len(T_uniq) != 1:
-        raise SystemExit('Not all files have the same temperature')
+        raise SystemExit('Not all files have the same temperature (T).')
 
     if not global_have_mbar:
         if 'BAR' in P.methods:
@@ -612,13 +605,11 @@ def readDataAmber(P):
 
         print('\nWARNING: BAR/MBAR have been switched off.')
 
-    ave = []
     start_from = int(round(P.equiltime / (ntpr * float(dt))))
     print '\nSkipping first %d steps (= %f ps)\n' % (start_from, P.equiltime)
 
     # FIXME: compute maximum number of MBAR energy sections
-    lvals = sorted(dvdl_all)
-    K = len(dvdl_all)
+    K = len(lvals)
     nsnapshots = [len(e) - start_from for e in dvdl_all.values()]
     maxn = max(nsnapshots)
 
@@ -648,6 +639,8 @@ def readDataAmber(P):
 
             gfile.write('\n')
 
+    ave = []
+
     for i, clambda in enumerate(lvals):
         vals = dvdl_all[clambda][start_from:]
         ave.append(np.average(vals))
@@ -667,7 +660,7 @@ def readDataAmber(P):
     y0, y1 = _extrapol(lvals, ave, 'polyfit')
 
     if y0:
-        print('Note: adding missing lambda = 0.0: %f' % y0)
+        print('Note: extrapolating missing gradient for lambda = 0.0: %f' % y0)
 
         K += 1
         lvals.insert(0, 0.0)
@@ -675,16 +668,16 @@ def readDataAmber(P):
         ave.insert(0, y0)
 
         # we need a little bit of noise to get the statistics, otherwise
-        # covariance will be zero and error termination
+        # covariance will be zero and program will terminate with error
         frand = y0 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
         dhdlt = np.insert(dhdlt, 0, frand, 0)
 
     if y1:
-        print('Note: adding missing lambda = 1.0: %f' % y1)
+        print('Note: extrapolating missing gradient for lambda = 1.0: %f' % y1)
 
         K += 1
         lvals.append(1.0)
-        nsnapshots.append(maxn)#
+        nsnapshots.append(maxn)
         ave.append(y1)
 
         frand = y1 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
