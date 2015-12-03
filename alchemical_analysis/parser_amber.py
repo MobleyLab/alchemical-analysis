@@ -217,7 +217,7 @@ class OnlineAvVar(object):
         # self.M2 += delta * (val - self.mean)
 
 
-def process_mbar_lambdas(secp):
+def _process_mbar_lambdas(secp):
     """
     Extract the lambda points used to compute MBAR energies from
     AMBER MDOUT.
@@ -417,7 +417,7 @@ def readDataAmber(P):
 
             if have_mbar:
                 mbar_ndata = int(nstlim / mbar_ndata)
-                mbar_lambdas = process_mbar_lambdas(secp)
+                mbar_lambdas = _process_mbar_lambdas(secp)
                 clambda_str = '%6.4f' % clambda
 
                 # FIXME: case when lambda is contained in mbar_lambdas but
@@ -541,8 +541,8 @@ def readDataAmber(P):
 
     print('\nSorting input data by starting time and lambda')
 
-    file_data.sort(key=lambda x: x.t0)
-    file_data.sort(key=lambda x: x.clambda)
+    file_data.sort(key=lambda fd: fd.t0)
+    file_data.sort(key=lambda fd: fd.clambda)
 
     dvdl_all = defaultdict(list)
     mbar_all = {}
@@ -610,7 +610,11 @@ def readDataAmber(P):
 
     # FIXME: compute maximum number of MBAR energy sections
     K = len(lvals)
-    nsnapshots = [len(e) - start_from for e in dvdl_all.values()]
+    nsnapshots = []
+
+    for clambda in lvals:
+        nsnapshots.append(len(dvdl_all[clambda]) - start_from)
+
     maxn = max(nsnapshots)
 
     # AMBER has currently only one global lambda value, hence 2nd dim = 1
@@ -622,6 +626,7 @@ def readDataAmber(P):
     else:
         u_klt = None
 
+    # FIXME: make this a parser dependent option
     with open(os.path.join(P.output_directory, 'grads.dat'), 'w') as gfile:
         gfile.write('# gradients for lambdas: %s\n' %
                     ' '.join('%s' % l for l in lvals) )
@@ -642,14 +647,14 @@ def readDataAmber(P):
     ave = []
 
     for i, clambda in enumerate(lvals):
-        vals = dvdl_all[clambda][start_from:]
+        vals = dvdl_all[clambda][start_from:maxn]
         ave.append(np.average(vals))
 
         dhdlt[i][0][:len(vals)] = np.array(vals)
 
         if u_klt is not None:
             for j, ene in enumerate(mbar_all[clambda]):
-                enes = ene[start_from:]
+                enes = ene[start_from:maxn]
                 l_enes = len(enes)
                 u_klt[i][j][:l_enes] = enes
 
