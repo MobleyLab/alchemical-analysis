@@ -610,11 +610,7 @@ def readDataAmber(P):
 
     # FIXME: compute maximum number of MBAR energy sections
     K = len(lvals)
-    nsnapshots = []
-
-    for clambda in lvals:
-        nsnapshots.append(len(dvdl_all[clambda]) - start_from)
-
+    nsnapshots = [len(dvdl_all[clambda]) - start_from for clambda in lvals]
     maxn = max(nsnapshots)
 
     # AMBER has currently only one global lambda value, hence 2nd dim = 1
@@ -626,35 +622,17 @@ def readDataAmber(P):
     else:
         u_klt = None
 
-    # FIXME: make this a parser dependent option
-    with open(os.path.join(P.output_directory, 'grads.dat'), 'w') as gfile:
-        gfile.write('# gradients for lambdas: %s\n' %
-                    ' '.join('%s' % l for l in lvals) )
-
-        for i in range(maxn):
-            gfile.write('%f ' % (i * dt) )
-
-            for clambda in lvals:
-                try:
-                    val = dvdl_all[clambda][i]
-                except IndexError:
-                    val = 0.0
-
-                gfile.write('%f ' % val)
-
-            gfile.write('\n')
-
     ave = []
 
     for i, clambda in enumerate(lvals):
-        vals = dvdl_all[clambda][start_from:maxn]
+        vals = dvdl_all[clambda][start_from:]
         ave.append(np.average(vals))
 
         dhdlt[i][0][:len(vals)] = np.array(vals)
 
         if u_klt is not None:
             for j, ene in enumerate(mbar_all[clambda]):
-                enes = ene[start_from:maxn]
+                enes = ene[start_from:]
                 l_enes = len(enes)
                 u_klt[i][j][:l_enes] = enes
 
@@ -698,5 +676,24 @@ def readDataAmber(P):
     _print_comps(dvdl_comps_all, ncomp)
 
     print('\n\n')
+
+    # FIXME: make this a parser dependent option
+    with open(os.path.join(P.output_directory, 'grads.dat'), 'w') as gfile:
+        gfile.write('# gradients for lambdas: %s\n' %
+                    ' '.join('%s' % l for l in lvals) )
+
+        for i in range(maxn):
+            gfile.write('%f ' % (i * dt) )
+
+            for clambda in lvals:
+                try:
+                    val = dvdl_all[clambda][i]
+                except IndexError:
+                    val = 0.0
+
+                gfile.write('%f ' % val)
+
+            gfile.write('\n')
+
 
     return (np.array(nsnapshots), np.array(lvals).reshape(K, 1), dhdlt, u_klt)
