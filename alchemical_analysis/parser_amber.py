@@ -152,7 +152,7 @@ class SectionParser(object):
 
                 # FIXME: assumes fields are only integers or floats
                 if '*' in value:            # Fortran format overflow
-                    result.append(None)
+                    result.append(None) #float('Inf') )
                 # NOTE: check if this is a sufficient test for int
                 elif '.' not in value and re.search(r'\d+', value):
                     result.append(int(value))
@@ -331,7 +331,7 @@ def readDataAmber(P):
     """
 
     # To suppress unwanted calls in __main__.
-    P.lv_names = ['']
+    P.lv_names = [r'all']
     datafile_tuple = P.datafile_directory, P.prefix, P.suffix
     filenames = glob.glob('%s/%s*%s' % datafile_tuple)
 
