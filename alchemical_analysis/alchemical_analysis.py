@@ -116,11 +116,6 @@ def getMethods(string):
 
 def checkUnitsAndMore(units):
 
-   # If using Gromacs we can read in the temperature directly from dhdl.xvg
-   if P.software.title() == 'Gromacs':
-      import parser_gromacs
-      P.temperature = parser_gromacs.readTempGromacs(P)
-
    kB = 1.3806488*6.02214129/1000.0 # Boltzmann's constant (kJ/mol/K).
    beta = 1./(kB*P.temperature)
 
@@ -544,13 +539,17 @@ def totalEnergies():
    endvdw = 0
    for lv_n in ['vdw','coul','fep']:
       if lv_n in P.lv_names:
-         ndx_char = P.lv_names.index(lv_n)
-         lv_char = lv[:, ndx_char]
+         _ndx_char = P.lv_names.index(lv_n)
+         lv_char = lv[:, _ndx_char]
          if not (lv_char == lv_char[0]).all():
             if lv_n == 'vdw':
                 endvdw = (lv_char != 1).sum()
+            if lv_n == 'fep':
+                endcoul = (lv_char != 1).sum()
+                ndx_char = P.lv_names.index(lv_n)
             if lv_n == 'coul':
                 endcoul = (lv_char != 1).sum()
+                ndx_char = P.lv_names.index(lv_n)
 
    # Figure out if coulomb section comes before or after vdw section
    if endcoul > endvdw:
