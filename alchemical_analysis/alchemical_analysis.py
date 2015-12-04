@@ -27,6 +27,7 @@
 ## Not a built-in module. Will be called from main, whenever needed. ##
 ## import pymbar      Multistate Bennett Acceptance Ratio estimator. ##
 
+import sys
 import numpy
 import pickle                       # for full-precision data storage
 from   optparse import OptionParser # for parsing command-line options
@@ -70,7 +71,7 @@ def getMethods(string):
 
    all_methods = ['TI','TI-CUBIC','DEXP','IEXP','GINS','GDEL','BAR','UBAR','RBAR','MBAR']
    methods     = ['TI','TI-CUBIC','DEXP','IEXP','BAR','MBAR']
-   if (numpy.array(['Sire', 'Amber']) == P.software.title()).any():
+   if (numpy.array(['Sire']) == P.software.title()).any():
       methods = ['TI','TI-CUBIC']
    if not string:
       return methods
@@ -656,6 +657,7 @@ def totalEnergies():
       printLine('%9s:  ' % segments[-1], str_dat, dFs[-1], ddFs[-1])
    # Store results.
    outfile = open(os.path.join(P.output_directory, 'results.txt'), 'w')
+   outfile.write('# Command line was: %s\n\n' % ' '.join(sys.argv) )
    outfile.writelines(outtext)
    outfile.close()
 
@@ -1143,6 +1145,7 @@ def main():
    # Timing.
    stime = ttt_time.time()
    print "Started on %s" % ttt_time.asctime()
+   print 'Command line was: %s\n' % ' '.join(sys.argv)
 
    # Simulation profile P (to be stored in 'results.pickle') will amass information about the simulation.
    P = parser.parse_args()[0]
@@ -1166,7 +1169,7 @@ def main():
       nsnapshots, lv, dhdlt, u_klt = parser_sire.readDataSire(P)
    elif P.software.title() == 'Amber':
       import parser_amber
-      lv, ave_dhdl, std_dhdl = parser_amber.readDataAmber(P)
+      nsnapshots, lv, dhdlt, u_klt = parser_amber.readDataAmber(P)
    elif P.software.title() == 'Desmond':
        import parser_desmond
        #NML: Desmond FEP jobs will always output with these names
@@ -1188,7 +1191,7 @@ def main():
       #### u_klt[k,m,t] is the reduced potential energy of snapshot t of state k evaluated at state m
 
    K, n_components = lv.shape
-   if (numpy.array(['Sire','Gromacs']) == P.software.title()).any():
+   if (numpy.array(['Sire','Gromacs', 'Amber']) == P.software.title()).any():
       dhdl, N_k, u_kln = uncorrelate(sta=numpy.zeros(K, int), fin=nsnapshots, do_dhdl=True)
    elif P.software.title() == 'Desmond':
       N_k, u_kln = uncorrelate(sta=numpy.zeros(K, int), fin=nsnapshots, do_dhdl=False)
@@ -1223,3 +1226,4 @@ if __name__ == "__main__":
 #===================================================================================================
 #                                   End of the script
 #===================================================================================================
+

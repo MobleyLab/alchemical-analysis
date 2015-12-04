@@ -1,0 +1,101 @@
+Started on Tue Sep 29 12:19:34 2015
+Command line was: ../../alchemical_analysis//alchemical_analysis.py -a AMBER -d data -p [01].*/ti00[2-9] -q out -o . -r 5 -u kcal -s 0 -g -w
+
+Loading in data from data/0.9/ti003.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.9/ti002.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.4/ti003.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.4/ti002.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.2/ti003.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.2/ti002.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.5/ti003.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.5/ti002.out...  50 data points, 10 DV/DL averages
+Loading in data from data/1.0/ti003.out...  50 data points, 10 DV/DL averages
+Loading in data from data/1.0/ti002.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.8/ti003.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.8/ti002.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.0/ti003.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.0/ti002.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.3/ti003.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.3/ti002.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.1/ti003.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.1/ti002.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.6/ti003.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.6/ti002.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.7/ti003.out...  50 data points, 10 DV/DL averages
+Loading in data from data/0.7/ti002.out...  50 data points, 10 DV/DL averages
+
+The DV/DL components from gradients of _every_single_ step (kcal/mol):
+Lambda       BOND     ANGLE     DIHED    1-4 NB   1-4 EEL   VDWAALS     EELEC RESTRAINT
+0.00000     0.000     0.000     0.000     0.000    -3.817     0.000    14.887     0.000
+0.10000     0.000     0.000     0.000     0.000    -3.818     0.000    11.867     0.000
+0.20000     0.000     0.000     0.000     0.000    -3.819     0.000     9.477     0.000
+0.30000     0.000     0.000     0.000     0.000    -3.821     0.000     7.511     0.000
+0.40000     0.000     0.000     0.000     0.000    -3.821     0.000     5.779     0.000
+0.50000     0.000     0.000     0.000     0.000    -3.823     0.000     4.332     0.000
+0.60000     0.000     0.000     0.000     0.000    -3.823     0.000     3.241     0.000
+0.70000     0.000     0.000     0.000     0.000    -3.824     0.000     2.191     0.000
+0.80000     0.000     0.000     0.000     0.000    -3.826     0.000     1.392     0.000
+0.90000     0.000     0.000     0.000     0.000    -3.828     0.000     0.693     0.000
+1.00000     0.000     0.000     0.000     0.000    -3.830     0.000    -0.006     0.000
+   TI =     0.000     0.000     0.000     0.000    -3.823     0.000     5.392     0.000 
+
+
+
+
+Number of correlated and uncorrelated samples:
+
+ State            N          N_k        N/N_k
+
+     0          100           69         1.44
+     1          100          100         1.00
+     2          100          100         1.00
+     3          100           92         1.08
+     4          100          100         1.00
+     5          100          100         1.00
+     6          100          100         1.00
+     7          100          100         1.00
+     8          100           80         1.25
+     9          100          100         1.00
+    10          100          100         1.00
+
+Estimating the free energy change with MBAR...
+The overlap matrix is...
+  0.13   0.16   0.14   0.11   0.10   0.09   0.07   0.06   0.04   0.05   0.04 
+  0.11   0.15   0.13   0.11   0.10   0.09   0.08   0.07   0.05   0.06   0.05 
+  0.10   0.13   0.12   0.10   0.10   0.09   0.09   0.08   0.06   0.07   0.06 
+  0.08   0.12   0.11   0.10   0.10   0.10   0.09   0.09   0.07   0.08   0.07 
+  0.07   0.10   0.10   0.09   0.10   0.10   0.10   0.09   0.07   0.09   0.09 
+  0.06   0.09   0.09   0.09   0.10   0.10   0.10   0.10   0.08   0.10   0.10 
+  0.05   0.08   0.09   0.08   0.10   0.10   0.10   0.10   0.08   0.11   0.11 
+  0.04   0.07   0.08   0.08   0.09   0.10   0.10   0.11   0.09   0.11   0.12 
+  0.04   0.06   0.07   0.08   0.09   0.10   0.11   0.11   0.09   0.12   0.13 
+  0.03   0.06   0.07   0.07   0.09   0.10   0.11   0.11   0.10   0.13   0.13 
+  0.03   0.05   0.06   0.07   0.09   0.10   0.11   0.12   0.10   0.13   0.14 
+
+For a nicer figure look at 'O_MBAR.pdf'
+Estimating the free energy change with TI, TI-CUBIC, DEXP, IEXP, BAR...
+------------ ------------------------- ------------------------- ------------------------- ------------------------- ------------------------- ------------------------- 
+   States             TI (kcal/mol)       TI-CUBIC (kcal/mol)           DEXP (kcal/mol)           IEXP (kcal/mol)            BAR (kcal/mol)           MBAR (kcal/mol)    
+------------ ------------------------- ------------------------- ------------------------- ------------------------- ------------------------- ------------------------- 
+   0 -- 1         0.92216  +-  0.03143      0.92238  +-  0.03348      1.03220  +-  0.04968      0.81063  +-  0.04132      0.90214  +-  0.03131      0.58300  +-  0.02639 
+   1 -- 2         0.65062  +-  0.02558      0.64236  +-  0.02876      0.74891  +-  0.03752      0.54422  +-  0.03354      0.65018  +-  0.02593      0.46268  +-  0.02235 
+   2 -- 3         0.45650  +-  0.02518      0.45060  +-  0.02882      0.50128  +-  0.03211      0.41768  +-  0.03891      0.45810  +-  0.02508      0.35035  +-  0.01930 
+   3 -- 4         0.31230  +-  0.02436      0.31917  +-  0.02786      0.36396  +-  0.03773      0.25229  +-  0.03024      0.30986  +-  0.02429      0.24769  +-  0.01700 
+   4 -- 5         0.12945  +-  0.01970      0.12718  +-  0.02269      0.21592  +-  0.02995      0.03767  +-  0.02524      0.12938  +-  0.01995      0.15547  +-  0.01525 
+   5 -- 6        -0.03098  +-  0.01786     -0.03996  +-  0.02054      0.01207  +-  0.02517     -0.07406  +-  0.02532     -0.03100  +-  0.01794      0.07366  +-  0.01391 
+   6 -- 7        -0.11007  +-  0.01712     -0.11255  +-  0.01966     -0.09942  +-  0.02487     -0.12242  +-  0.02362     -0.11013  +-  0.01708      0.00167  +-  0.01289 
+   7 -- 8        -0.16404  +-  0.01693     -0.15770  +-  0.01936     -0.14390  +-  0.02261     -0.18495  +-  0.02500     -0.16185  +-  0.01685     -0.06145  +-  0.01217 
+   8 -- 9        -0.26313  +-  0.01554     -0.26342  +-  0.01763     -0.20434  +-  0.02415     -0.32439  +-  0.01875     -0.26974  +-  0.01528     -0.11683  +-  0.01174 
+   9 -- 10       -0.35921  +-  0.01379     -0.36589  +-  0.01533     -0.33866  +-  0.01894     -0.37887  +-  0.01996     -0.35919  +-  0.01377     -0.16564  +-  0.01160 
+------------ ------------------------- ------------------------- ------------------------- ------------------------- ------------------------- ------------------------- 
+    TOTAL:        1.54360  +-  0.09204      1.52217  +-  0.09307      2.08802  +-  0.09967      0.97780  +-  0.09204      1.51775  +-  0.06775      1.53059  +-  0.14154 
+
+************************************************************************************************************************************************************************
+IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII   The above table has been stored in   IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII             ./results.txt              IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII     while the full-precision data      IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII (along with the simulation profile) in IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII            ./results.pickle            IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+************************************************************************************************************************************************************************
+Plotting the free energy breakdown figure...
+Plotting the TI figure...

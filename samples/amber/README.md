@@ -1,22 +1,12 @@
 An implementation of the recommended practices for analyzing alchemical free energy calculations, as described in Klimovich et al., JCAMD 29:397-411 (2015).
 
-There are five subdirectories in `data/` named `ti00[1-5]`, each containing `ti00[1-5].out.bz2` (which are copies of the `ti001.out`, with `clambda` edited then compressed with bzip2 )
-and `ti00[1-5].en` (copies of `ti001.en`).
-
-ti00[1-5].out.bz2 files are compressed for space reasons in the
-repository (each about 6 MB before compression and 1 MB after).  They
-must be decompressed by running 'bunzip data/*.bz2'.
-
-The output files were obtained by executing the script with the following options:
-
-`python ../alchemical_analysis.py -a AMBER -d data/ -p ti*/ti -q out -u kcal -r 8 -v`
+There are 11 subdirectories in `data/` each containing `ti00[23].out`.  The output files were created with the command in run.sh.
 
 The argument that follows the `-a` flag should not necessarily be in all capitals; any combination of lower- and upper-case letters is OK.
+
 `data` is the path to the directory with the data files.
 
 The `-p` flag seeks for the prefix of the data file. If the data files are in multiple subdirectories,
 the name of those subdirectories (in a form of the glob pattern) should preface the file prefix (like `ti*/ti` above).
 
-Whenever the `-v` flag (verbose option) is used, the averages and RMS fluctuations computed for each quantity present in the MDEN file (`ti00X.en` in our example; no requirement for it to bear the same prefix as the MDOUT file) will be computed and displayed.
-
-The dataset contained in the `data/` directory was generated from the files obtained from a 21-window simulation of the vdw gas-phase methanol-to-ethane transformation run by Hannes Loeffler at STFC, UK.
+The dataset contained in the `data/` directory was generated from the files obtained from a 11-window simulation of the electrostatic solution-phase methanol-to-methane transformation run by Hannes Loeffler at STFC, UK.
