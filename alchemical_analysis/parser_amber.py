@@ -152,7 +152,7 @@ class SectionParser(object):
 
                 # FIXME: assumes fields are only integers or floats
                 if '*' in value:            # Fortran format overflow
-                    result.append(None) #float('Inf') )
+                    result.append(float('Inf') )
                 # NOTE: check if this is a sufficient test for int
                 elif '.' not in value and re.search(r'\d+', value):
                     result.append(int(value))
@@ -423,20 +423,17 @@ def readDataAmber(P):
                 # FIXME: case when lambda is contained in mbar_lambdas but
                 #        mbar_lambdas has additional entries
                 if clambda_str not in mbar_lambdas:
-                    if global_have_mbar:
-                        print('\nWARNING: lambda %s not contained in set of '
-                              'MBAR lambdas: %s\nNot using MBAR.' %
-                              (clambda_str, ', '.join(mbar_lambdas)))
+                    print('\nWARNING: lambda %s not contained in set of '
+                          'MBAR lambdas: %s\nNot using MBAR.' %
+                          (clambda_str, ', '.join(mbar_lambdas)))
 
-                    global_have_mbar = have_mbar = False
+                    have_mbar = False
                 else:
                     mbar_nlambda = len(mbar_lambdas)
                     mbar_lambda_idx = mbar_lambdas.index(clambda_str)
 
                     for _ in range(mbar_nlambda):
                         file_datum.mbar_energies.append([])
-            else:
-                global_have_mbar = False
 
             if not secp.skip_after('^   3.  ATOMIC '):
                 print('WARNING: no ATOMIC found, ignoring file\n')
@@ -458,23 +455,20 @@ def readDataAmber(P):
             old_nstep = -1
             old_comp_nstep = -1
             incomplete = False
+            high_E_cnt = 0
 
             for line in secp:
                 if have_mbar and line.startswith('MBAR Energy analysis'):
                     mbar = secp.extract_section('^MBAR', '^ ---', mbar_lambdas,
                                                 extra=line)
 
-                    if not all(mbar):
-                        if global_have_mbar:
-                            print('\nWARNING: some MBAR energies cannot be '
-                                  'read. Not using MBAR.')
-
-                        global_have_mbar = have_mbar = False
-                        continue
-
                     E_ref = mbar[mbar_lambda_idx]
 
                     for lmbda, E in enumerate(mbar):
+                        # NOTE: should be ok for pymbar because exp(-u)
+                        if E > 0.0:
+                            high_E_cnt += 1
+
                         file_datum.mbar_energies[lmbda].append(E - E_ref)
 
                 if 'DV/DL, AVERAGES OVER' in line:
@@ -519,6 +513,13 @@ def readDataAmber(P):
                 if line == '   5.  TIMINGS\n':
                     finished = True
                     break
+
+
+            if high_E_cnt:
+                print('\nWARNING: %i MBAR energ%s very high'
+                      ' or cannot be read.' %
+                      (high_E_cnt, 'ies are' if high_E_cnt > 1 else 'y is') )
+
 
         # -- end of parsing current file --
 
@@ -596,7 +597,7 @@ def readDataAmber(P):
     if len(T_uniq) != 1:
         raise SystemExit('Not all files have the same temperature (T).')
 
-    if not global_have_mbar:
+    if not have_mbar:
         if 'BAR' in P.methods:
             P.methods.remove('BAR')
 
@@ -616,7 +617,7 @@ def readDataAmber(P):
     # AMBER has currently only one global lambda value, hence 2nd dim = 1
     dhdlt = np.zeros([K, 1, maxn], np.float64)
 
-    if have_mbar and global_have_mbar:
+    if have_mbar:
         assert K == len(mbar_all)
         u_klt = np.zeros([K, K, maxn], np.float64)
     else:
@@ -630,14 +631,15 @@ def readDataAmber(P):
 
         dhdlt[i][0][:len(vals)] = np.array(vals)
 
-        if u_klt is not None:
+        if have_mbar:
             for j, ene in enumerate(mbar_all[clambda]):
                 enes = ene[start_from:]
                 l_enes = len(enes)
                 u_klt[i][j][:l_enes] = enes
 
-    if u_klt is not None:
+    if have_mbar:
         u_klt = P.beta * u_klt
+
 
     # sander does not sample end-points...
     y0, y1 = _extrapol(lvals, ave, 'polyfit')
@@ -675,7 +677,7 @@ def readDataAmber(P):
 
     _print_comps(dvdl_comps_all, ncomp)
 
-    print('\n\n')
+    print('\n')
 
     # FIXME: make this a parser dependent option
     with open(os.path.join(P.output_directory, 'grads.dat'), 'w') as gfile:
