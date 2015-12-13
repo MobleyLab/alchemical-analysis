@@ -344,7 +344,6 @@ def readDataAmber(P):
     dvdl_comps_all = defaultdict(list)
 
     ncomp = len(DVDL_COMPS)
-    global_have_mbar = True
     pmemd = False
 
     for filename in filenames:
@@ -412,7 +411,7 @@ def readDataAmber(P):
             if not pmemd:
                 have_mbar = False
 
-            if 'BAR' not in P.methods or 'MBAR' not in P.methods:
+            if 'BAR' not in P.methods and 'MBAR' not in P.methods:
                 have_mbar = False
 
             if have_mbar:
@@ -580,7 +579,15 @@ def readDataAmber(P):
     if not dvdl_all:
         raise SystemExit('No DV/DL data found')
 
-    if len(dvdl_all) != len(mbar_lambdas):
+    if not have_mbar:
+        if 'BAR' in P.methods:
+            P.methods.remove('BAR')
+
+        if 'MBAR' in P.methods:
+            P.methods.remove('MBAR')
+
+        print('\nWARNING: BAR/MBAR have been switched off.')
+    elif len(dvdl_all) != len(mbar_lambdas):
         raise SystemExit('Gradient samples have been found for %i lambdas (%s) '
                          'but MBAR data has %i (%s).' %
                          (len(dvdl_all), ', '.join([str(l) for l in lvals]),
@@ -596,15 +603,6 @@ def readDataAmber(P):
 
     if len(T_uniq) != 1:
         raise SystemExit('Not all files have the same temperature (T).')
-
-    if not have_mbar:
-        if 'BAR' in P.methods:
-            P.methods.remove('BAR')
-
-        if 'MBAR' in P.methods:
-            P.methods.remove('MBAR')
-
-        print('\nWARNING: BAR/MBAR have been switched off.')
 
     start_from = int(round(P.equiltime / (ntpr * float(dt))))
     print '\nSkipping first %d steps (= %f ps)\n' % (start_from, P.equiltime)
