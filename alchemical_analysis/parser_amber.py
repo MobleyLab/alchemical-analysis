@@ -377,25 +377,31 @@ def readDataAmber(P):
                 print('WARNING: no CONTROL DATA found, ignoring file')
                 continue
 
-            # NOTE: sections must be searched for in order!
+            # NOTE: sections must be searched for in order
+            #       some sections may not exist in MDOUT when certain flags
+            #       are not set, e.g. MBAR only available if ifmbar>0
             ntpr, = secp.extract_section('^Nature and format of output:', '^$',
                                          ['ntpr'])
 
             nstlim, dt = secp.extract_section('Molecular dynamics:', '^$',
                                               ['nstlim', 'dt'])
 
-            T, = secp.extract_section('temperature regulation:', '^$', ['temp0'])
+            T, = secp.extract_section('temperature regulation:', '^$',
+                                     ['temp0'])
+
+            # FIXME: is it reasonable to support non-constT?
+            #        probably just for BAR related methods
+            if not T:
+                raise SystemExit('Non-constant temperature MD not currently '
+                                 'supported')
+
             P.temperature = T
 
-            # FIXME: file may end just after "2. CONTROL DATA" so vars will
-            #        be all None
-
-            # NOTE: some sections may not exist in MDOUT when certain flags
-            #       are not set
             clambda, = secp.extract_section('^Free energy options:', '^$',
                                             ['clambda'], '^---')
 
             if clambda is None:
+                print '>>>', clambda
                 print('WARNING: no free energy section found, ignoring file')
                 continue
 
@@ -407,10 +413,11 @@ def readDataAmber(P):
                                                          '^---')
 
             # sander is just too cumbersome with MBAR, e.g. terminator is not
-            # '^---', no end-points, etc
+            # '^---', no end-states, etc
             if not pmemd:
                 have_mbar = False
 
+            # FIXME: what other methods depend on MBAR data?
             if 'BAR' not in P.methods and 'MBAR' not in P.methods:
                 have_mbar = False
 
@@ -419,8 +426,6 @@ def readDataAmber(P):
                 mbar_lambdas = _process_mbar_lambdas(secp)
                 clambda_str = '%6.4f' % clambda
 
-                # FIXME: case when lambda is contained in mbar_lambdas but
-                #        mbar_lambdas has additional entries
                 if clambda_str not in mbar_lambdas:
                     print('\nWARNING: lambda %s not contained in set of '
                           'MBAR lambdas: %s\nNot using MBAR.' %
@@ -435,13 +440,13 @@ def readDataAmber(P):
                         file_datum.mbar_energies.append([])
 
             if not secp.skip_after('^   3.  ATOMIC '):
-                print('WARNING: no ATOMIC found, ignoring file\n')
+                print('WARNING: no ATOMIC section found, ignoring file\n')
                 continue
 
             t0, = secp.extract_section('^ begin', '^$', ['coords'])
 
             if not secp.skip_after('^   4.  RESULTS'):
-                print('WARNING: no RESULTS found, ignoring file\n')
+                print('WARNING: no RESULTS section found, ignoring file\n')
                 continue
 
             file_datum.clambda = clambda
@@ -586,7 +591,7 @@ def readDataAmber(P):
         if 'MBAR' in P.methods:
             P.methods.remove('MBAR')
 
-        print('\nWARNING: BAR/MBAR have been switched off.')
+        print('\nNote: BAR/MBAR results are not computed.')
     elif len(dvdl_all) != len(mbar_lambdas):
         raise SystemExit('Gradient samples have been found for %i lambdas (%s) '
                          'but MBAR data has %i (%s).' %
