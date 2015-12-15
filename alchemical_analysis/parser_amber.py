@@ -469,6 +469,10 @@ def readDataAmber(P):
                     mbar = secp.extract_section('^MBAR', '^ ---', mbar_lambdas,
                                                 extra=line)
 
+                    if not all(mbar):
+                        incomplete = True
+                        continue
+
                     E_ref = mbar[mbar_lambda_idx]
 
                     for lmbda, E in enumerate(mbar):
@@ -533,7 +537,7 @@ def readDataAmber(P):
         print('%i data points, %i DV/DL averages' % (nensec, nenav))
 
         if not finished:
-            print('WARNING: prematurely terminated run\n')
+            print('WARNING: prematurely terminated run')
             continue
 
         if not nensec:
