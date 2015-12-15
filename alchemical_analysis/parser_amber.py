@@ -1,15 +1,17 @@
 """
-This is the AMBER parser for Alchemical Analysis.
+This is the AMBER parser for the Alchemical Analysis tool.
 
 The code can handle both sander and pmemd output.  TI gradients will be read
-from the instantaneous DV/DL entries at every ntpr from the MDOUT file.  MBAR
-values are collected too but assumed to be occuring at the same frequency as
-the energy output (that's how it is done in GROMACS).  BAR/MBAR will be
-switched off when the current lambda is not in the set of MBAR lambdas and
-when the code detects an overflow (value is all '*') in the energy output.
-MBAR is currently switched off for sander output because sander can't sample
-the end-points and the way MBAR lambdas are handled.  Component gradients are
-collected from the average outputs.  Gzip compression is supported too.
+from the instantaneous DV/DL entries in the MDOUT file (the MDEN file is not
+used) which is written every ntpr step.  MBAR values are collected but assumed
+to be occuring at the same frequency as the DV/DL output (bar_intervall=ntpr).
+BAR/MBAR will be switched off when the current lambda is not in the set of MBAR
+lambdas.  MBAR is currently switched off also for sander output because sander
+can't sample the end-points.  Component gradients are collected from the
+average outputs (ntave).  GZIP/BZIP2 compression is supported.
+
+Relevant namelist variables in MDIN: ntpr, ntave, ifmbar and bar*,
+do NOT set t as the code depends on a correctly set begin time
 """
 
 ######################################################################
@@ -51,8 +53,8 @@ _FP_RE = r'[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?'
 _RND_SCALE = 1e-3
 _RND_SCALE_HALF = _RND_SCALE / 2.0
 _MAGIC_CMPR = {
-    '\x1f\x8b\x08': 'gz',
-    '\x42\x5a\x68': 'bz2',
+    'gz': '\x1f\x8b\x08',
+    'bz2': '\x42\x5a\x68',
 }
 
 
@@ -77,6 +79,16 @@ def _pre_gen(it, first):
         yield it.next()
 
 
+def get_magic(filename):
+    """Determine the magic number of a file."""
+
+    # FIXME: check for endianess
+    with open(filename, 'rb') as f:
+        magic = f.read(3)
+
+    return magic
+
+
 class SectionParser(object):
     """
     A simple parser to extract data values from sections.
@@ -86,12 +98,12 @@ class SectionParser(object):
         self.filename = filename
 
         ext = os.path.splitext(self.filename)[1]
+        magic = get_magic(filename)
 
-        # FIXME: check for magic instead?
-        if (ext == '.gz'):
+        if (ext == '.gz' or magic == _MAGIC_CMPR['gz']):
             import gzip
             open_it = gzip.GzipFile
-        elif (ext == '.bz2'):
+        elif (ext == '.bz2' or magic == _MAGIC_CMPR['bz2']):
             import bz2
             open_it = bz2.BZ2File
         else:
@@ -333,6 +345,8 @@ def readDataAmber(P):
     # To suppress unwanted calls in __main__.
     P.lv_names = [r'all']
     datafile_tuple = P.datafile_directory, P.prefix, P.suffix
+
+    # FIXME: this should happen in the main code
     filenames = glob.glob('%s/%s*%s' % datafile_tuple)
 
     if not len(filenames):
