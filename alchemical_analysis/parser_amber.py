@@ -107,6 +107,21 @@ class SectionParser(object):
         self.lineno = 0
         self.last_pos = 0
 
+
+    def skip_lines(self, nlines):
+        """Skip a number of files."""
+
+        lineno = 0
+
+        for line in self:
+            lineno += 1
+
+            if lineno > nlines:
+                return line
+
+        return None
+
+
     def skip_after(self, pattern):
         """Skip until after a line that matches pattern."""
 
@@ -325,6 +340,16 @@ def _print_comps(dvdl_comps_all, ncomp):
         print(' %8.3f' % np.trapz(y_ene, x_ene)),
 
 
+def any_none(sequence):
+    """Check if any element of a sequence is None."""
+
+    for element in sequence:
+        if element is None:
+            return True
+
+    return False
+
+
 def readDataAmber(P):
     """
     Parse free energy gradients and MBAR data from AMBER MDOUT file based on
@@ -353,25 +378,19 @@ def readDataAmber(P):
         print('Loading in data from %s... ' % filename),
 
         file_datum = FEData()
-
-        in_comps = False
         finished = False
-
-        dvdl_data = []
         dvdl_comp_data = []
 
         for _ in DVDL_COMPS:
             dvdl_comp_data.append(OnlineAvVar())
 
         with SectionParser(filename) as secp:
-            lineno = 0
-            line = ''
+            line = secp.skip_lines(5)
 
-            for line in secp:
-                lineno += 1
-
-                if lineno > 5:
-                    break
+            if not line:
+                print('WARNING: file does not contain any useful data, '
+                       'ignoring file')
+                continue
 
             if 'PMEMD' in line:
                 pmemd = True
@@ -404,7 +423,6 @@ def readDataAmber(P):
                                             ['clambda'], '^---')
 
             if clambda is None:
-                print '>>>', clambda
                 print('WARNING: no free energy section found, ignoring file')
                 continue
 
@@ -461,16 +479,16 @@ def readDataAmber(P):
             nenav = 0
             old_nstep = -1
             old_comp_nstep = -1
-            incomplete = False
             high_E_cnt = 0
+
+            in_comps = False
 
             for line in secp:
                 if have_mbar and line.startswith('MBAR Energy analysis'):
                     mbar = secp.extract_section('^MBAR', '^ ---', mbar_lambdas,
                                                 extra=line)
 
-                    if not all(mbar):
-                        incomplete = True
+                    if any_none(mbar):
                         continue
 
                     E_ref = mbar[mbar_lambda_idx]
@@ -491,18 +509,13 @@ def readDataAmber(P):
                                                       ['NSTEP'] + DVDL_COMPS,
                                                       extra=line)
 
-                        for res in result:
-                            if res is None:
-                                incomplete = True
-
-                        if result[0] != old_comp_nstep and not incomplete:
+                        if result[0] != old_comp_nstep and not any_none(result):
                             for i, E in enumerate(DVDL_COMPS):
                                 dvdl_comp_data[i].accumulate(
                                     float(result[i+1]))
 
                             nenav += 1
                             old_comp_nstep = result[0]
-                            incomplete = False
 
                         in_comps = False
                     else:
@@ -510,16 +523,11 @@ def readDataAmber(P):
                                                            ['NSTEP', 'DV/DL'],
                                                            extra=line)
 
-                        for res in nstep, dvdl:
-                            if res is None:
-                                incomplete = True
-
-                        if nstep != old_nstep and not incomplete:
-                            dvdl_data.append(dvdl)
+                        if nstep != old_nstep and dvdl is not None \
+                            and nstep is not None:
                             file_datum.gradients.append(dvdl)
                             nensec += 1
                             old_nstep = nstep
-                            incomplete = False
 
                 if line == '   5.  TIMINGS\n':
                     finished = True
@@ -617,7 +625,7 @@ def readDataAmber(P):
         raise SystemExit('Not all files have the same temperature (T).')
 
     start_from = int(round(P.equiltime / (ntpr * float(dt))))
-    print '\nSkipping first %d steps (= %f ps)\n' % (start_from, P.equiltime)
+    print('\nSkipping first %d steps (= %f ps)\n' % (start_from, P.equiltime))
 
     # FIXME: compute maximum number of MBAR energy sections
     K = len(lvals)
