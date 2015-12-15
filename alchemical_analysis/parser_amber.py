@@ -52,9 +52,10 @@ DVDL_COMPS = ['BOND', 'ANGLE', 'DIHED', '1-4 NB', '1-4 EEL', 'VDWAALS',
 _FP_RE = r'[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?'
 _RND_SCALE = 1e-3
 _RND_SCALE_HALF = _RND_SCALE / 2.0
+
 _MAGIC_CMPR = {
-    'gz': '\x1f\x8b\x08',
-    'bz2': '\x42\x5a\x68',
+    '\x1f\x8b\x08': ('gzip', 'GzipFile'),  # last byte is compression method
+    '\x42\x5a\x68': ('bz2', 'BZ2File')
 }
 
 
@@ -79,16 +80,6 @@ def _pre_gen(it, first):
         yield it.next()
 
 
-def get_magic(filename):
-    """Determine the magic number of a file."""
-
-    # FIXME: check for endianess
-    with open(filename, 'rb') as f:
-        magic = f.read(3)
-
-    return magic
-
-
 class SectionParser(object):
     """
     A simple parser to extract data values from sections.
@@ -96,18 +87,16 @@ class SectionParser(object):
 
     def __init__(self, filename):
         self.filename = filename
+        
+        with open(filename, 'rb') as f:
+            magic = f.read(3)   # NOTE: works because all 3-byte headers
 
-        ext = os.path.splitext(self.filename)[1]
-        magic = get_magic(filename)
-
-        if (ext == '.gz' or magic == _MAGIC_CMPR['gz']):
-            import gzip
-            open_it = gzip.GzipFile
-        elif (ext == '.bz2' or magic == _MAGIC_CMPR['bz2']):
-            import bz2
-            open_it = bz2.BZ2File
-        else:
+        try:
+            method = _MAGIC_CMPR[magic]
+        except KeyError:
             open_it = open
+        else:
+            open_it = getattr(__import__(method[0]), method[1])
 
         try:
             self.fileh = open_it(self.filename, 'rb')
