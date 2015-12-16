@@ -516,8 +516,7 @@ def readDataAmber(P):
 
 
             if high_E_cnt:
-                print('\nWARNING: %i MBAR energ%s very high'
-                      ' or cannot be read.' %
+                print('\nWARNING: %i MBAR energ%s > 0.0 kcal/mol' %
                       (high_E_cnt, 'ies are' if high_E_cnt > 1 else 'y is') )
 
 
