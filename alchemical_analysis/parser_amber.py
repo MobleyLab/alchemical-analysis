@@ -345,11 +345,10 @@ def readDataAmber(P):
     sections in the file.
     """
 
-    # To suppress unwanted calls in __main__.
     P.lv_names = [r'all']
-    datafile_tuple = P.datafile_directory, P.prefix, P.suffix
 
     # FIXME: this should happen in the main code
+    datafile_tuple = P.datafile_directory, P.prefix, P.suffix
     filenames = glob.glob('%s/%s*%s' % datafile_tuple)
 
     if not len(filenames):
@@ -372,7 +371,7 @@ def readDataAmber(P):
 
             if not line:
                 print('WARNING: file does not contain any useful data, '
-                       'ignoring file')
+                      'ignoring file')
                 continue
 
             if 'PMEMD' in line:
@@ -447,7 +446,7 @@ def readDataAmber(P):
                 print('WARNING: no ATOMIC section found, ignoring file\n')
                 continue
 
-            t0, = secp.extract_section('^ begin', '^$', ['coords'])
+            t0, = secp.extract_section('^ begin time', '^$', ['coords'])
 
             if not secp.skip_after('^   4.  RESULTS'):
                 print('WARNING: no RESULTS section found, ignoring file\n')
@@ -506,7 +505,7 @@ def readDataAmber(P):
                                                            extra=line)
 
                         if nstep != old_nstep and dvdl is not None \
-                            and nstep is not None:
+                               and nstep is not None:
                             file_datum.gradients.append(dvdl)
                             nensec += 1
                             old_nstep = nstep
@@ -582,6 +581,7 @@ def readDataAmber(P):
         raise SystemExit('No DV/DL data found')
 
     if not have_mbar:
+        # FIXME: needs to be handled by main code
         if 'BAR' in P.methods:
             P.methods.remove('BAR')
 
