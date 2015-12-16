@@ -60,7 +60,8 @@ _MAGIC_CMPR = {
 
 
 class FEData(object):
-    __slots__ = ['clambda', 't0', 'dt', 'T', 'gradients', 'mbar_energies']
+    __slots__ = ['clambda', 't0', 'dt', 'T', 'gradients',
+                 'component_gradients', 'mbar_energies']
 
     def __init__(self):
         self.clambda = -1.0
@@ -68,6 +69,7 @@ class FEData(object):
         self.dt = -1.0
         self.T = -1.0
         self.gradients = []
+        self.component_gradients = []
         self.mbar_energies = []
 
 
@@ -214,25 +216,6 @@ class SectionParser(object):
         self.close()
 
 
-class OnlineAvVar(object):
-    '''Online algorithm to compute mean (and variance).'''
-
-    def __init__(self):
-        self.step = 0
-        self.mean = 0.0
-        # self.M2 = 0.0
-
-    def accumulate(self, val):
-        '''Accumulate data points to compute mean and variance on-the-fly.'''
-
-        self.step += 1
-
-        delta = val - self.mean
-
-        self.mean += delta / self.step
-        # self.M2 += delta * (val - self.mean)
-
-
 def _process_mbar_lambdas(secp):
     """
     Extract the lambda points used to compute MBAR energies from
@@ -294,34 +277,40 @@ def _extrapol(x, y, scheme):
     return y0, y1
 
 
-def _print_comps(dvdl_comps_all, ncomp):
+def _print_comps(comps, ncomp):
     """Print out per force field term free energy components."""
     
     print("\nThe correlated DV/DL components from "
           "_every_single_ step (kcal/mol):")
 
-    ene_comp = []
-    x_comp = sorted(dvdl_comps_all.keys())
-
-    for comp in sorted(dvdl_comps_all.items()):
-        ene_comp.append(comp[1:])
-
     fmt = 'Lambda ' + '%10s' * ncomp
     print(fmt % tuple(DVDL_COMPS))
 
     fmt = '%7.5f' + ' %9.3f' * ncomp
+    x_comp = sorted(comps)
+    aves = {}
+    ene_comp = []
 
-    outstr = {}
+    for i, clambda in enumerate(x_comp):
+        Enes = comps[clambda]
+        ave = [0.0 for _ in range(ncomp)]
 
-    for clambda in x_comp:
-        lstr = (clambda,) + tuple(dvdl_comps_all[clambda])
+        for Ene in Enes:
+            for j in range(ncomp):
+                ave[j] += Ene[j]
+
+        ave = [a / len(Enes) for a in ave]
+        aves[clambda] = ave
+        ene_comp.append(ave)
+
+        lstr = (clambda,) + tuple(ave)
         print(fmt % lstr)
 
     print('   TI ='),
 
-    for ene in np.transpose(ene_comp):
+    for ene in zip(*ene_comp):
         x_ene = x_comp
-        y_ene = ene[0]
+        y_ene = ene
 
         if not all(y_ene):
             print(' %8.3f' % 0.0),
@@ -369,9 +358,6 @@ def readDataAmber(P):
                          % datafile_tuple)
 
     file_data = []
-    dvdl_comps_all = defaultdict(list)
-
-    ncomp = len(DVDL_COMPS)
     pmemd = False
 
     for filename in filenames:
@@ -379,10 +365,7 @@ def readDataAmber(P):
 
         file_datum = FEData()
         finished = False
-        dvdl_comp_data = []
-
-        for _ in DVDL_COMPS:
-            dvdl_comp_data.append(OnlineAvVar())
+        dvdl_comps = [[] for _ in range(len(DVDL_COMPS))]
 
         with SectionParser(filename) as secp:
             line = secp.skip_lines(5)
@@ -511,8 +494,7 @@ def readDataAmber(P):
 
                         if result[0] != old_comp_nstep and not any_none(result):
                             for i, E in enumerate(DVDL_COMPS):
-                                dvdl_comp_data[i].accumulate(
-                                    float(result[i+1]))
+                                dvdl_comps[i].append(float(result[i+1]))
 
                             nenav += 1
                             old_comp_nstep = result[0]
@@ -552,9 +534,9 @@ def readDataAmber(P):
             print('WARNING: File %s does not contain any DV/DL data\n' %
                   filename)
             continue
-
+            
+        file_datum.component_gradients.extend(zip(*dvdl_comps))
         file_data.append(file_datum)
-        dvdl_comps_all[clambda] = [Enes.mean for Enes in dvdl_comp_data]
 
     # -- all file parsing done --
 
@@ -565,6 +547,7 @@ def readDataAmber(P):
     file_data.sort(key=lambda fd: fd.clambda)
 
     dvdl_all = defaultdict(list)
+    dvdl_comps_all = defaultdict(list)
     mbar_all = {}
 
     t0_found = defaultdict(list)
@@ -577,6 +560,7 @@ def readDataAmber(P):
         clambda = fd.clambda
 
         dvdl_all[clambda].extend(fd.gradients)
+        dvdl_comps_all[clambda].extend(fd.component_gradients)
         t0_found[clambda].append(fd.t0)
         t0_uniq[clambda].add(fd.t0)
 
@@ -586,13 +570,11 @@ def readDataAmber(P):
 
         if have_mbar:
             if clambda not in mbar_all:
-                mbar_all[clambda] = []
-
-                for _ in range(mbar_nlambda):
-                    mbar_all[clambda].append([])
+                mbar_all[clambda] = [[] for _ in range(mbar_nlambda)]
 
             for mbar, data in zip(mbar_all[clambda], fd.mbar_energies):
                 mbar.extend(data)
+
 
     lvals = sorted(clambda_uniq)
 
@@ -693,7 +675,7 @@ def readDataAmber(P):
 
     print('   TI = %9.3f' % np.trapz(ave, lvals))
 
-    _print_comps(dvdl_comps_all, ncomp)
+    _print_comps(dvdl_comps_all, len(DVDL_COMPS))
 
     print('\n')
 
