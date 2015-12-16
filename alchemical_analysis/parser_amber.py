@@ -370,7 +370,7 @@ def readDataAmber(P):
             line = secp.skip_lines(5)
 
             if not line:
-                print('WARNING: file does not contain any useful data, '
+                print('  WARNING: file does not contain any useful data, '
                       'ignoring file')
                 continue
 
@@ -378,7 +378,7 @@ def readDataAmber(P):
                 pmemd = True
 
             if not secp.skip_after('^   2.  CONTROL  DATA  FOR  THE  RUN'):
-                print('WARNING: no CONTROL DATA found, ignoring file')
+                print('  WARNING: no CONTROL DATA found, ignoring file')
                 continue
 
             # NOTE: sections must be searched for in order
@@ -405,7 +405,7 @@ def readDataAmber(P):
                                             ['clambda'], '^---')
 
             if clambda is None:
-                print('WARNING: no free energy section found, ignoring file')
+                print('  WARNING: no free energy section found, ignoring file')
                 continue
 
             mbar_ndata = 0
@@ -430,7 +430,7 @@ def readDataAmber(P):
                 clambda_str = '%6.4f' % clambda
 
                 if clambda_str not in mbar_lambdas:
-                    print('\nWARNING: lambda %s not contained in set of '
+                    print('\n  WARNING: lambda %s not contained in set of '
                           'MBAR lambdas: %s\nNot using MBAR.' %
                           (clambda_str, ', '.join(mbar_lambdas)))
 
@@ -443,13 +443,13 @@ def readDataAmber(P):
                         file_datum.mbar_energies.append([])
 
             if not secp.skip_after('^   3.  ATOMIC '):
-                print('WARNING: no ATOMIC section found, ignoring file\n')
+                print('  WARNING: no ATOMIC section found, ignoring file\n')
                 continue
 
             t0, = secp.extract_section('^ begin time', '^$', ['coords'])
 
             if not secp.skip_after('^   4.  RESULTS'):
-                print('WARNING: no RESULTS section found, ignoring file\n')
+                print('  WARNING: no RESULTS section found, ignoring file\n')
                 continue
 
             file_datum.clambda = clambda
@@ -516,7 +516,7 @@ def readDataAmber(P):
 
 
             if high_E_cnt:
-                print('\nWARNING: %i MBAR energ%s > 0.0 kcal/mol' %
+                print('\n  WARNING: %i MBAR energ%s > 0.0 kcal/mol' %
                       (high_E_cnt, 'ies are' if high_E_cnt > 1 else 'y is') )
 
 
@@ -525,11 +525,11 @@ def readDataAmber(P):
         print('%i data points, %i DV/DL averages' % (nensec, nenav))
 
         if not finished:
-            print('WARNING: prematurely terminated run')
+            print('  WARNING: prematurely terminated run')
             continue
 
         if not nensec:
-            print('WARNING: File %s does not contain any DV/DL data\n' %
+            print('  WARNING: File %s does not contain any DV/DL data\n' %
                   filename)
             continue
             
