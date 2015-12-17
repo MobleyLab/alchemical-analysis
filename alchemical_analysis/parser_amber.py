@@ -364,7 +364,7 @@ def readDataAmber(P):
 
         file_datum = FEData()
         finished = False
-        dvdl_comps = [[] for _ in range(len(DVDL_COMPS))]
+        comps = []
 
         with SectionParser(filename) as secp:
             line = secp.skip_lines(5)
@@ -492,8 +492,7 @@ def readDataAmber(P):
                                                       extra=line)
 
                         if result[0] != old_comp_nstep and not any_none(result):
-                            for i, E in enumerate(DVDL_COMPS):
-                                dvdl_comps[i].append(float(result[i+1]))
+                            comps.append([float(E) for E in result[1:]])
 
                             nenav += 1
                             old_comp_nstep = result[0]
@@ -533,7 +532,7 @@ def readDataAmber(P):
                   filename)
             continue
             
-        file_datum.component_gradients.extend(zip(*dvdl_comps))
+        file_datum.component_gradients.extend(comps)
         file_data.append(file_datum)
 
     # -- all file parsing done --
