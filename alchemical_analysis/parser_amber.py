@@ -525,17 +525,15 @@ def readDataAmber(P):
 
         print('%i data points, %i DV/DL averages' % (nensec, nenav))
 
+        file_datum.component_gradients.extend(comps)
+        file_data.append(file_datum)
+
         if not finished:
             print('  WARNING: prematurely terminated run')
-            continue
 
         if not nensec:
             print('  WARNING: File %s does not contain any DV/DL data\n' %
                   filename)
-            continue
-            
-        file_datum.component_gradients.extend(comps)
-        file_data.append(file_datum)
 
     # -- all file parsing done --
 
@@ -591,9 +589,11 @@ def readDataAmber(P):
 
         print('\nNote: BAR/MBAR results are not computed.')
     elif len(dvdl_all) != len(mbar_lambdas):
-        raise SystemExit('ERROR: Gradient samples have been found for %i '
-                         'lambdas\n%s\nbut MBAR data has %i\n%s\n' %
-                         (len(dvdl_all), ', '.join([str(l) for l in lvals]),
+        ndvdl = len(dvdl_all)
+        raise SystemExit('ERROR: gradient samples have been found for %i '
+                         'lambda%s:\n%s\n       but MBAR data has %i:\n%s\n' %
+                         (ndvdl, 's' if ndvdl > 1 else '',
+                          ','.join([str(l) for l in lvals]),
                           len(mbar_lambdas),
                           ', '.join([str(float(l)) for l in mbar_lambdas]) ) )
 
