@@ -60,6 +60,8 @@ _MAGIC_CMPR = {
 
 
 class FEData(object):
+    """A simple struct container to collect data from individual files."""
+
     __slots__ = ['clambda', 't0', 'dt', 'T', 'gradients',
                  'component_gradients', 'mbar_energies']
 
@@ -75,6 +77,7 @@ class FEData(object):
 
 def _pre_gen(it, first):
     """A generator that returns first first if it exists."""
+
     if first:
         yield first
 
@@ -88,6 +91,8 @@ class SectionParser(object):
     """
 
     def __init__(self, filename):
+        """Opens a file according to its file type."""
+
         self.filename = filename
         
         with open(filename, 'rb') as f:
@@ -104,14 +109,12 @@ class SectionParser(object):
             self.fileh = open_it(self.filename, 'rb')
             self.filesize = os.stat(self.filename).st_size
         except IOError:
-            raise SystemExit('Error opening file %s' % filename)
+            raise SystemExit('ERROR: cannot open file %s' % filename)
 
         self.lineno = 0
-        self.last_pos = 0
-
 
     def skip_lines(self, nlines):
-        """Skip a number of files."""
+        """Skip a given number of files."""
 
         lineno = 0
 
@@ -123,9 +126,8 @@ class SectionParser(object):
 
         return None
 
-
     def skip_after(self, pattern):
-        """Skip until after a line that matches pattern."""
+        """Skip until after a line that matches a regex pattern."""
 
         for line in self:
             match = re.search(pattern, line)
@@ -139,7 +141,8 @@ class SectionParser(object):
                         debug=False):
         """
         Extract data values (int, float) in fields from a section
-        marked with start and end.  Do not read further than limit.
+        marked with start and end regexes.  Do not read further than
+        limit regex.
         """
 
         inside = False
@@ -181,32 +184,24 @@ class SectionParser(object):
 
         return result
 
-    def pushback(self):
-        """
-        Reposition to one line back.  Works only once, see next().
-        The seek() may be very slow for compressed streams!
-        """
-        self.lineno -= 1
-        self.fileh.seek(self.last_pos)
-
     def __iter__(self):
         return self
 
     def next(self):
-        """Read next line of filehandle and remember current position."""
+        """Read next line of the filehandle and check for EOF."""
+
         self.lineno += 1
         curr_pos = self.fileh.tell()
 
         if curr_pos == self.filesize:
             raise StopIteration
 
-        self.last_pos = curr_pos
-
         # NOTE: can't mix next() with seek()
         return self.fileh.readline()
 
     def close(self):
         """Close the filehandle."""
+
         self.fileh.close()
 
     def __enter__(self):
@@ -218,8 +213,8 @@ class SectionParser(object):
 
 def _process_mbar_lambdas(secp):
     """
-    Extract the lambda points used to compute MBAR energies from
-    AMBER MDOUT.
+    Extract the lambda points used to compute MBAR energies from an
+    AMBER MDOUT file.
     """
 
     in_mbar = False
@@ -244,7 +239,7 @@ def _process_mbar_lambdas(secp):
 
 
 def _extrapol(x, y, scheme):
-    """Simple extrapolation scheme."""
+    """Simple extrapolation schemes."""
 
     y0 = None
     y1 = None
@@ -272,26 +267,34 @@ def _extrapol(x, y, scheme):
         if 1.0 not in x:
             y1 = sum(coeffs)
     else:
-        raise SystemExit('Unsupported extrapolation scheme: %s' % scheme)
+        raise SystemExit('ERROR: Unsupported extrapolation scheme: %s' %
+                         scheme)
 
     return y0, y1
 
 
 def _print_comps(comps, ncomp):
-    """Print out per force field term free energy components."""
+    """
+    Print out per-force-field-term free energy components and
+    resulting dG.
+    """
     
-    print("\nThe correlated DV/DL components from "
-          "_every_single_ step (kcal/mol):")
+    print('\nThe correlated gradient (DV/DL) components from '
+          '_every_single_ step (kcal/mol):\n')
 
     fmt = 'Lambda ' + '%10s' * ncomp
     print(fmt % tuple(DVDL_COMPS))
 
     fmt = '%7.5f' + ' %9.3f' * ncomp
+    sep = '-' * (7 + 10 * ncomp)     # format plus ncomp spaces
+    print('%s' % sep)
+
     x_comp = sorted(comps)
-    aves = {}
     ene_comp = []
 
-    for i, clambda in enumerate(x_comp):
+    # comps may contain the component free energies from several time steps
+    # so average them
+    for clambda in x_comp:
         Enes = comps[clambda]
         ave = [0.0 for _ in range(ncomp)]
 
@@ -299,14 +302,13 @@ def _print_comps(comps, ncomp):
             for j in range(ncomp):
                 ave[j] += Ene[j]
 
-        ave = [a / len(Enes) for a in ave]
-        aves[clambda] = ave
-        ene_comp.append(ave)
+        ave = [a / len(Enes) for a in ave] # len(Enes) = no. of time steps/file
+        ene_comp.append(ave)            # tansposed later to compute dG
 
         lstr = (clambda,) + tuple(ave)
         print(fmt % lstr)
 
-    print('   TI ='),
+    print('%s\n   dG =' % sep),
 
     for ene in zip(*ene_comp):
         x_ene = x_comp
@@ -341,11 +343,11 @@ def any_none(sequence):
 
 def readDataAmber(P):
     """
-    Parse free energy gradients and MBAR data from AMBER MDOUT file based on
-    sections in the file.
+    Parse free energy gradients and MBAR data from an AMBER MDOUT file. Also
+    read the meta data from the header sections in the file.
     """
 
-    P.lv_names = [r'all']
+    P.lv_names = [r'all']               # legend for plotting
 
     # FIXME: this should happen in the main code
     datafile_tuple = P.datafile_directory, P.prefix, P.suffix
@@ -396,8 +398,8 @@ def readDataAmber(P):
             # FIXME: is it reasonable to support non-constT?
             #        probably just for BAR related methods
             if not T:
-                raise SystemExit('Non-constant temperature MD not currently '
-                                 'supported')
+                raise SystemExit('ERROR: Non-constant temperature MD not '
+                                 'currently supported')
 
             P.temperature = T
 
@@ -538,10 +540,11 @@ def readDataAmber(P):
     # -- all file parsing done --
 
 
-    print('\nSorting input data by starting time and lambda')
+    # NOTE: lambda sorting is not required because data is collected in dict
+    #       which is later sorted on the keys
+    print('\nSorting input data by starting time')
 
     file_data.sort(key=lambda fd: fd.t0)
-    file_data.sort(key=lambda fd: fd.clambda)
 
     dvdl_all = defaultdict(list)
     dvdl_comps_all = defaultdict(list)
@@ -576,7 +579,7 @@ def readDataAmber(P):
     lvals = sorted(clambda_uniq)
 
     if not dvdl_all:
-        raise SystemExit('No DV/DL data found')
+        raise SystemExit('ERROR: No DV/DL data found')
 
     if not have_mbar:
         # FIXME: needs to be handled by main code
@@ -588,21 +591,22 @@ def readDataAmber(P):
 
         print('\nNote: BAR/MBAR results are not computed.')
     elif len(dvdl_all) != len(mbar_lambdas):
-        raise SystemExit('Gradient samples have been found for %i lambdas (%s) '
-                         'but MBAR data has %i (%s).' %
+        raise SystemExit('ERROR: Gradient samples have been found for %i '
+                         'lambdas\n%s\nbut MBAR data has %i\n%s\n' %
                          (len(dvdl_all), ', '.join([str(l) for l in lvals]),
                           len(mbar_lambdas),
                           ', '.join([str(float(l)) for l in mbar_lambdas]) ) )
 
     for found, uniq in zip(t0_found.values(), t0_uniq.values() ):
         if len(found) != len(uniq):
-            raise SystemExit('Same starting time occurs multiple times.')
+            raise SystemExit('ERROR: Same starting time occurs multiple '
+                             'times.')
 
     if len(dt_uniq) != 1:
-        raise SystemExit('Not all files have the same time step (dt).')
+        raise SystemExit('ERROR: Not all files have the same time step (dt).')
 
     if len(T_uniq) != 1:
-        raise SystemExit('Not all files have the same temperature (T).')
+        raise SystemExit('ERROR: Not all files have the same temperature (T).')
 
     start_from = int(round(P.equiltime / (ntpr * float(dt))))
     print('\nSkipping first %d steps (= %f ps)\n' % (start_from, P.equiltime))
@@ -666,12 +670,16 @@ def readDataAmber(P):
         frand = y1 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
         dhdlt = np.append(dhdlt, [[frand]], 0)
 
-    print("\nThe gradients from the correlated samples (kcal/mol):")
+    print('\nThe gradients (DV/DL) from the correlated samples (kcal/mol):\n\n'
+          'Lambda   gradient')
+
+    sep = '-' * (7 + 9 + 1)             # format plus 1 space
+    print('%s' % sep)
 
     for clambda, dvdl in zip(lvals, ave):
         print('%7.5f %9.3f' % (clambda, dvdl) )
 
-    print('   TI = %9.3f' % np.trapz(ave, lvals))
+    print('%s\n   dG = %9.3f' % (sep, np.trapz(ave, lvals)))
 
     _print_comps(dvdl_comps_all, len(DVDL_COMPS))
 
@@ -679,7 +687,7 @@ def readDataAmber(P):
 
     # FIXME: make this a parser dependent option
     with open(os.path.join(P.output_directory, 'grads.dat'), 'w') as gfile:
-        gfile.write('# gradients for lambdas: %s\n' %
+        gfile.write('# gradients (DV/DL) for lambdas: %s\n' %
                     ' '.join('%s' % l for l in lvals) )
 
         for i in range(maxn):
