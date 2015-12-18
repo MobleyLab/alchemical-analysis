@@ -350,8 +350,8 @@ def readDataAmber(P):
     P.lv_names = [r'all']               # legend for plotting
 
     # FIXME: this should happen in the main code
-    datafile_tuple = P.datafile_directory, P.prefix, P.suffix
-    filenames = glob.glob('%s/%s*%s' % datafile_tuple)
+    datafile_tuple = P.datafile_directory, os.sep, P.prefix, P.suffix
+    filenames = glob.glob('%s%s%s*%s' % datafile_tuple)
 
     if not len(filenames):
         raise SystemExit("\nERROR!\nNo files found within directory '%s' with "
@@ -593,7 +593,7 @@ def readDataAmber(P):
         raise SystemExit('ERROR: gradient samples have been found for %i '
                          'lambda%s:\n%s\n       but MBAR data has %i:\n%s\n' %
                          (ndvdl, 's' if ndvdl > 1 else '',
-                          ','.join([str(l) for l in lvals]),
+                          ', '.join([str(l) for l in lvals]),
                           len(mbar_lambdas),
                           ', '.join([str(float(l)) for l in mbar_lambdas]) ) )
 
