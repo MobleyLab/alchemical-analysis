@@ -60,7 +60,10 @@ def readDataSire(P):
 
       def loadtxtSire(self, state):
          print "Loading in data from %-*s (state %d) ..." % (len_fstring, self.filename, state)
-         dhdlt[state, :, :nsnapshots[state]] = numpy.genfromtxt(self.filename, dtype=float, skiprows=self.skip_lines, usecols=1)
+         try: #Numpy 1.1 removes skiprows
+            dhdlt[state, :, :nsnapshots[state]] = numpy.genfromtxt(self.filename, dtype=float, skiprows=self.skip_lines, usecols=1)
+         except TypeError:
+            dhdlt[state, :, :nsnapshots[state]] = numpy.genfromtxt(self.filename, dtype=float, skip_header=self.skip_lines, usecols=1)
          return
 
    # Preliminaries I-III: Sort the dhdl.xvg files; read in the header; count up the equilibrated snapshots.
