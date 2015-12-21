@@ -18,7 +18,7 @@ the 38 input files.
 To run the files for a sparser lambda spacing (11 total states),
 invoke specifying the data directory to use with the command:
 
-`python alchemical_analysis.py -d data/3-methylindole-11steps -q xvg -p dhdl -u kJ`
+`python ../../alchemical_analysis/alchemical_analysis.py -d data/3-methylindole-11steps -q xvg -p dhdl -u kJ`
 
 For the denser lambda spacing with 38 total states, run
 

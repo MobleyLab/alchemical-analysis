@@ -33,7 +33,7 @@ Script: `alchemical_analysis.py`
 
 This implements recommended practices for analyzing alchemical free energy calculations, as described in Klimovich et al., JCAMD 29:397-411 (2015). This was motivated in part by earlier work illustrating how to apply MBAR to alchemical free energy calculations (and a comparison with other methods) in Paliwal and Shirts, J. Chem. Theory Comp, v. 7, 4115-4134 (2011).
 
-See description in `gromacs/README.md`, `sire/README.md`, and `amber/README.md`.
+See description in `samples/gromacs/README.md`, `samples/sire/README.md`, and `samples/amber/README.md`.
 
 
 Help for `alchemical_analysis.py` (obtained with `python alchemical_analysis.py -h`) is:
