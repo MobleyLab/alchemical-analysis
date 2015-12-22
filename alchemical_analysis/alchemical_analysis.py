@@ -244,6 +244,8 @@ def estimatewithMBAR(u_kln, N_k, reltol, regular_estimate=False):
          for j in range(K):
             if O[j,i] < 0.005:
                ii = ''
+            elif O[j,i] > 0.995:
+               ii = '1.00'
             else:
                ii = ("%.2f" % O[j,i])[1:]
             alf = O[j,i]/max_prob
