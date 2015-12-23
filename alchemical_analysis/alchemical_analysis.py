@@ -48,7 +48,7 @@ parser.add_option('-g', '--breakdown', dest = 'breakdown', help = 'Plotting the 
 parser.add_option('-i', '--threshold', dest = 'uncorr_threshold', help = 'Proceed with correlated samples if the number of uncorrelated samples is found to be less than this number. If 0 is given, the time series analysis will not be performed at all. Default: 50.', default = 50, type=int)
 parser.add_option('-k', '--koff', dest = 'bSkipLambdaIndex', help = 'Give a string of lambda indices separated by \'-\' and they will be removed from the analysis. (Another approach is to have only the files of interest present in the directory). Default: None.', default = '')
 parser.add_option('-m', '--methods', dest = 'methods', help = 'A list of the methods to esitimate the free energy with. Default: [TI, TI-CUBIC, DEXP, IEXP, BAR, MBAR]. To add/remove methods to the above list provide a string formed of the method strings preceded with +/-. For example, \'-ti_cubic+gdel\' will turn methods into [TI, DEXP, IEXP, BAR, MBAR, GDEL]. \'ti_cubic+gdel\', on the other hand, will call [TI-CUBIC, GDEL]. \'all\' calls the full list of supported methods [TI, TI-CUBIC, DEXP, IEXP, GINS, GDEL, BAR, UBAR, RBAR, MBAR].', default = '')
-parser.add_option('-n', '--uncorr', dest = 'uncorr', help = 'The observable to be used for the autocorrelation analysis; either \'dhdl_all\' (default; obtained as a sum over all energy components) or \'dhdl\' (obtained as a sum over those energy components that are changing) or \'dE\'. In the latter case the energy differences dE_{i,i+1} (dE_{i,i-1} for the last lambda) are used.', default = 'dhdl_all')
+parser.add_option('-n', '--uncorr', dest = 'uncorr', help = 'The observable to be used for the autocorrelation analysis; either \'dhdl_all\' (obtained as a sum over all energy components) or \'dhdl\' (obtained as a sum over those energy components that are changing; default) or \'dE\'. In the latter case the energy differences dE_{i,i+1} (dE_{i,i-1} for the last lambda) are used.', default = 'dhdl')
 parser.add_option('-o', '--out', dest = 'output_directory', help = 'Directory in which the output files produced by this script will be stored. Default: Same as datafile_directory.', default = '')
 parser.add_option('-p', '--prefix', dest = 'prefix', help = 'Prefix for datafile sets, i.e.\'dhdl\' (default).', default = 'dhdl')
 parser.add_option('-q', '--suffix', dest = 'suffix', help = 'Suffix for datafile sets, i.e. \'xvg\' (default).', default = 'xvg')
@@ -223,7 +223,7 @@ def uncorrelate(sta, fin, do_dhdl=False):
                dhdl[k,n,0:N] = dhdlt[k,n,indices]
 
    if UNCORR_OBSERVABLE == 'dE':
-      #Decorrelate based on energy differences between lambdas
+      # Uncorrelate based on energy differences between lambdas.
 
       for k in range(K):
          # Sum up over the energy components as above using only the relevant data; here we use energy differences
@@ -243,7 +243,6 @@ def uncorrelate(sta, fin, do_dhdl=False):
          if not (u_klt is None):
             for l in range(K):
                u_kln[k,l,0:N] = u_klt[k,l,indices]
-
 
    if do_dhdl:
       return (dhdl, N_k, u_kln)
