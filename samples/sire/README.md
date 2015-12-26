@@ -2,7 +2,7 @@ An implementation of the recommended practices for analyzing alchemical free ene
 
 To run the analysis on the example files, execute the script with the command:
 
-`python ../alchemical_analysis.py -a Sire -d data/ -p actual_grad_ -q dat -u kcal`
+`python ../../alchemical_analysis/alchemical_analysis.py -a Sire -d data/ -p actual_grad_ -q dat -u kcal`
 
 Here is a brief overview of the flags and how to call them for Sire. (The focus is on those that are relevant to Sire, or, more accurately, to the situation when the files to be analyzed contain only the dV/dLambda data.  
 `python alchemical_analysis.py -h` would yield a more detailed description).
