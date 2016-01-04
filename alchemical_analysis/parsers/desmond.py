@@ -15,7 +15,7 @@ import unixlike                 # some implemented unixlike commands
 # FUNCTIONS: This is the Desmond gibbs.N.dE file parser.
 #===================================================================================================
 
-def readDataDesmond(P):
+def parse(P):
 
    class F:
 
@@ -86,6 +86,11 @@ def readDataDesmond(P):
    # Preliminaries I: Get LV,Snapsize,consistency check, and skip frames
    #===================================================================================================
 
+   # FIXME: need a better mechanism for this
+   P.prefix='gibbs'
+   P.suffix='dE'
+   P.methods=['BAR']
+
    datafile_tuple = P.datafile_directory, P.prefix, P.suffix
    fs = [ F(filename) for filename in glob( '%s/%s*%s' % datafile_tuple ) ]
    n_files = len(fs)
@@ -129,4 +134,6 @@ def readDataDesmond(P):
    u_klt = numpy.zeros([K,K+1,int(maxn)], numpy.float64)       # u_klt[k,m,t] is the reduced potential energy of snapshot t of state k evaluated at state m
    for nf, f in enumerate(fs):
       f.iter_loadtxt(nf)
-   return nsnapshots, lv, u_klt
+
+   # 3rd value None because not gradients provided
+   return nsnapshots, lv, None, u_klt

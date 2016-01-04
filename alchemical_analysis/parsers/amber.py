@@ -341,7 +341,7 @@ def any_none(sequence):
     return False
 
 
-def readDataAmber(P):
+def parse(P):
     """
     Parse free energy gradients and MBAR data from an AMBER MDOUT file. Also
     read the meta data from the header sections in the file.
