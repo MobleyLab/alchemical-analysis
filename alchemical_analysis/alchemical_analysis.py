@@ -1184,7 +1184,9 @@ def main(P):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='An open tool implementing some recommended practices for analyzing alchemical free energy calculations')
+    parser = argparse.ArgumentParser(description=
+       'An open tool implementing some recommended practices for analyzing '
+       'alchemical free energy calculations.')
 
     parser.add_argument('-a', '--software', dest = 'software', help = 'Package\'s name the data files come from: Gromacs, Sire, Desmond, or AMBER. Default: Gromacs.', default = 'Gromacs')
     parser.add_argument('-c', '--cfm', dest = 'bCFM', help = 'The Curve-Fitting-Method-based consistency inspector. Default: False.', default = False, action = 'store_true')

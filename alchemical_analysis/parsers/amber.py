@@ -1,14 +1,15 @@
 """
 This is the AMBER parser for the Alchemical Analysis tool.
 
-The code can handle both sander and pmemd output.  TI gradients will be read
-from the instantaneous DV/DL entries in the MDOUT file (the MDEN file is not
-used) which is written every ntpr step.  MBAR values are collected but assumed
-to be occuring at the same frequency as the DV/DL output (bar_intervall=ntpr).
-BAR/MBAR will be switched off when the current lambda is not in the set of MBAR
-lambdas.  MBAR is currently switched off also for sander output because sander
-can't sample the end-points.  Component gradients are collected from the
-average outputs (ntave).  GZIP/BZIP2 compression is supported.
+The code can handle both sander and pmemd output.  TI gradients will be
+read from the instantaneous DV/DL entries in the MDOUT file (the MDEN file
+is not used) which is written every ntpr step.  MBAR values are collected
+but assumed to be occuring at the same frequency as the DV/DL output
+(bar_intervall=ntpr).  BAR/MBAR will be switched off when the current lambda
+is not in the set of MBAR lambdas.  MBAR is currently switched off also for
+sander output because sander can't sample the end-points.  Component
+gradients are collected from the average outputs (ntave).  GZIP/BZIP2
+compression is supported.
 
 Relevant namelist variables in MDIN: ntpr, ntave, ifmbar and bar*,
 do NOT set t as the code depends on a correctly set begin time
@@ -273,14 +274,14 @@ def _extrapol(x, y, scheme):
     return y0, y1
 
 
-def _print_comps(comps, ncomp):
+def _print_comps(comps, ncomp, units, conv):
     """
     Print out per-force-field-term free energy components and
     resulting dG.
     """
     
     print('\nThe correlated gradient (DV/DL) components from '
-          '_every_single_ step (kcal/mol):\n')
+          '_every_single_ step %s:\n' % units)
 
     fmt = 'Lambda ' + '%10s' * ncomp
     print(fmt % tuple(DVDL_COMPS))
@@ -300,7 +301,7 @@ def _print_comps(comps, ncomp):
 
         for Ene in Enes:
             for j in range(ncomp):
-                ave[j] += Ene[j]
+                ave[j] += Ene[j] * conv
 
         ave = [a / len(Enes) for a in ave] # len(Enes) = no. of time steps/file
         ene_comp.append(ave)            # tansposed later to compute dG
@@ -350,13 +351,24 @@ def parse(P):
     P.lv_names = [r'all']               # legend for plotting
 
     # FIXME: this should happen in the main code
-    datafile_tuple = P.datafile_directory, P.prefix, P.suffix
-    filenames = glob.glob('%s/%s*%s' % datafile_tuple)
+    datafile_tuple = P.datafile_directory, os.sep, P.prefix, P.suffix
+    filenames = glob.glob('%s%s%s*%s' % datafile_tuple)
 
     if not len(filenames):
-        raise SystemExit("\nERROR!\nNo files found within directory '%s' with "
+        raise SystemExit("\nERROR: no files found within directory '%s' with "
                          "prefix '%s' and suffix '%s': check your inputs."
                          % datafile_tuple)
+
+
+    # FIXME: needs centralised solution
+    if P.units == '(kcal/mol)':
+        Econv = 1.0
+    elif P.units == '(kJ/mol)':
+        Econv = 4.184
+    elif P.units == '(k_BT)':
+        Econv = P.beta
+    else:
+        raise SystemExit('ERROR: unknown units %s' % P.units)
 
     file_data = []
     pmemd = False
@@ -593,7 +605,7 @@ def parse(P):
         raise SystemExit('ERROR: gradient samples have been found for %i '
                          'lambda%s:\n%s\n       but MBAR data has %i:\n%s\n' %
                          (ndvdl, 's' if ndvdl > 1 else '',
-                          ','.join([str(l) for l in lvals]),
+                          ', '.join([str(l) for l in lvals]),
                           len(mbar_lambdas),
                           ', '.join([str(float(l)) for l in mbar_lambdas]) ) )
 
@@ -629,7 +641,7 @@ def parse(P):
 
     for i, clambda in enumerate(lvals):
         vals = dvdl_all[clambda][start_from:]
-        ave.append(np.average(vals))
+        ave.append(np.average(vals) * Econv)
 
         dhdlt[i][0][:len(vals)] = np.array(vals)
 
@@ -670,18 +682,18 @@ def parse(P):
         frand = y1 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
         dhdlt = np.append(dhdlt, [[frand]], 0)
 
-    print('\nThe gradients (DV/DL) from the correlated samples (kcal/mol):\n\n'
-          'Lambda   gradient')
+    print('\nThe gradients (DV/DL) from the correlated samples %s:\n\n'
+          'Lambda   gradient' % P.units)
 
     sep = '-' * (7 + 9 + 1)             # format plus 1 space
     print('%s' % sep)
 
     for clambda, dvdl in zip(lvals, ave):
-        print('%7.5f %9.3f' % (clambda, dvdl) )
+        print('%7.5f %9.3f' % (clambda, dvdl))
 
     print('%s\n   dG = %9.3f' % (sep, np.trapz(ave, lvals)))
 
-    _print_comps(dvdl_comps_all, len(DVDL_COMPS))
+    _print_comps(dvdl_comps_all, len(DVDL_COMPS), P.units, Econv)
 
     print('\n')
 
