@@ -407,7 +407,6 @@ def estimatePairs(N_k, shape, lchange, dlam, ave_dhdl, std_dhdl, u_kln,
 
     K, n_components = shape
 
-    print ("Estimating the free energy change with %s..." % ', '.join(P.methods)).replace(', MBAR', '')
     df_allk = list(); ddf_allk = list()
 
     for k in range(K-1):
@@ -987,11 +986,9 @@ def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
         pl.close(fig)
         return
 
-    print "Plotting the free energy breakdown figure..."
     plotdFvsLambda1()
     plotdFvsLambda2()
     if ('TI' in P.methods or 'TI-CUBIC' in P.methods):
-        print "Plotting the TI figure..."
         plotTI()
 
 #===================================================================================================
@@ -1000,8 +997,6 @@ def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
 
 def plotCFM(K,u_kln, N_k, df_allk, ddf_allk, num_bins=100):
     """A graphical representation of what Bennett calls 'Curve-Fitting Method'."""
-
-    print "Plotting the CFM figure..."
 
     def leaveTicksOnlyOnThe(xdir, ydir, axis):
         dirs = ['left', 'right', 'top', 'bottom']
@@ -1192,6 +1187,8 @@ def main(P):
     if 'TI-CUBIC' in P.methods:
         cubspl, mapl = getSplines(lv, lchange)
 
+    print('Estimating the free energy change with %s...' %
+          ', '.join(P.methods)).replace(', MBAR', '')
     df_allk, ddf_allk = estimatePairs(N_k, lv.shape, lchange, dlam, ave_dhdl,
                                       std_dhdl, u_kln, cubspl, mapl,
                                       Deltaf_ij, dDeltaf_ij)
@@ -1203,10 +1200,16 @@ def main(P):
         dF_t(K)
 
     if P.breakdown:
+        print('Plotting the free energy breakdown figure...')
         plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk,
                        ddf_allk)
 
     if P.bCFM and u_kln is not None:
+        print('Plotting the CFM figure...')
+
+        if ('TI' in P.methods or 'TI-CUBIC' in P.methods):
+            print('Plotting the TI figure...')
+
         plotCFM(K, u_kln, N_k, df_allk, ddf_allk, 50)
 
 
