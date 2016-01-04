@@ -24,15 +24,13 @@
 # IMPORTS
 #===================================================================================================
 
-## Not a built-in module. Will be called from main, whenever needed. ##
-## import pymbar      Multistate Bennett Acceptance Ratio estimator. ##
-
 import sys
-import numpy
 import pickle                       # for full-precision data storage
 import os                           # for os interface
 import time as ttt_time             # for timing
-import pdb                          # for debugging
+
+import numpy
+import pymbar
 
 
 __version__ = '1.1.0'
@@ -126,7 +124,7 @@ def timeStatistics(stime):
 # FUNCTIONS: The autocorrelation analysis.
 #===================================================================================================
 
-def uncorrelate(sta, fin, do_dhdl=False):
+def uncorrelate(shape, dhdlt, u_klt, sta, fin, do_dhdl=False):
    """Identifies uncorrelated samples and updates the arrays of the reduced potential energy and dhdlt retaining data entries of these samples only.
       'sta' and 'fin' are the starting and final snapshot positions to be read, both are arrays of dimension K."""
    if not P.uncorr_threshold:
@@ -134,7 +132,8 @@ def uncorrelate(sta, fin, do_dhdl=False):
          return dhdlt, nsnapshots, None
       return dhdlt, nsnapshots, u_klt
 
-   import pymbar     ## this is not a built-in module ##
+   K, n_components = shape
+   dhdl = None
 
    u_kln = numpy.zeros([K,K,max(fin-sta)], numpy.float64) # u_kln[k,m,n] is the reduced potential energy of uncorrelated sample index n from state k evaluated at state m
    N_k = numpy.zeros(K, int) # N_k[k] is the number of uncorrelated samples from state k
@@ -171,6 +170,8 @@ def uncorrelate(sta, fin, do_dhdl=False):
             for n in range(n_components):
                dhdl[k,n,0:N] = dhdlt[k,n,indices]
 
+   # FIXME: how is this different from above and why can't this be handled
+   #        in the parser
    if UNCORR_OBSERVABLE == 'dE':
       #Decorrelate based on energy differences between lambdas
 
@@ -193,17 +194,16 @@ def uncorrelate(sta, fin, do_dhdl=False):
             for l in range(K):
                u_kln[k,l,0:N] = u_klt[k,l,indices]
 
-
-   if do_dhdl:
-      return (dhdl, N_k, u_kln)
-   return (N_k, u_kln)
+   return dhdl, N_k, u_kln
 
 #===================================================================================================
 # FUNCTIONS: The MBAR workhorse.
 #===================================================================================================
 
-def estimatewithMBAR(u_kln, N_k, reltol, regular_estimate=False):
+def estimatewithMBAR(K, u_kln, N_k, reltol, regular_estimate=False):
    """Computes the MBAR free energy given the reduced potential and the number of relevant entries in it."""
+
+   import matplotlib.pyplot as pl
 
    def plotOverlapMatrix(O):
       """Plots the probability of observing a sample from state i (row) in state j (column).
@@ -256,6 +256,7 @@ def estimatewithMBAR(u_kln, N_k, reltol, regular_estimate=False):
 
    if regular_estimate:
       print "\nEstimating the free energy change with MBAR..."
+
    MBAR = pymbar.mbar.MBAR(u_kln, N_k, verbose = P.verbose, relative_tolerance = reltol, initialize = P.init_with)
    # Get matrix of dimensionless free energy differences and uncertainty estimate.
    (Deltaf_ij, dDeltaf_ij, theta_ij ) = MBAR.getFreeEnergyDifferences(uncertainty_method='svd-ew', return_theta = True)
@@ -353,7 +354,9 @@ class naturalcubicspline:
       ynew[-1] = y[-1]
       return ynew
 
-def TIprelim(lv):
+def TIprelim(N_k, lv, dhdl):
+
+   K, n_components = lv.shape
 
    # Lambda vectors spacing.
    dlam = numpy.diff(lv, axis=0)
@@ -378,7 +381,10 @@ def TIprelim(lv):
 
    return lchange, dlam, ave_dhdl, std_dhdl
 
-def getSplines(lchange):
+def getSplines(lv, lchange):
+
+   K, n_components = lv.shape
+
    # construct a map back to the original components
    mapl = numpy.zeros([K,n_components],int)   # map back to the original k from the components
    for j in range(n_components):
@@ -403,7 +409,10 @@ def getSplines(lchange):
 # FUNCTIONS: This one estimates dF and ddF for all pairs of adjacent states and stores them.
 #===================================================================================================
 
-def estimatePairs():
+def estimatePairs(N_k, shape, lchange, dlam, ave_dhdl, std_dhdl, u_kln,
+                  cubspl, mapl, Deltaf_ij, dDeltaf_ij):
+
+   K, n_components = shape
 
    print ("Estimating the free energy change with %s..." % ', '.join(P.methods)).replace(', MBAR', '')
    df_allk = list(); ddf_allk = list()
@@ -507,7 +516,10 @@ def estimatePairs():
 # FUNCTIONS: All done with calculations; summarize and print stats.
 #===================================================================================================
 
-def totalEnergies():
+def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
+                  df_allk, ddf_allk):
+
+   K, n_components = shape
 
    # Count up the charging states.
    startcoul = 0
@@ -661,7 +673,10 @@ def totalEnergies():
 # FUNCTIONS: Free energy change vs. simulation time. Called by the -f flag.
 #===================================================================================================
 
-def dF_t():
+def dF_t(K):
+
+   import matplotlib.pyplot as pl
+   from matplotlib.font_manager import FontProperties as FP
 
    def plotdFvsTime(f_ts, r_ts, F_df, R_df, F_ddf, R_ddf):
       """Plots the free energy change computed using the equilibrated snapshots between the proper target time frames (f_ts and r_ts)
@@ -743,7 +758,7 @@ def dF_t():
       print "%60s ps..." % ts[i+1]
       fin = numpy.sum(nss_tf[:i+2],axis=0)
       N_k, u_kln = uncorrelate(nss_tf[0], numpy.sum(nss_tf[:i+2],axis=0))
-      F_df[i], F_ddf[i] = estimatewithMBAR(u_kln, N_k, P.relative_tolerance)
+      F_df[i], F_ddf[i] = estimatewithMBAR(K, u_kln, N_k, P.relative_tolerance)
    # Do the reverse analysis.
    print "Reverse dF(t) analysis...\nUsing the data starting from"
    fin = numpy.sum(nss_tf[:],axis=0)
@@ -751,7 +766,7 @@ def dF_t():
       print "%34s ps..." % ts[i+1]
       sta = numpy.sum(nss_tf[:i+2],axis=0)
       N_k, u_kln = uncorrelate(sta, fin)
-      R_df[i+1], R_ddf[i+1] = estimatewithMBAR(u_kln, N_k, P.relative_tolerance)
+      R_df[i+1], R_ddf[i+1] = estimatewithMBAR(K, u_kln, N_k, P.relative_tolerance)
 
    print """\n   The free energies %s evaluated by using the trajectory
    snaphots corresponding to various time intervals for both the
@@ -774,7 +789,12 @@ def dF_t():
 # FUNCTIONS: Free energy change breakdown (into lambda-pair dFs). Called by the -g flag.
 #===================================================================================================
 
-def plotdFvsLambda():
+def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
+
+   import matplotlib.pyplot as pl
+   from matplotlib.font_manager import FontProperties as FP
+
+   K, n_components = lv.shape
 
    def plotdFvsLambda1():
       """Plots the free energy differences evaluated for each pair of adjacent states for all methods."""
@@ -990,8 +1010,11 @@ def plotdFvsLambda():
 # FUNCTIONS: The Curve-Fitting Method. Called by the -c flag.
 #===================================================================================================
 
-def plotCFM(u_kln, N_k, num_bins=100):
+def plotCFM(K,u_kln, N_k, df_allk, ddf_allk, num_bins=100):
    """A graphical representation of what Bennett calls 'Curve-Fitting Method'."""
+
+   import matplotlib
+   import matplotlib.pyplot as pl
 
    print "Plotting the CFM figure..."
    def leaveTicksOnlyOnThe(xdir, ydir, axis):
@@ -1088,98 +1111,84 @@ def plotCFM(u_kln, N_k, num_bins=100):
    plotdg_vs_dU(yy, df_allk, ddf_allk)
    return
 
+
 #===================================================================================================
 # MAIN
 #===================================================================================================
 
 def main(P):
+    """
+    The main command line routine.
+    """
 
-   global dhdlt
-   global u_klt
-   global K
-   global n_components
-   global pymbar
-   global dhdl
-   global N_k
-   global lv
-   global dlam
-   global ave_dhdl
-   global std_dhdl
-   global lchange
-   global cubspl
-   global mapl
-   global u_kln
-   global Deltaf_ij
-   global dDeltaf_ij
-   global df_allk
-   global ddf_allk
-   global nsnapshots
-   global pl
-   global FP
-   global matplotlib
+    # Timing.
+    stime = ttt_time.time()
+    print "Started on %s" % ttt_time.asctime()
+    print 'Command line was: %s\n' % ' '.join(sys.argv)
 
-   # Timing.
-   stime = ttt_time.time()
-   print "Started on %s" % ttt_time.asctime()
-   print 'Command line was: %s\n' % ' '.join(sys.argv)
+    P.methods = getMethods(P.methods.upper())
+    P.units, P.beta, P.beta_report = checkUnitsAndMore(P.units)
 
-   P.methods = getMethods(P.methods.upper())
-   P.units, P.beta, P.beta_report = checkUnitsAndMore(P.units)
+    if (numpy.array([P.bForwrev, P.breakdown, P.bCFM, P.overlap]) != 0).any():
+        import matplotlib # 'matplotlib-1.1.0-1'; errors may pop up when using an earlier version
+        matplotlib.use('Agg')
 
-   if ''.join(P.methods).replace('TI-CUBIC', '').replace('TI', ''):
-      import pymbar     ## this is not a built-in module ##
-   if (numpy.array([P.bForwrev, P.breakdown, P.bCFM, P.overlap]) != 0).any():
-      import matplotlib # 'matplotlib-1.1.0-1'; errors may pop up when using an earlier version
-      matplotlib.use('Agg')
-      import matplotlib.pyplot as pl
-      from matplotlib.font_manager import FontProperties as FP
+    parser_name = P.software.title().lower()
+    toload = 'parsers.' + parser_name
 
-   parser_name = P.software.title().lower()
-   toload = 'parsers.' + parser_name
-
-   try:
-      parser = __import__(toload, fromlist='*')
-   except ImportError:
-      raise SystemExit('%s parser not implemented.  Roll your own.' %
-                       parser_name)
-   else:
-      nsnapshots, lv, dhdlt, u_klt = parser.parse(P)
+    try:
+        parser = __import__(toload, fromlist='*')
+    except ImportError:
+        raise SystemExit('%s parser not implemented.  Roll your own.' %
+                         parser_name)
+    else:
+        nsnapshots, lv, dhdlt, u_klt = parser.parse(P)
    
 
-   K, n_components = lv.shape
+    K, n_components = lv.shape
 
-   if (numpy.array(['Sire','Gromacs', 'Amber']) == P.software.title()).any():
-      dhdl, N_k, u_kln = uncorrelate(sta=numpy.zeros(K, int), fin=nsnapshots, do_dhdl=True)
-   elif P.software.title() == 'Desmond':
-      N_k, u_kln = uncorrelate(sta=numpy.zeros(K, int), fin=nsnapshots, do_dhdl=False)
-   # Estimate free energy difference with MBAR -- all states at once.
+    # FIXME: need simpler logic to discern TI from FEP analysis
+    if P.software.title() in ('Sire', 'Gromacs', 'Amber'):
+        do_dhdl=True
+    elif P.software.title() == 'Desmond':
+        do_dhdl=False
 
-   if 'MBAR' in P.methods:
-      Deltaf_ij, dDeltaf_ij = estimatewithMBAR(u_kln, N_k, P.relative_tolerance, regular_estimate=True)
+    dhdl, N_k, u_kln = uncorrelate(lv.shape, dhdlt, u_klt,
+                                   sta=numpy.zeros(K, int),
+                                   fin=nsnapshots, do_dhdl=do_dhdl)
 
-   # The TI preliminaries.
-   if ('TI' in P.methods or 'TI-CUBIC' in P.methods):
-      lchange, dlam, ave_dhdl, std_dhdl = TIprelim(lv)
+    # Estimate free energy difference with MBAR -- all states at once.
+    if 'MBAR' in P.methods:
+        Deltaf_ij, dDeltaf_ij = estimatewithMBAR(K, u_kln, N_k,
+                                                 P.relative_tolerance,
+                                                 regular_estimate=True)
 
-   if 'TI-CUBIC' in P.methods:
-      cubspl, mapl = getSplines(lchange)
+    # FIXME: dlam is undefined if there is no TI...
+    if 'TI' in P.methods or 'TI-CUBIC' in P.methods:
+        lchange, dlam, ave_dhdl, std_dhdl = TIprelim(N_k, lv, dhdl)
 
-   # Call other methods. Print stats. Store results.
-   df_allk, ddf_allk = estimatePairs()
-   totalEnergies()
+    if 'TI-CUBIC' in P.methods:
+        cubspl, mapl = getSplines(lv, lchange)
 
-   # Plot figures.
-   if P.bForwrev:
-      dF_t()
+    # Call other methods. Print stats. Store results.
+    df_allk, ddf_allk = estimatePairs(N_k, lv.shape, lchange, dlam, ave_dhdl,
+                                      std_dhdl, u_kln, cubspl, mapl,
+                                      Deltaf_ij, dDeltaf_ij)
+    totalEnergies(lv.shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij,
+                  dDeltaf_ij, df_allk, ddf_allk)
 
-   if P.breakdown:
-      plotdFvsLambda()
+    if P.bForwrev:
+        dF_t(K)
 
-   if P.bCFM:
-      if not (u_kln is None):
-         plotCFM(u_kln, N_k, 50)
+    if P.breakdown:
+        plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk,
+                       ddf_allk)
 
-   print "\nTime spent: %s hours, %s minutes, and %s seconds.\nFinished on %s" % timeStatistics(stime)
+    if P.bCFM and u_kln is not None:
+        plotCFM(K, u_kln, N_k, df_allk, ddf_allk, 50)
+
+    print "\nTime spent: %s hours, %s minutes, and %s seconds.\nFinished on %s" % timeStatistics(stime)
+
 
 if __name__ == "__main__":
     import argparse
@@ -1212,8 +1221,8 @@ if __name__ == "__main__":
     parser.add_argument('--version', action='version',
                         version='%(prog)s {}'.format(__version__))
  
-
-   # Simulation profile P (to be stored in 'results.pickle') will amass information about the simulation.
+    # Simulation profile P (to be stored in 'results.pickle')
+    # will amass information about the simulation.
     P = parser.parse_args()
 
     main(P)
