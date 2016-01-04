@@ -1,24 +1,26 @@
 #!/usr/bin/env python
 
-######################################################################
-# Alchemical Analysis: An open tool implementing some recommended practices for analyzing alchemical free energy calculations
-# Copyright 2011-2015 UC Irvine and the Authors
-#
-# Authors: Pavel Klimovich, Michael Shirts and David Mobley
-#
-#This library is free software; you can redistribute it and/or
-#modify it under the terms of the GNU Lesser General Public
-#License as published by the Free Software Foundation; either
-#version 2.1 of the License, or (at your option) any later version.
-#
-#This library is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-#Lesser General Public License for more details.
-#
-#You should have received a copy of the GNU Lesser General Public
-#License along with this library; if not, see <http://www.gnu.org/licenses/>.
-######################################################################
+r"""Alchemical Analysis: An open tool implementing some recommended practices
+for analyzing alchemical free energy calculations.
+
+
+Copyright 2011-2015 UC Irvine and the Authors
+
+Authors: Pavel Klimovich, Michael Shirts and David Mobley
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, see <http://www.gnu.org/licenses/>.
+"""
 
 #===================================================================================================
 # IMPORTS
@@ -1147,6 +1149,19 @@ def main(P):
         nsnapshots, lv, dhdlt, u_klt = parser.parse(P)
    
 
+    # NOTE: parser may have changed P.methods
+    if P.overlap and not 'MBAR' in P.methods:
+       print("WARNING: MBAR is not in 'methods'; can't plot the overlap "
+             "matrix.")
+       P.overlap = False
+
+    # FIXME: really need to test for FEP analysis
+    if P.bCFM and (not 'MBAR' in P.methods or not 'BAR' in P.methods):
+       print("WARNING: BAR/MBAR are not in 'methods'; can't perform "
+             "Curve-Fitting-Method.")
+       P.bCFM = False
+
+
     K, n_components = lv.shape
 
     # FIXME: need simpler logic to discern TI from FEP analysis
@@ -1231,7 +1246,7 @@ if __name__ == "__main__":
                         'they will be removed from the analysis. (Another '
                         'approach is to have only the files of interest present '
                         'in the directory). Default: None.')
-    parser.add_argument('-m', '--methods', dest='methods', help=
+    parser.add_argument('-m', '--methods', help=
                         'A list of the methods to esitimate the free energy '
                         'with. Default: [TI, TI-CUBIC, DEXP, IEXP, BAR, MBAR]. '
                         'To add/remove methods to the above list provide a '
@@ -1296,17 +1311,8 @@ if __name__ == "__main__":
     if not P.output_directory:
         P.output_directory = P.datafile_directory
 
-    P.methods = getMethods(P.methods.upper())
-
-    if P.overlap and not 'MBAR' in P.methods:
-        parser.error("MBAR is not in 'methods'; can't plot the overlap matrix.")
-
-    # FIXME: really need to test for FEP analysis
-    if P.bCFM and (not 'MBAR' in P.methods or not 'BAR' in P.methods):
-        parser.error("BAR/MBAR are not in 'methods'; can't perform "
-                     "Curve-Fitting-Method.")
-
     P.units, P.beta, P.beta_report = checkUnitsAndMore(P.units)
+    P.methods = getMethods(P.methods.upper())
 
     main(P)
 
