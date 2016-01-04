@@ -33,7 +33,10 @@ import numpy
 import pymbar
 
 
+
 __version__ = '1.1.0'
+
+
 
 #===================================================================================================
 # FUNCTIONS: Miscellanea.
@@ -104,13 +107,9 @@ def checkUnitsAndMore(units):
       beta_report = 1
       units = '(k_BT)'
    else:
-      parser.error('\nI don\'t understand the unit type \'%s\': the only options \'kJ\', \'kcal\', and \'kBT\'' % units)
+      parser.error("I don't understand the unit type '%s': the only options "
+                   "'kJ', 'kcal', and 'kBT'"% units)
 
-   if not P.output_directory:
-      P.output_directory = P.datafile_directory
-   if P.overlap:
-      if not 'MBAR' in P.methods:
-         parser.error("\nMBAR is not in 'methods'; can't plot the overlap matrix.")
    return units, beta, beta_report
 
 def timeStatistics(stime):
@@ -1126,21 +1125,24 @@ def main(P):
     print "Started on %s" % ttt_time.asctime()
     print 'Command line was: %s\n' % ' '.join(sys.argv)
 
-    P.methods = getMethods(P.methods.upper())
-    P.units, P.beta, P.beta_report = checkUnitsAndMore(P.units)
-
     if (numpy.array([P.bForwrev, P.breakdown, P.bCFM, P.overlap]) != 0).any():
         import matplotlib # 'matplotlib-1.1.0-1'; errors may pop up when using an earlier version
         matplotlib.use('Agg')
 
-    parser_name = P.software.title().lower()
-    toload = 'parsers.' + parser_name
+    parser_top = 'parsers'
+    parser_name = P.software.lower()
+    module = parser_top + '.' + parser_name
 
     try:
-        parser = __import__(toload, fromlist='*')
+        pkg = __import__(parser_top)
+
+        if parser_name not in pkg.KNOWN_PARSERS:
+            raise ImportError
+
+        parser = __import__(module, fromlist='*')
     except ImportError:
-        raise SystemExit('%s parser not implemented.  Roll your own.' %
-                         parser_name)
+        raise SystemExit('%s parser not implemented or not registered.' %
+                         P.software.title() )
     else:
         nsnapshots, lv, dhdlt, u_klt = parser.parse(P)
    
@@ -1157,20 +1159,22 @@ def main(P):
                                    sta=numpy.zeros(K, int),
                                    fin=nsnapshots, do_dhdl=do_dhdl)
 
+    # FIXME: break functions into TI and FEP functionality
+    Deltaf_ij = dDeltaf_ij = lchange = dlam = ave_dhdl = std_dhdl = \
+        cubspl = mapl = None
+
     # Estimate free energy difference with MBAR -- all states at once.
     if 'MBAR' in P.methods:
         Deltaf_ij, dDeltaf_ij = estimatewithMBAR(K, u_kln, N_k,
                                                  P.relative_tolerance,
                                                  regular_estimate=True)
 
-    # FIXME: dlam is undefined if there is no TI...
     if 'TI' in P.methods or 'TI-CUBIC' in P.methods:
         lchange, dlam, ave_dhdl, std_dhdl = TIprelim(N_k, lv, dhdl)
 
     if 'TI-CUBIC' in P.methods:
         cubspl, mapl = getSplines(lv, lchange)
 
-    # Call other methods. Print stats. Store results.
     df_allk, ddf_allk = estimatePairs(N_k, lv.shape, lchange, dlam, ave_dhdl,
                                       std_dhdl, u_kln, cubspl, mapl,
                                       Deltaf_ij, dDeltaf_ij)
@@ -1197,33 +1201,112 @@ if __name__ == "__main__":
        'An open tool implementing some recommended practices for analyzing '
        'alchemical free energy calculations.')
 
-    parser.add_argument('-a', '--software', dest = 'software', help = 'Package\'s name the data files come from: Gromacs, Sire, Desmond, or AMBER. Default: Gromacs.', default = 'Gromacs')
-    parser.add_argument('-c', '--cfm', dest = 'bCFM', help = 'The Curve-Fitting-Method-based consistency inspector. Default: False.', default = False, action = 'store_true')
-    parser.add_argument('-d', '--dir', dest = 'datafile_directory', help = 'Directory in which data files are stored. Default: Current directory.', default = '.')
-    parser.add_argument('-f', '--forwrev', dest = 'bForwrev', help = 'Plotting the free energy change as a function of time in both directions. The number of time points (an integer) is to be followed the flag. Default: 0', default = 0, type=int)
-    parser.add_argument('-g', '--breakdown', dest = 'breakdown', help = 'Plotting the free energy differences evaluated for each pair of adjacent states for all methods. Default: False.', default = False, action = 'store_true')
-    parser.add_argument('-i', '--threshold', dest = 'uncorr_threshold', help = 'Proceed with correlated samples if the number of uncorrelated samples is found to be less than this number. If 0 is given, the time series analysis will not be performed at all. Default: 50.', default = 50, type=int)
-    parser.add_argument('-k', '--koff', dest = 'bSkipLambdaIndex', help = 'Give a string of lambda indices separated by \'-\' and they will be removed from the analysis. (Another approach is to have only the files of interest present in the directory). Default: None.', default = '')
-    parser.add_argument('-m', '--methods', dest = 'methods', help = 'A list of the methods to esitimate the free energy with. Default: [TI, TI-CUBIC, DEXP, IEXP, BAR, MBAR]. To add/remove methods to the above list provide a string formed of the method strings preceded with +/-. For example, \'-ti_cubic+gdel\' will turn methods into [TI, DEXP, IEXP, BAR, MBAR, GDEL]. \'ti_cubic+gdel\', on the other hand, will call [TI-CUBIC, GDEL]. \'all\' calls the full list of supported methods [TI, TI-CUBIC, DEXP, IEXP, GINS, GDEL, BAR, UBAR, RBAR, MBAR].', default = '')
-    parser.add_argument('-n', '--uncorr', dest = 'uncorr', help = 'The observable to be used for the autocorrelation analysis; either \'dhdl\' (default) or \'dE\'. In the latter case the energy differences dE_{i,i+1} (dE_{i,i-1} for the last lambda) are used.', default = 'dhdl')
-    parser.add_argument('-o', '--out', dest = 'output_directory', help = 'Directory in which the output files produced by this script will be stored. Default: Same as datafile_directory.', default = '')
-    parser.add_argument('-p', '--prefix', dest = 'prefix', help = 'Prefix for datafile sets, i.e.\'dhdl\' (default).', default = 'dhdl')
-    parser.add_argument('-q', '--suffix', dest = 'suffix', help = 'Suffix for datafile sets, i.e. \'xvg\' (default).', default = 'xvg')
-    parser.add_argument('-r', '--decimal', dest = 'decimal', help = 'The number of decimal places the free energies are to be reported with. No worries, this is for the text output only; the full-precision data will be stored in \'results.pickle\'. Default: 3.', default = 3, type=int)
-    parser.add_argument('-s', '--skiptime', dest = 'equiltime', help = 'Discard data prior to this specified time as \'equilibration\' data. Units picoseconds. Default: 0 ps.', default = 0, type=float)
-    parser.add_argument('-t', '--temperature', dest = 'temperature', help = "Temperature in K. Default: 298 K.", default = 298, type=float)
-    parser.add_argument('-u', '--units', dest = 'units', help = 'Units to report energies: \'kJ\', \'kcal\', and \'kBT\'. Default: \'kJ\'', default = 'kJ')
-    parser.add_argument('-v', '--verbose', dest = 'verbose', help = 'Verbose option. Default: False.', default = False, action = 'store_true')
-    parser.add_argument('-w', '--overlap', dest = 'overlap', help = 'Print out and plot the overlap matrix. Default: False.', default = False, action = 'store_true')
-    parser.add_argument('-x', '--ignoreWL', dest = 'bIgnoreWL', help = 'Do not check whether the WL weights are equilibrated. No log file needed as an accompanying input.', default = False, action = 'store_true')
-    parser.add_argument('-y', '--tolerance', dest = 'relative_tolerance', help = "Convergence criterion for the energy estimates with BAR and MBAR. Default: 1e-10.", default = 1e-10, type=float)
-    parser.add_argument('-z', '--initialize', dest = 'init_with', help = 'The initial MBAR free energy guess; either \'BAR\' or \'zeroes\'. Default: \'BAR\'.', default = 'BAR')
+    parser.add_argument('-a', '--software', help="Package\'s name the data "
+                        "files come from. Default: Gromacs.",
+                        default='Gromacs',
+                        choices=('Gromacs', 'Sire',  'Desmond', 'AMBER'))
+    parser.add_argument('-c', '--cfm', dest='bCFM', help=
+                        'The Curve-Fitting-Method-based consistency inspector. '
+                        'Default: False.', default=False, action='store_true')
+    parser.add_argument('-d', '--dir', dest='datafile_directory', help=
+                        'Directory in which data files are stored. Default: '
+                        'Current directory.', default='.')
+    parser.add_argument('-f', '--forwrev', dest='bForwrev', help=
+                        'Plotting the free energy change as a function of time '
+                        'in both directions. The number of time points (an '
+                        'integer) is to be followed the flag. Default: 0',
+                        default=0, type=int)
+    parser.add_argument('-g', '--breakdown', help='Plotting the free energy '
+                        'differences evaluated for each pair of adjacent states '
+                        'for all methods. Default: False.', default=False,
+                        action='store_true')
+    parser.add_argument('-i', '--threshold', dest='uncorr_threshold', help=
+                        'Proceed with correlated samples if the number of '
+                        'uncorrelated samples is found to be less than this '
+                        'number. If 0 is given, the time series analysis will '
+                        'not be performed at all. Default: 50.', default=50,
+                        type=int)
+    parser.add_argument('-k', '--koff', dest='bSkipLambdaIndex', help=
+                        'Give a string of lambda indices separated by \'-\' and '
+                        'they will be removed from the analysis. (Another '
+                        'approach is to have only the files of interest present '
+                        'in the directory). Default: None.')
+    parser.add_argument('-m', '--methods', dest='methods', help=
+                        'A list of the methods to esitimate the free energy '
+                        'with. Default: [TI, TI-CUBIC, DEXP, IEXP, BAR, MBAR]. '
+                        'To add/remove methods to the above list provide a '
+                        'string formed of the method strings preceded with +/-. '
+                        'For example, \'-ti_cubic+gdel\' will turn methods into '
+                        '[TI, DEXP, IEXP, BAR, MBAR, GDEL]. \'ti_cubic+gdel\', '
+                        'on the other hand, will call [TI-CUBIC, GDEL]. \'all\' '
+                        'calls the full list of supported methods [TI, '
+                        'TI-CUBIC, DEXP, IEXP, GINS, GDEL, BAR, UBAR, RBAR, '
+                        'MBAR].')
+    parser.add_argument('-n', '--uncorr', help="The observable to be used for "
+                        "the autocorrelation analysis; either 'dhdl' "
+                        "(default) or 'dE'. In the latter case the energy "
+                        "differences dE_{i,i+1} (dE_{i,i-1} for the last "
+                        "lambda) are used.", default='dhdl')
+    parser.add_argument('-o', '--out', dest='output_directory', help=
+                        'Directory in which the output files produced by this '
+                        'script will be stored. Default: Same as '
+                        'datafile_directory.')
+    parser.add_argument('-p', '--prefix', help="Prefix for datafile sets, i.e. "
+                        "'dhdl' (default).", default='dhdl')
+    parser.add_argument('-q', '--suffix', help="Suffix for datafile sets, i.e. "
+                        "'xvg' (default).", default='xvg')
+    parser.add_argument('-r', '--decimal',help="The number of decimal places "
+                        "the free energies are to be reported with. No "
+                        "worries, this is for the text output only; the "
+                        "full-precision data will be stored in "
+                        "'results.pickle'. Default: 3.", default=3, type=int)
+    parser.add_argument('-s', '--skiptime', dest='equiltime', help=
+                        "Discard data prior to this specified time as "
+                        "'equilibration' data. Units picoseconds. Default: "
+                        "0 ps.", default=0, type=float)
+    parser.add_argument('-t', '--temperature', help="Temperature in K. "
+                        "Default: 298 K.", default=298, type=float)
+    parser.add_argument('-u', '--units', help="Units to report energies. "
+                        "Default: 'kJ'", default='kJ',
+                        choices=('kJ', 'kcal', 'kBT'))
+    parser.add_argument('-v', '--verbose', help='Verbose option. Default: '
+                        'False.', default=False, action='store_true')
+    parser.add_argument('-w', '--overlap', help='Print out and plot the '
+                        'overlap matrix. Default: False.',
+                        default=False, action='store_true')
+    parser.add_argument('-x', '--ignoreWL', dest='bIgnoreWL', help=
+                        'Do not check whether the WL weights are '
+                        'equilibrated. No log file needed as an accompanying '
+                        'input.', default=False, action='store_true')
+    parser.add_argument('-y', '--tolerance', dest='relative_tolerance',
+                        help='Convergence criterion for the energy estimates '
+                        'with BAR and MBAR. Default: 1e-10.',
+                        default=1e-10, type=float)
+    parser.add_argument('-z', '--initialize', dest='init_with',
+                        help="The initial MBAR free energy guess; either "
+                        "'BAR' or 'zeroes'. Default: 'BAR'.", default='BAR',
+                        choices=('BAR', 'zeroes'))
     parser.add_argument('--version', action='version',
                         version='%(prog)s {}'.format(__version__))
  
     # Simulation profile P (to be stored in 'results.pickle')
     # will amass information about the simulation.
     P = parser.parse_args()
+
+    if not P.output_directory:
+        P.output_directory = P.datafile_directory
+
+    P.methods = getMethods(P.methods.upper())
+
+    if P.overlap and not 'MBAR' in P.methods:
+        parser.error("MBAR is not in 'methods'; can't plot the overlap matrix.")
+
+    # FIXME: really need to test for FEP analysis
+    if P.bCFM and (not 'MBAR' in P.methods or not 'BAR' in P.methods):
+        parser.error("BAR/MBAR are not in 'methods'; can't perform "
+                     "Curve-Fitting-Method.")
+
+    P.units, P.beta, P.beta_report = checkUnitsAndMore(P.units)
 
     main(P)
 
