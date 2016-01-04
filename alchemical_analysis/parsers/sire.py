@@ -70,6 +70,9 @@ def parse(P):
    datafile_tuple = P.datafile_directory, P.prefix, P.suffix
    fs = glob('%s/%s*%s' % datafile_tuple)
    K = len(fs)
+
+   P.methods = ['TI', 'TI-CUBIC']
+
    if not K:
       raise SystemExit("\nERROR!\nNo files found within directory '%s' with prefix '%s' and suffix '%s': check your inputs." % datafile_tuple)
    len_fstring = max([len(i) for i in fs])

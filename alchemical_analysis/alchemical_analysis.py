@@ -48,8 +48,7 @@ def getMethods(string):
 
     all_methods = ['TI','TI-CUBIC','DEXP','IEXP','GINS','GDEL','BAR','UBAR','RBAR','MBAR']
     methods     = ['TI','TI-CUBIC','DEXP','IEXP','BAR','MBAR']
-    if (numpy.array(['Sire']) == P.software.title()).any():
-        methods = ['TI','TI-CUBIC']
+
     if not string:
         return methods
 
@@ -91,12 +90,14 @@ def getMethods(string):
             parser.error("\nUnknown character '%s' in the method string is found." % primo)
     return methods
 
+# FIXME: consistent units between parser and main code
 def checkUnitsAndMore(units):
 
+    # FXIME: move to a module with constants
     kB = 1.3806488*6.02214129/1000.0 # Boltzmann's constant (kJ/mol/K).
     beta = 1./(kB*P.temperature)
 
-    b_kcal = (numpy.array(['Sire', 'Amber']) == P.software.title()).any()
+    b_kcal = P.software not in ('sire', 'amber')
 
     if units == 'kJ':
         beta_report = beta/4.184**b_kcal
@@ -109,7 +110,7 @@ def checkUnitsAndMore(units):
         units = '(k_BT)'
     else:
         parser.error("I don't understand the unit type '%s': the only options "
-                     "'kJ', 'kcal', and 'kBT'"% units)
+                     "'kJ', 'kcal', and 'kBT'" % units)
 
     return units, beta, beta_report
 
@@ -122,7 +123,7 @@ def uncorrelate(shape, dhdlt, u_klt, sta, fin, do_dhdl=False):
     """Identifies uncorrelated samples and updates the arrays of the reduced potential energy and dhdlt retaining data entries of these samples only.
        'sta' and 'fin' are the starting and final snapshot positions to be read, both are arrays of dimension K."""
     if not P.uncorr_threshold:
-        if P.software.title()=='Sire':
+        if P.software == 'sire':
             return dhdlt, nsnapshots, None
         return dhdlt, nsnapshots, u_klt
 
@@ -976,10 +977,12 @@ def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
         pl.grid(which='both', color='w', lw=0.25, axis='y', zorder=12)
         pl.ylabel(r'$\mathrm{\langle{\frac{ \partial U } { \partial \lambda }}\rangle_{\lambda}\/%s}$' % P.units, fontsize=20, color='#151B54')
         pl.annotate('$\mathit{\lambda}$', xy=(0, 0), xytext=(0.5, -0.05), size=18, textcoords='axes fraction', va='top', ha='center', color='#151B54')
-        if not P.software.title()=='Sire':
+
+        if not P.software == 'sire':
             lege = ax.legend(prop=FP(size=14), frameon=False, loc=1)
             for l in lege.legendHandles:
                 l.set_linewidth(10)
+
         pl.savefig(os.path.join(P.output_directory, 'dhdl_TI.pdf'))
         pl.close(fig)
         return
@@ -1132,13 +1135,12 @@ def main(P):
     print('Command line was: %s\n' % ' '.join(sys.argv))
 
     parser_top = 'parsers'
-    parser_name = P.software.lower()
-    module = parser_top + '.' + parser_name
+    module = parser_top + '.' + P.software
 
     try:
         pkg = __import__(parser_top)
 
-        if parser_name not in pkg.KNOWN_PARSERS:
+        if P.software not in pkg.KNOWN_PARSERS:
             raise ImportError
 
         parser = __import__(module, fromlist='*')
@@ -1165,9 +1167,9 @@ def main(P):
     K, n_components = lv.shape
 
     # FIXME: need simpler logic to discern TI from FEP analysis
-    if P.software.title() in ('Sire', 'Gromacs', 'Amber'):
+    if P.software in ('sire', 'gromacs', 'amber'):
         do_dhdl=True
-    elif P.software.title() == 'Desmond':
+    elif P.software == 'desmond':
         do_dhdl=False
 
     dhdl, N_k, u_kln = uncorrelate(lv.shape, dhdlt, u_klt,
@@ -1311,6 +1313,7 @@ if __name__ == "__main__":
         P.output_directory = P.datafile_directory
 
     P.units, P.beta, P.beta_report = checkUnitsAndMore(P.units)
+    P.software = P.software.lower()
     P.methods = getMethods(P.methods.upper())
 
     if any((P.bForwrev, P.breakdown, P.bCFM, P.overlap)):
