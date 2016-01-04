@@ -29,7 +29,6 @@ License along with this library; if not, see <http://www.gnu.org/licenses/>.
 import sys
 import pickle                       # for full-precision data storage
 import os                           # for os interface
-import time as ttt_time             # for timing
 
 import numpy
 import pymbar
@@ -114,12 +113,6 @@ def checkUnitsAndMore(units):
 
    return units, beta, beta_report
 
-def timeStatistics(stime):
-   etime = ttt_time.time()
-   tm = int((etime-stime)/60.)
-   th = int(tm/60.)
-   ts = '%.2f' % (etime-stime-60*(tm+60*th))
-   return th, tm, ts, ttt_time.asctime()
 
 #===================================================================================================
 # FUNCTIONS: The autocorrelation analysis.
@@ -203,8 +196,6 @@ def uncorrelate(shape, dhdlt, u_klt, sta, fin, do_dhdl=False):
 
 def estimatewithMBAR(K, u_kln, N_k, reltol, regular_estimate=False):
    """Computes the MBAR free energy given the reduced potential and the number of relevant entries in it."""
-
-   import matplotlib.pyplot as pl
 
    def plotOverlapMatrix(O):
       """Plots the probability of observing a sample from state i (row) in state j (column).
@@ -652,7 +643,6 @@ def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
    outfile.close()
 
    P.datafile_directory = os.getcwd()
-   P.when_analyzed = ttt_time.asctime()
    P.ddf_allk = ddf_allk
    P.df_allk  = df_allk
    P.ddFs     = ddFs
@@ -675,9 +665,6 @@ def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
 #===================================================================================================
 
 def dF_t(K):
-
-   import matplotlib.pyplot as pl
-   from matplotlib.font_manager import FontProperties as FP
 
    def plotdFvsTime(f_ts, r_ts, F_df, R_df, F_ddf, R_ddf):
       """Plots the free energy change computed using the equilibrated snapshots between the proper target time frames (f_ts and r_ts)
@@ -791,9 +778,6 @@ def dF_t(K):
 #===================================================================================================
 
 def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
-
-   import matplotlib.pyplot as pl
-   from matplotlib.font_manager import FontProperties as FP
 
    K, n_components = lv.shape
 
@@ -1014,10 +998,8 @@ def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
 def plotCFM(K,u_kln, N_k, df_allk, ddf_allk, num_bins=100):
    """A graphical representation of what Bennett calls 'Curve-Fitting Method'."""
 
-   import matplotlib
-   import matplotlib.pyplot as pl
-
    print "Plotting the CFM figure..."
+
    def leaveTicksOnlyOnThe(xdir, ydir, axis):
       dirs = ['left', 'right', 'top', 'bottom']
       axis.xaxis.set_ticks_position(xdir)
@@ -1117,19 +1099,37 @@ def plotCFM(K,u_kln, N_k, df_allk, ddf_allk, num_bins=100):
 # MAIN
 #===================================================================================================
 
+def timer(func):
+   """Simple decorator to time a function."""
+   
+   import time
+
+   def wrapper(*args, **kwargs):
+       stime = time.time()
+       print("Started on %s" % time.asctime())
+
+       result = func(*args, **kwargs)
+
+       etime = time.time()
+       tm = int((etime - stime) / 60.0)
+       th = int(tm / 60.0)
+       ts = '%.2f' % (etime - stime - 60.0 * (tm + 60.0 * th))
+
+       print("\nTime spent: %s hours, %s minutes, and %s seconds.\n"
+             "Finished on %s" % (th, tm, ts, time.asctime()))
+
+       return result
+
+   return wrapper
+
+
+@timer
 def main(P):
     """
     The main command line routine.
     """
 
-    # Timing.
-    stime = ttt_time.time()
-    print "Started on %s" % ttt_time.asctime()
-    print 'Command line was: %s\n' % ' '.join(sys.argv)
-
-    if (numpy.array([P.bForwrev, P.breakdown, P.bCFM, P.overlap]) != 0).any():
-        import matplotlib # 'matplotlib-1.1.0-1'; errors may pop up when using an earlier version
-        matplotlib.use('Agg')
+    print('Command line was: %s\n' % ' '.join(sys.argv))
 
     parser_top = 'parsers'
     parser_name = P.software.lower()
@@ -1193,6 +1193,7 @@ def main(P):
     df_allk, ddf_allk = estimatePairs(N_k, lv.shape, lchange, dlam, ave_dhdl,
                                       std_dhdl, u_kln, cubspl, mapl,
                                       Deltaf_ij, dDeltaf_ij)
+
     totalEnergies(lv.shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij,
                   dDeltaf_ij, df_allk, ddf_allk)
 
@@ -1205,8 +1206,6 @@ def main(P):
 
     if P.bCFM and u_kln is not None:
         plotCFM(K, u_kln, N_k, df_allk, ddf_allk, 50)
-
-    print "\nTime spent: %s hours, %s minutes, and %s seconds.\nFinished on %s" % timeStatistics(stime)
 
 
 if __name__ == "__main__":
@@ -1298,8 +1297,8 @@ if __name__ == "__main__":
                         'with BAR and MBAR. Default: 1e-10.',
                         default=1e-10, type=float)
     parser.add_argument('-z', '--initialize', dest='init_with',
-                        help="The initial MBAR free energy guess; either "
-                        "'BAR' or 'zeroes'. Default: 'BAR'.", default='BAR',
+                        help="The initial MBAR free energy guess. Default: "
+                        "'BAR'.", default='BAR',
                         choices=('BAR', 'zeroes'))
     parser.add_argument('--version', action='version',
                         version='%(prog)s {}'.format(__version__))
@@ -1313,6 +1312,13 @@ if __name__ == "__main__":
 
     P.units, P.beta, P.beta_report = checkUnitsAndMore(P.units)
     P.methods = getMethods(P.methods.upper())
+
+    if any((P.bForwrev, P.breakdown, P.bCFM, P.overlap)):
+        import matplotlib             # matplotlib < 1.1.0-1: errors may pop up
+        matplotlib.use('Agg')
+
+        import matplotlib.pyplot as pl
+        from matplotlib.font_manager import FontProperties as FP
 
     main(P)
 
