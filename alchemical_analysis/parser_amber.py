@@ -359,17 +359,6 @@ def readDataAmber(P):
                          "prefix '%s' and suffix '%s': check your inputs."
                          % datafile_tuple)
 
-
-    # FIXME: needs centralised solution
-    if P.units == '(kcal/mol)':
-        Econv = 1.0
-    elif P.units == '(kJ/mol)':
-        Econv = 4.184
-    elif P.units == '(k_BT)':
-        Econv = P.beta
-    else:
-        raise SystemExit('ERROR: unknown units %s' % P.units)
-
     file_data = []
     pmemd = False
 
@@ -645,6 +634,16 @@ def readDataAmber(P):
         u_klt = np.zeros([K, K, maxn], np.float64)
     else:
         u_klt = None
+
+    # FIXME: needs centralised solution
+    if P.units == '(kcal/mol)':
+        Econv = 1.0
+    elif P.units == '(kJ/mol)':
+        Econv = 4.184
+    elif P.units == '(k_BT)':
+        Econv = P.beta
+    else:
+        raise SystemExit('ERROR: unknown units %s' % P.units)
 
     ave = []
 
