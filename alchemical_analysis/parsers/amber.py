@@ -47,6 +47,8 @@ from collections import defaultdict
 
 import numpy as np
 
+import consts
+
 
 DVDL_COMPS = ['BOND', 'ANGLE', 'DIHED', '1-4 NB', '1-4 EEL', 'VDWAALS',
               'EELEC', 'RESTRAINT']
@@ -361,16 +363,6 @@ def parse(P):
                          % datafile_tuple)
 
 
-    # FIXME: needs centralised solution
-    if P.units == '(kcal/mol)':
-        Econv = 1.0
-    elif P.units == '(kJ/mol)':
-        Econv = 4.184
-    elif P.units == '(k_BT)':
-        Econv = P.beta
-    else:
-        raise SystemExit('ERROR: unknown units %s' % P.units)
-
     file_data = []
     pmemd = False
 
@@ -413,8 +405,6 @@ def parse(P):
             if not T:
                 raise SystemExit('ERROR: Non-constant temperature MD not '
                                  'currently supported')
-
-            P.temperature = T
 
             clambda, = secp.extract_section('^Free energy options:', '^$',
                                             ['clambda'], '^---')
@@ -622,6 +612,12 @@ def parse(P):
         raise SystemExit('ERROR: Not all files have the same temperature (T).')
 
 
+    # P.beta has been computed with P.temperature from the command line
+    T = T_uniq.pop()
+    P.beta *= P.temperature / T
+    P.beta_report *= P.temperature / T
+    P.temperature = T
+    
     # FIXME: check if ntpr is consistent across all input files
     P.snap_size = [dt_uniq.pop() * ntpr]
 
@@ -643,6 +639,16 @@ def parse(P):
         u_klt = None
 
     ave = []
+
+    # FIXME: needs centralised solution
+    if P.units == '(kcal/mol)':
+        Econv = 1.0
+    elif P.units == '(kJ/mol)':
+        Econv = consts.CAL2JOULE
+    elif P.units == '(k_BT)':
+        Econv = P.beta
+    else:
+        raise SystemExit('ERROR: unknown units %s' % P.units)
 
     for i, clambda in enumerate(lvals):
         vals = dvdl_all[clambda][start_from:]

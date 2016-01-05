@@ -40,6 +40,11 @@ import consts
 __version__ = '1.1.0'
 
 
+if False:
+    import sys
+    f = open(os.devnull, 'w')
+    sys.stdout = f
+
 
 #===================================================================================================
 # FUNCTIONS: Miscellanea.
@@ -103,10 +108,10 @@ def checkUnitsAndMore(units):
     b_kcal = P.software not in ('sire', 'amber')
 
     if units == 'kJ':
-        beta_report = beta/4.184**b_kcal
+        beta_report = beta / consts.CAL2JOULE**b_kcal
         units = '(kJ/mol)'
     elif units == 'kcal':
-        beta_report = 4.184**(not b_kcal)*beta
+        beta_report = consts.CAL2JOULE**(not b_kcal) * beta
         units = '(kcal/mol)'
     elif units == 'kBT':
         beta_report = 1
@@ -138,7 +143,8 @@ def uncorrelate(shape, dhdlt, u_klt, sta, fin, do_dhdl=False):
     g = numpy.zeros(K,float) # autocorrelation times for the data
     if do_dhdl:
         dhdl = numpy.zeros([K,n_components,max(fin-sta)], float) #dhdl is value for dhdl for each component in the file at each time.
-        print "\n\nNumber of correlated and uncorrelated samples:\n\n%6s %12s %12s %12s\n" % ('State', 'N', 'N_k', 'N/N_k')
+        logger.info('\n\nNumber of correlated and uncorrelated samples:'
+                    '\n\n%6s %12s %12s %12s\n' % ('State', 'N', 'N_k', 'N/N_k'))
 
     UNCORR_OBSERVABLE = {'Gromacs':P.uncorr, 'Amber':'dhdl', 'Sire':'dhdl', 'Desmond':'dE'}[P.software.title()]
 
@@ -156,7 +162,9 @@ def uncorrelate(shape, dhdlt, u_klt, sta, fin, do_dhdl=False):
             # Handle case where we end up with too few.
             if N < P.uncorr_threshold:
                 if do_dhdl:
-                    print "WARNING: Only %s uncorrelated samples found at lambda number %s; proceeding with analysis using correlated samples..." % (N, k)
+                    logger.warn(': Only %s uncorrelated samples found at '
+                                'lambda number %s; proceeding with analysis '
+                                'using correlated samples...' % (N, k))
                 indices = sta[k] + numpy.arange(len(dhdl_sum))
                 N = len(indices)
             N_k[k] = N # Store the number of uncorrelated samples from state k.
@@ -164,7 +172,7 @@ def uncorrelate(shape, dhdlt, u_klt, sta, fin, do_dhdl=False):
                 for l in range(K):
                     u_kln[k,l,0:N] = u_klt[k,l,indices]
             if do_dhdl:
-                print "%6s %12s %12s %12.2f" % (k, fin[k], N_k[k], g[k])
+                logger.info('%6s %12s %12s %12.2f' % (k, fin[k], N_k[k], g[k]))
                 for n in range(n_components):
                     dhdl[k,n,0:N] = dhdlt[k,n,indices]
 
@@ -184,7 +192,9 @@ def uncorrelate(shape, dhdlt, u_klt, sta, fin, do_dhdl=False):
             N = len(indices) # number of uncorrelated samples
             # Handle case where we end up with too few.
             if N < P.uncorr_threshold:
-                print "WARNING: Only %s uncorrelated samples found at lambda number %s; proceeding with analysis using correlated samples..." % (N, k)
+                logger.warn('WARNING: Only %s uncorrelated samples found '
+                            'at lambda number %s; proceeding with analysis '
+                            'using correlated samples...' % (N, k))
                 indices = sta[k] + numpy.arange(len(dE))
                 N = len(indices)
             N_k[k] = N # Store the number of uncorrelated samples from state k.
@@ -252,24 +262,25 @@ def estimatewithMBAR(K, u_kln, N_k, reltol, regular_estimate=False):
         return
 
     if regular_estimate:
-        print "\nEstimating the free energy change with MBAR..."
+        logger.info('\nEstimating the free energy change with MBAR...')
 
     MBAR = pymbar.mbar.MBAR(u_kln, N_k, verbose = P.verbose, relative_tolerance = reltol, initialize = P.init_with)
     # Get matrix of dimensionless free energy differences and uncertainty estimate.
     (Deltaf_ij, dDeltaf_ij, theta_ij ) = MBAR.getFreeEnergyDifferences(uncertainty_method='svd-ew', return_theta = True)
     if P.verbose:
-        print "Matrix of free energy differences\nDeltaf_ij:\n%s\ndDeltaf_ij:\n%s" % (Deltaf_ij, dDeltaf_ij)
+        logger.info('Matrix of free energy differences\nDeltaf_ij:\n%s\ndDeltaf_ij:\n%s'
+                    % (Deltaf_ij, dDeltaf_ij))
     if regular_estimate:
         if P.overlap:
-            print "The overlap matrix is..."
+            logger.info('The overlap matrix is...')
             O = MBAR.computeOverlap()[2]
             for k in range(K):
                 line = ''
                 for l in range(K):
                     line += ' %5.2f ' % O[k, l]
-                print line
+                logger.info(line)
             plotOverlapMatrix(O)
-            print '\nFor a nicer figure look at %s' % consts.MBAR_OVERLAP_PDF
+            logger.info('\nFor a nicer figure look at %s' % consts.MBAR_OVERLAP_PDF)
         return (Deltaf_ij, dDeltaf_ij)
     return (Deltaf_ij[0,K-1]/P.beta_report, dDeltaf_ij[0,K-1]/P.beta_report)
 
@@ -598,20 +609,18 @@ def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
     # Display results.
     def printLine(str1, str2, d1=None, d2=None):
         """Fills out the results table linewise."""
-        print str1,
         text = str1
+
         for name in P.methods:
             if d1 == 'plain':
-                print str2,
                 text += ' ' + str2
             if d1 == 'name':
-                print str2 % (name, P.units),
                 text += ' ' + str2 % (name, P.units)
             if d1 and d2:
-                print str2 % (d1[name]/P.beta_report, d2[name]/P.beta_report),
-                text += ' ' + str2 % (d1[name]/P.beta_report, d2[name]/P.beta_report)
-        print ''
+                text += ' ' + str2 % (d1[name]/P.beta_report,
+                                      d2[name]/P.beta_report)
         outtext.append(text + '\n')
+
         return
 
     d = P.decimal
@@ -622,29 +631,33 @@ def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
     printLine(12*'-', str_dash, 'plain')
     printLine('%-12s' % '   States', str_names, 'name')
     printLine(12*'-', str_dash, 'plain')
+
     for k in range(K-1):
         printLine('%4d -- %-4d' % (k, k+1), str_dat, df_allk[k], ddf_allk[k])
     printLine(12*'-', str_dash, 'plain')
+
     remark = ["",  "A remark on the energy components interpretation: ",
               " 'vdWaals' is computed as 'TOTAL' - 'Coulomb', where ",
               " 'Coulomb' is found as the free energy change between ",
               " the states defined by the lambda vectors (0,0,...,0) ",
               " and (1,0,...,0), the only varying vector component ",
               " being either 'coul-lambda' or 'fep-lambda'. "]
+
     w = 12 + (1+len(str_dash))*len(P.methods)
     str_align = '{:I^%d}' % w
+
     if len(P.lv_names)>1:
         for i in range(len(segments)):
             printLine('%9s:  ' % segments[i], str_dat, dFs[i], ddFs[i])
         for i in remark:
-            print str_align.replace('I', ' ').format(i)
+            logger.info(str_align.replace('I', ' ').format(i))
     else:
         printLine('%9s:  ' % segments[-1], str_dat, dFs[-1], ddFs[-1])
-    # Store results.
-    outfile = open(os.path.join(P.output_directory, consts.RESULTS_FILE), 'w')
-    outfile.write('# Command line: %s\n\n' % ' '.join(sys.argv) )
-    outfile.writelines(outtext)
-    outfile.close()
+
+    with open(os.path.join(P.output_directory, consts.RESULTS_FILE), 'w') as \
+         outfile:
+        outfile.write('# Command line: %s\n\n' % ' '.join(sys.argv) )
+        outfile.writelines(outtext)
 
     P.datafile_directory = os.getcwd()
     P.ddf_allk = ddf_allk
@@ -652,18 +665,22 @@ def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
     P.ddFs     = ddFs
     P.dFs      = dFs
 
-    outfile = open(os.path.join(P.output_directory, consts.RESULTS_PICKLE), 'w')
-    pickle.dump(P, outfile)
-    outfile.close()
+    with open(os.path.join(P.output_directory, consts.RESULTS_PICKLE), 'w') as \
+         outfile:
+        pickle.dump(P, outfile)
 
-    print '\n'+w*'*'
+    outtext.append('\n' + w*'*' + '\n')
+
     for i in [" The above table has been stored in ",
-              " " + P.output_directory + "%s " % consts.RESULTS_FILE,
+              " " + P.output_directory + "/%s " % consts.RESULTS_FILE,
               " while the full-precision data ",
               " (along with the simulation profile) in ",
-              " " + P.output_directory + "%s " % consts.RESULTS_PICKLE]:
-        print str_align.format('{:^40}'.format(i))
-    print w*'*'
+              " " + P.output_directory + "/%s " % consts.RESULTS_PICKLE]:
+        outtext.append(str_align.format('{:^40}'.format(i)))
+
+    outtext.append('\n' + w*'*')
+
+    logger.info(''.join(outtext))
 
     return
 
@@ -749,41 +766,59 @@ def dF_t(K, shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij):
     F_df[-1], F_ddf[-1] = (Deltaf_ij[0,K-1]/P.beta_report, dDeltaf_ij[0,K-1]/P.beta_report)
     R_df[0], R_ddf[0]   = (Deltaf_ij[0,K-1]/P.beta_report, dDeltaf_ij[0,K-1]/P.beta_report)
     # Do the forward analysis.
-    print "Forward dF(t) analysis...\nEstimating the free energy change using the data up to"
+    logger.info('Forward dF(t) analysis...\nEstimating the free energy change '
+                'using he data up to')
     sta = nss_tf[0]
     for i in range(n_tf-2):
-        print "%60s ps..." % ts[i+1]
+        logger.info('%60s ps...' % ts[i+1])
         fin = numpy.sum(nss_tf[:i+2],axis=0)
         _, N_k, u_kln = uncorrelate(shape, dhdlt, u_klt, nss_tf[0],
                                     numpy.sum(nss_tf[:i+2],axis=0))
         F_df[i], F_ddf[i] = estimatewithMBAR(K, u_kln, N_k, P.relative_tolerance)
+
     # Do the reverse analysis.
-    print "Reverse dF(t) analysis...\nUsing the data starting from"
+    logger.info('Reverse dF(t) analysis...\nUsing the data starting from')
+
     fin = numpy.sum(nss_tf[:],axis=0)
     for i in range(n_tf-2):
-        print "%34s ps..." % ts[i+1]
+        logger.info('%34s ps...' % ts[i+1])
         sta = numpy.sum(nss_tf[:i+2],axis=0)
         _, N_k, u_kln = uncorrelate(shape, dhdlt, u_klt, sta, fin)
         R_df[i+1], R_ddf[i+1] = estimatewithMBAR(K, u_kln, N_k, P.relative_tolerance)
 
-    print """\n   The free energies %s evaluated by using the trajectory
-    snaphots corresponding to various time intervals for both the
-    reverse and forward (in parentheses) direction.\n""" % P.units
-    print "%s\n %20s %19s %20s\n%s" % (70*'-', 'Time interval, ps','Reverse', 'Forward', 70*'-')
-    print "%10s -- %s\n%10s -- %-10s %11.3f +- %5.3f %16s\n" % (ts[0], ts[-1], '('+ts[0], ts[0]+')', R_df[0], R_ddf[0], 'XXXXXX')
+    logger.info('\n   The free energies %s evaluated by using the trajectory'
+                'snaphots corresponding to various time intervals for both the'
+                'reverse and forward (in parentheses) direction.\n' % P.units)
+    logger.info('%s\n %20s %19s %20s\n%s' %
+                (70*'-', 'Time interval, ps', 'Reverse', 'Forward', 70*'-'))
+    logger.info('%10s -- %s\n%10s -- %-10s %11.3f +- %5.3f %16s\n' %
+                (ts[0], ts[-1], '('+ts[0], ts[0]+')', R_df[0], R_ddf[0],
+                 'XXXXXX'))
+
     for i in range(1, len(ts)-1):
-        print "%10s -- %s\n%10s -- %-10s %11.3f +- %5.3f %11.3f +- %5.3f\n" % (ts[i], ts[-1], '('+ts[0], ts[i]+')', R_df[i], R_ddf[i], F_df[i-1], F_ddf[i-1])
-    print "%10s -- %s\n%10s -- %-10s %16s %15.3f +- %5.3f\n%s" % (ts[-1], ts[-1], '('+ts[0], ts[-1]+')', 'XXXXXX', F_df[-1], F_ddf[-1], 70*'-')
+        logger.info('%10s -- %s\n%10s -- %-10s %11.3f +- %5.3f %11.3f +- %5.3f\n'
+                    % (ts[i], ts[-1], '('+ts[0], ts[i]+')', R_df[i], R_ddf[i],
+                       F_df[i-1], F_ddf[i-1]))
+
+    logger.info("%10s -- %s\n%10s -- %-10s %16s %15.3f +- %5.3f\n%s" %
+                (ts[-1], ts[-1], '('+ts[0], ts[-1]+')', 'XXXXXX', F_df[-1],
+                 F_ddf[-1], 70*'-'))
 
     # Plot the forward and reverse dF(t); store the data points in the text file.
-    print "Plotting data to the file %s...\n" % consts.DF_T_PDF
-    plotdFvsTime([float(i) for i in ts[1:]], [float(i) for i in ts[:-1]], F_df, R_df, F_ddf, R_ddf)
-    outtext = ["%12s %10s %-10s %17s %10s %s\n" % ('Time (ps)', 'Forward', P.units, 'Time (ps)', 'Reverse', P.units)]
-    outtext+= ["%10s %11.3f +- %5.3f %18s %11.3f +- %5.3f\n" % (ts[1:][i], F_df[i], F_ddf[i], ts[:-1][i], R_df[i], R_ddf[i]) for i in range(len(F_df))]
+    logger.info('Plotting data to the file %s...\n' % consts.DF_T_PDF)
 
-    outfile = open(os.path.join(P.output_directory, consts.DF_T_FILE), 'w')
-    outfile.writelines(outtext)
-    outfile.close()
+    plotdFvsTime([float(i) for i in ts[1:]], [float(i) for i in ts[:-1]], F_df, R_df, F_ddf, R_ddf)
+
+    outtext = ["%12s %10s %-10s %17s %10s %s\n" %
+               ('Time (ps)', 'Forward', P.units, 'Time (ps)', 'Reverse',
+                P.units)]
+    outtext+= ["%10s %11.3f +- %5.3f %18s %11.3f +- %5.3f\n" %
+               (ts[1:][i], F_df[i], F_ddf[i], ts[:-1][i], R_df[i], R_ddf[i])
+               for i in range(len(F_df))]
+
+    with open(os.path.join(P.output_directory, consts.DF_T_FILE), 'w') as \
+         outfile:
+        outfile.writelines(outtext)
 
     return
 
@@ -1124,7 +1159,7 @@ def timer(func):
 
     def wrapper(*args, **kwargs):
         stime = time.time()
-        print("Started on %s" % time.asctime())
+        logger.info("Started on %s" % time.asctime())
 
         result = func(*args, **kwargs)
 
@@ -1133,8 +1168,8 @@ def timer(func):
         th = int(tm / 60.0)
         ts = '%.2f' % (etime - stime - 60.0 * (tm + 60.0 * th))
 
-        print("\nTime spent: %s hours, %s minutes, and %s seconds.\n"
-              "Finished on %s" % (th, tm, ts, time.asctime()))
+        logger.info("\nTime spent: %s hours, %s minutes, and %s seconds.\n"
+                    "Finished on %s" % (th, tm, ts, time.asctime()))
 
         return result
 
@@ -1147,9 +1182,10 @@ def main(P):
     The main command line routine.
     """
 
-    print('\n=== Alchemical Analysis %s ===\n\nCommand line: %s\n' %
+    logger.info('\n=== Alchemical Analysis %s ===\n\nCommand line: %s\n' %
           (__version__, ' '.join(sys.argv)))
 
+    parser_name = P.software.title()
     parser_top = 'parsers'
     module = parser_top + '.' + P.software
 
@@ -1162,21 +1198,25 @@ def main(P):
         parser = __import__(module, fromlist='*')
     except ImportError:
         raise SystemExit('%s parser not implemented or not registered.' %
-                         P.software.title() )
+                          parser_name)
     else:
+        logger.info('--- Parser %s starts ---\n' % parser_name)
+
         nsnapshots, lv, dhdlt, u_klt = parser.parse(P)
+
+        logger.info('--- Parser %s finished ---' % parser_name)
 
 
     # NOTE: parser may have changed P.methods -> may want to ask parser of
     #       supported methods befor actual parsing
     if P.overlap and not 'MBAR' in P.methods:
-        print("WARNING: MBAR is not in 'methods'; cannot plot the overlap "
-              "matrix.")
+        logger.warn("MBAR is not in 'methods'; cannot plot the overlap "
+                    "matrix.")
         P.overlap = False
 
     # FIXME: really need to test for FEP analysis
     if P.bCFM and (not 'MBAR' in P.methods or not 'BAR' in P.methods):
-        print("WARNING: BAR/MBAR are not in 'methods'; cannot perform "
+        logger.warn("BAR/MBAR are not in 'methods'; cannot perform "
               "Curve-Fitting-Method.")
         P.bCFM = False
 
@@ -1209,8 +1249,8 @@ def main(P):
     if 'TI-CUBIC' in P.methods:
         cubspl, mapl = getSplines(lv, lchange)
 
-    print('Estimating the free energy change with %s...' %
-          ', '.join(P.methods)).replace(', MBAR', '')
+    logger.info('Estimating the free energy change with %s...' %
+                ', '.join(P.methods).replace(', MBAR', '') )
 
     df_allk, ddf_allk = estimatePairs(N_k, lv.shape, lchange, dlam, ave_dhdl,
                                       std_dhdl, u_kln, cubspl, mapl,
@@ -1223,21 +1263,52 @@ def main(P):
         dF_t(K, lv.shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij)
 
     if P.breakdown:
-        print('Plotting the free energy breakdown figure...')
+        logger.info('Plotting the free energy breakdown figure...')
         plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk,
                        ddf_allk)
 
     if P.bCFM and u_kln is not None:
-        print('Plotting the CFM figure...')
+        logger.info('Plotting the CFM figure...')
 
         if ('TI' in P.methods or 'TI-CUBIC' in P.methods):
-            print('Plotting the TI figure...')
+            logger.info('Plotting the TI figure...')
 
         plotCFM(K, u_kln, N_k, df_allk, ddf_allk, 50)
 
 
 if __name__ == "__main__":
     import argparse
+    import logging
+
+
+    class MyFormatter(logging.Formatter):
+
+        err_fmt  = "ERROR: %(msg)s"
+        warn_fmt = "WARNING: %(msg)s"
+        info_fmt = "%(msg)s"
+        dbg_fmt  = "DEBUG: %(module)s: %(lineno)d: %(msg)s"
+
+        def __init__(self, fmt="%(levelno)s: %(msg)s"):
+            logging.Formatter.__init__(self, fmt)
+
+        def format(self, record):
+            format_orig = self._fmt
+
+            if record.levelno == logging.DEBUG:
+                self._fmt = MyFormatter.dbg_fmt
+            elif record.levelno == logging.WARN:
+                self._fmt = MyFormatter.warn_fmt
+            elif record.levelno == logging.INFO:
+                self._fmt = MyFormatter.info_fmt
+            elif record.levelno == logging.ERROR:
+                self._fmt = MyFormatter.err_fmt
+
+            result = logging.Formatter.format(self, record)
+
+            self._fmt = format_orig
+
+            return result
+
 
     parser = argparse.ArgumentParser(description=
        'An open tool implementing some recommended practices for analyzing '
@@ -1305,9 +1376,9 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--skiptime', dest='equiltime', help=
                         "Discard data prior to this specified time as "
                         "'equilibration' data. Units picoseconds. Default: "
-                        "0 ps.", default=0, type=float)
+                        "0 ps.", default=0.0, type=float)
     parser.add_argument('-t', '--temperature', help="Temperature in K. "
-                        "Default: 298 K.", default=298, type=float)
+                        "Default: 298 K.", default=298.0, type=float)
     parser.add_argument('-u', '--units', help="Units to report energies. "
                         "Default: 'kJ'", default='kJ',
                         choices=('kJ', 'kcal', 'kBT'))
@@ -1349,7 +1420,17 @@ if __name__ == "__main__":
         import matplotlib.pyplot as pl
         from matplotlib.font_manager import FontProperties as FP
 
+    logging.basicConfig(level=logging.INFO, filename=os.devnull)
+    logger = logging.getLogger(__name__)
+
+    hdlr = logging.StreamHandler(sys.stdout)
+    hdlr.setFormatter(MyFormatter())
+    logging.root.addHandler(hdlr)
+
+    logger.disabled = False
+
     main(P)
+
 
 #===================================================================================================
 #                                   End of the script
