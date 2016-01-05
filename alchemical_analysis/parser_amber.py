@@ -620,6 +620,12 @@ def readDataAmber(P):
     if len(T_uniq) != 1:
         raise SystemExit('ERROR: Not all files have the same temperature (T).')
 
+    # P.beta has been computed with P.temperature from the command line
+    T = T_uniq.pop()
+    P.beta *= P.temperature / T
+    P.beta_report *= P.temperature / T
+    P.temperature = T
+
     # FIXME: check if ntpr is consistent across all input files
     P.snap_size = [dt_uniq.pop() * ntpr]
 
