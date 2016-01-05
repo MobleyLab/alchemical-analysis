@@ -621,8 +621,9 @@ def parse(P):
     if len(T_uniq) != 1:
         raise SystemExit('ERROR: Not all files have the same temperature (T).')
 
-    P.snap_size = []
-    P.snap_size.append(1000.0 * dt_uniq.pop())
+
+    # FIXME: check if ntpr is consistent across all input files
+    P.snap_size = [dt_uniq.pop() * ntpr]
 
     start_from = int(round(P.equiltime / (ntpr * float(dt))))
     print('\nSkipping first %d steps (= %f ps)\n' % (start_from, P.equiltime))

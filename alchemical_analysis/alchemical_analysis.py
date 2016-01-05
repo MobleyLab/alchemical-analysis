@@ -43,7 +43,18 @@ BAR_METHODS = set(['DEXP', 'IEXP', 'GINS', 'GDEL', 'BAR', 'UBAR', 'RBAR',
 ALL_METHODS = TI_METHODS | BAR_METHODS
 DEFAULT_METHODS = set(['TI', 'TI-CUBIC', 'DEXP', 'IEXP', 'BAR', 'MBAR'])
 
- 
+RESULTS_FILE = 'results.txt'
+RESULTS_PICKLE = 'results.pickle'
+DF_T_FILE = 'dF_t.txt'
+
+MBAR_OVERLAP_PDF = 'O_MBAR.pdf'
+DF_T_PDF = 'dF_t.pdf'
+DF_STATE_LONG_PDF = 'dF_state_long.pdf'
+DF_STATE_PDF = 'dF_state.pdf'
+DHDL_TI_PDF = 'dhdl_TI.pdf'
+CFM_PDF = 'cfm.pdf'
+
+
 
 #===================================================================================================
 # FUNCTIONS: Miscellanea.
@@ -250,7 +261,7 @@ def estimatewithMBAR(K, u_kln, N_k, reltol, regular_estimate=False):
 
         pl.xlim(-1, K)
         pl.ylim(0, K+1)
-        pl.savefig(os.path.join(P.output_directory, 'O_MBAR.pdf'), bbox_inches='tight', pad_inches=0.0)
+        pl.savefig(os.path.join(P.output_directory, MBAR_OVERLAP_PDF), bbox_inches='tight', pad_inches=0.0)
         pl.close(fig)
         return
 
@@ -272,7 +283,7 @@ def estimatewithMBAR(K, u_kln, N_k, reltol, regular_estimate=False):
                     line += ' %5.2f ' % O[k, l]
                 print line
             plotOverlapMatrix(O)
-            print "\nFor a nicer figure look at 'O_MBAR.pdf'"
+            print '\nFor a nicer figure look at %s' % MBAR_OVERLAP_PDF
         return (Deltaf_ij, dDeltaf_ij)
     return (Deltaf_ij[0,K-1]/P.beta_report, dDeltaf_ij[0,K-1]/P.beta_report)
 
@@ -644,7 +655,7 @@ def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
     else:
         printLine('%9s:  ' % segments[-1], str_dat, dFs[-1], ddFs[-1])
     # Store results.
-    outfile = open(os.path.join(P.output_directory, 'results.txt'), 'w')
+    outfile = open(os.path.join(P.output_directory, RESULTS_FILE), 'w')
     outfile.write('# Command line: %s\n\n' % ' '.join(sys.argv) )
     outfile.writelines(outtext)
     outfile.close()
@@ -655,13 +666,16 @@ def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
     P.ddFs     = ddFs
     P.dFs      = dFs
 
-    outfile = open(os.path.join(P.output_directory, 'results.pickle'), 'w')
+    outfile = open(os.path.join(P.output_directory, RESULTS_PICKLE), 'w')
     pickle.dump(P, outfile)
     outfile.close()
 
     print '\n'+w*'*'
-    for i in [" The above table has been stored in ", " "+P.output_directory+"/results.txt ",
-       " while the full-precision data ", " (along with the simulation profile) in ", " "+P.output_directory+"/results.pickle "]:
+    for i in [" The above table has been stored in ",
+              " " + P.output_directory + "%s " % RESULTS_FILE,
+              " while the full-precision data ",
+              " (along with the simulation profile) in ",
+              " " + P.output_directory + "%s " % RESULTS_PICKLE]:
         print str_align.format('{:^40}'.format(i))
     print w*'*'
 
@@ -710,7 +724,7 @@ def dF_t(K, shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij):
         pl.xticks(f_ts, ['%.2f' % i for i in f_ts])
         pl.tick_params(axis='x', color='#D2B9D3')
         pl.tick_params(axis='y', color='#D2B9D3')
-        pl.savefig(os.path.join(P.output_directory, 'dF_t.pdf'))
+        pl.savefig(os.path.join(P.output_directory, DF_T_PDF))
         pl.close(fig)
         return
 
@@ -774,11 +788,15 @@ def dF_t(K, shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij):
     print "%10s -- %s\n%10s -- %-10s %16s %15.3f +- %5.3f\n%s" % (ts[-1], ts[-1], '('+ts[0], ts[-1]+')', 'XXXXXX', F_df[-1], F_ddf[-1], 70*'-')
 
     # Plot the forward and reverse dF(t); store the data points in the text file.
-    print "Plotting data to the file dF_t.pdf...\n"
+    print "Plotting data to the file %s...\n" % DF_T_PDF
     plotdFvsTime([float(i) for i in ts[1:]], [float(i) for i in ts[:-1]], F_df, R_df, F_ddf, R_ddf)
     outtext = ["%12s %10s %-10s %17s %10s %s\n" % ('Time (ps)', 'Forward', P.units, 'Time (ps)', 'Reverse', P.units)]
     outtext+= ["%10s %11.3f +- %5.3f %18s %11.3f +- %5.3f\n" % (ts[1:][i], F_df[i], F_ddf[i], ts[:-1][i], R_df[i], R_ddf[i]) for i in range(len(F_df))]
-    outfile = open(os.path.join(P.output_directory, 'dF_t.txt'), 'w'); outfile.writelines(outtext); outfile.close()
+
+    outfile = open(os.path.join(P.output_directory, DF_T_FILE), 'w')
+    outfile.writelines(outtext)
+    outfile.close()
+
     return
 
 #===================================================================================================
@@ -820,7 +838,8 @@ def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
         leg = pl.legend(lines, tuple(P.methods), loc=3, ncol=2, prop=FP(size=10), fancybox=True)
         leg.get_frame().set_alpha(0.5)
         pl.title('The free energy change breakdown', fontsize = 12)
-        pl.savefig(os.path.join(P.output_directory, 'dF_state_long.pdf'), bbox_inches='tight')
+        pl.savefig(os.path.join(P.output_directory, DF_STATE_LONG_PDF),
+                   bbox_inches='tight')
         pl.close(fig)
         return
 
@@ -858,7 +877,8 @@ def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
             ndx += 1
         leg = ax.legend(lines, tuple(P.methods), loc=0, ncol=2, prop=FP(size=8), title='$\mathrm{\Delta G\/%s\/}\mathit{vs.}\/\mathrm{lambda\/pair}$' % P.units, fancybox=True)
         leg.get_frame().set_alpha(0.5)
-        pl.savefig(os.path.join(P.output_directory, 'dF_state.pdf'), bbox_inches='tight')
+        pl.savefig(os.path.join(P.output_directory, DF_STATE_PDF),
+                   bbox_inches='tight')
         pl.close(fig)
         return
 
@@ -993,7 +1013,7 @@ def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
                 for l in lege.legendHandles:
                     l.set_linewidth(10)
 
-        pl.savefig(os.path.join(P.output_directory, 'dhdl_TI.pdf'))
+        pl.savefig(os.path.join(P.output_directory, DHDL_TI_PDF))
         pl.close(fig)
         return
 
@@ -1042,7 +1062,7 @@ def plotCFM(K,u_kln, N_k, df_allk, ddf_allk, num_bins=100):
             pl.xlim(xx_i.min(), xx_i.max())
         pl.annotate(r'$\mathrm{\Delta U_{i,i+1}\/(reduced\/units)}$', xy=(0.5, 0.03), xytext=(0.5, 0), xycoords=('figure fraction', 'figure fraction'), size=20+sf, textcoords='offset points', va='center', ha='center', color='#151B54')
         pl.annotate(r'$\mathrm{\Delta g_{i+1,i}\/(reduced\/units)}$', xy=(0.06, 0.5), xytext=(0, 0.5), rotation=90, xycoords=('figure fraction', 'figure fraction'), size=20+sf, textcoords='offset points', va='center', ha='center', color='#151B54')
-        pl.savefig(os.path.join(P.output_directory, 'cfm.pdf'))
+        pl.savefig(os.path.join(P.output_directory, CFM_PDF))
         pl.close(fig)
         return
 
