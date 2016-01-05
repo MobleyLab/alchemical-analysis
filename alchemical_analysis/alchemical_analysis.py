@@ -664,7 +664,7 @@ def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
 # FUNCTIONS: Free energy change vs. simulation time. Called by the -f flag.
 #===================================================================================================
 
-def dF_t(K):
+def dF_t(K, shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij):
 
     def plotdFvsTime(f_ts, r_ts, F_df, R_df, F_ddf, R_ddf):
         """Plots the free energy change computed using the equilibrated snapshots between the proper target time frames (f_ts and r_ts)
@@ -745,7 +745,8 @@ def dF_t(K):
     for i in range(n_tf-2):
         print "%60s ps..." % ts[i+1]
         fin = numpy.sum(nss_tf[:i+2],axis=0)
-        N_k, u_kln = uncorrelate(nss_tf[0], numpy.sum(nss_tf[:i+2],axis=0))
+        _, N_k, u_kln = uncorrelate(shape, dhdlt, u_klt, nss_tf[0],
+                                    numpy.sum(nss_tf[:i+2],axis=0))
         F_df[i], F_ddf[i] = estimatewithMBAR(K, u_kln, N_k, P.relative_tolerance)
     # Do the reverse analysis.
     print "Reverse dF(t) analysis...\nUsing the data starting from"
@@ -753,7 +754,7 @@ def dF_t(K):
     for i in range(n_tf-2):
         print "%34s ps..." % ts[i+1]
         sta = numpy.sum(nss_tf[:i+2],axis=0)
-        N_k, u_kln = uncorrelate(sta, fin)
+        _, N_k, u_kln = uncorrelate(shape, dhdlt, u_klt, sta, fin)
         R_df[i+1], R_ddf[i+1] = estimatewithMBAR(K, u_kln, N_k, P.relative_tolerance)
 
     print """\n   The free energies %s evaluated by using the trajectory
@@ -766,7 +767,7 @@ def dF_t(K):
     print "%10s -- %s\n%10s -- %-10s %16s %15.3f +- %5.3f\n%s" % (ts[-1], ts[-1], '('+ts[0], ts[-1]+')', 'XXXXXX', F_df[-1], F_ddf[-1], 70*'-')
 
     # Plot the forward and reverse dF(t); store the data points in the text file.
-    print "Plotting data to the file dF_t.pdf...\n\n"
+    print "Plotting data to the file dF_t.pdf...\n"
     plotdFvsTime([float(i) for i in ts[1:]], [float(i) for i in ts[:-1]], F_df, R_df, F_ddf, R_ddf)
     outtext = ["%12s %10s %-10s %17s %10s %s\n" % ('Time (ps)', 'Forward', P.units, 'Time (ps)', 'Reverse', P.units)]
     outtext+= ["%10s %11.3f +- %5.3f %18s %11.3f +- %5.3f\n" % (ts[1:][i], F_df[i], F_ddf[i], ts[:-1][i], R_df[i], R_ddf[i]) for i in range(len(F_df))]
@@ -1197,7 +1198,7 @@ def main(P):
                   dDeltaf_ij, df_allk, ddf_allk)
 
     if P.bForwrev:
-        dF_t(K)
+        dF_t(K, lv.shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij)
 
     if P.breakdown:
         print('Plotting the free energy breakdown figure...')
