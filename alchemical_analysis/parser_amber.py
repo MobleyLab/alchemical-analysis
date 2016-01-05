@@ -348,6 +348,7 @@ def readDataAmber(P):
     """
 
     P.lv_names = [r'all']               # legend for plotting
+    P.bExpanded = False
 
     # FIXME: this should happen in the main code
     datafile_tuple = P.datafile_directory, os.sep, P.prefix, P.suffix
@@ -618,6 +619,9 @@ def readDataAmber(P):
 
     if len(T_uniq) != 1:
         raise SystemExit('ERROR: Not all files have the same temperature (T).')
+
+    P.snap_size = []
+    P.snap_size.append(1000.0 * dt_uniq.pop())
 
     start_from = int(round(P.equiltime / (ntpr * float(dt))))
     print('\nSkipping first %d steps (= %f ps)\n' % (start_from, P.equiltime))
