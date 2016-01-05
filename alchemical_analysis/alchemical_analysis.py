@@ -33,26 +33,11 @@ import pickle                           # for full-precision data storage
 import numpy
 import pymbar
 
+import consts
+
 
 
 __version__ = '1.1.0'
-
-TI_METHODS = set(['TI', 'TI-CUBIC'])
-BAR_METHODS = set(['DEXP', 'IEXP', 'GINS', 'GDEL', 'BAR', 'UBAR', 'RBAR',
-                  'MBAR'])
-ALL_METHODS = TI_METHODS | BAR_METHODS
-DEFAULT_METHODS = set(['TI', 'TI-CUBIC', 'DEXP', 'IEXP', 'BAR', 'MBAR'])
-
-RESULTS_FILE = 'results.txt'
-RESULTS_PICKLE = 'results.pickle'
-DF_T_FILE = 'dF_t.txt'
-
-MBAR_OVERLAP_PDF = 'O_MBAR.pdf'
-DF_T_PDF = 'dF_t.pdf'
-DF_STATE_LONG_PDF = 'dF_state_long.pdf'
-DF_STATE_PDF = 'dF_state.pdf'
-DHDL_TI_PDF = 'dhdl_TI.pdf'
-CFM_PDF = 'cfm.pdf'
 
 
 
@@ -64,12 +49,12 @@ def getMethods(string):
     """Returns a list of the methods the free energy is to be estimated with."""
 
     if not string:
-        return DEFAULT_METHODS
+        return consts.DEFAULT_METHODS
 
     if string == 'ALL':
-        return ALL_METHODS
+        return consts.ALL_METHODS
 
-    methods = DEFAULT_METHODS
+    methods = consts.DEFAULT_METHODS
 
     def addRemove(string):
         operation = string[0]
@@ -81,40 +66,40 @@ def getMethods(string):
             elif c=='_':
                 method += '-'
             elif (c=='-' or c=='+'):
-                if method in ALL_METHODS:
+                if method in consts.ALL_METHODS:
                     if operation=='-':
-                        if method in DEFAULT_METHODS:
+                        if method in consts.DEFAULT_METHODS:
                             methods.remove(method)
                     else:
-                        if not method in DEFAULT_METHODS:
+                        if not method in consts.DEFAULT_METHODS:
                             methods.append(method)
                     method = ''
                     operation = c
                 else:
-                    parser.error("\nThere is no '%s' in the list of supported methods." % method)
+                    raise SystemExit("There is no '%s' in the list of "
+                                     "supported methods." % method)
             else:
-                parser.error("\nUnknown character '%s' in the method string is found." % c)
+                raise SystemExit("Unknown character '%s' in the method "
+                                 "string is found." % c)
         return
 
     primo = string[0]
 
     if primo.isalpha():
         methods = string.replace('+', ' ').replace('_', '-').split()
-        methods = [m for m in methods if m in ALL_METHODS]
+        methods = [m for m in methods if m in consts.ALL_METHODS]
     elif primo=='+' or primo=='-':
         addRemove(string)
     else:
-        parser.error("\nUnknown character '%s' in the method string is found." % primo)
+        raise SystemExit("Unknown character '%s' in the method string is "
+                         "found." % primo)
 
     return methods
 
 # FIXME: consistent units between parser and main code
 def checkUnitsAndMore(units):
 
-    # FXIME: move to a module with constants
-    kB = 1.3806488*6.02214129/1000.0 # Boltzmann's constant (kJ/mol/K).
-    beta = 1./(kB*P.temperature)
-
+    beta = 1.0 / (consts.kB * P.temperature)
     b_kcal = P.software not in ('sire', 'amber')
 
     if units == 'kJ':
@@ -127,8 +112,8 @@ def checkUnitsAndMore(units):
         beta_report = 1
         units = '(k_BT)'
     else:
-        parser.error("I don't understand the unit type '%s': the only options "
-                     "'kJ', 'kcal', and 'kBT'" % units)
+        raise SystemExit("I don't understand the unit type '%s': the only "
+                         "options 'kJ', 'kcal', and 'kBT'" % units)
 
     return units, beta, beta_report
 
@@ -261,7 +246,8 @@ def estimatewithMBAR(K, u_kln, N_k, reltol, regular_estimate=False):
 
         pl.xlim(-1, K)
         pl.ylim(0, K+1)
-        pl.savefig(os.path.join(P.output_directory, MBAR_OVERLAP_PDF), bbox_inches='tight', pad_inches=0.0)
+        pl.savefig(os.path.join(P.output_directory, consts.MBAR_OVERLAP_PDF),
+                   bbox_inches='tight', pad_inches=0.0)
         pl.close(fig)
         return
 
@@ -283,7 +269,7 @@ def estimatewithMBAR(K, u_kln, N_k, reltol, regular_estimate=False):
                     line += ' %5.2f ' % O[k, l]
                 print line
             plotOverlapMatrix(O)
-            print '\nFor a nicer figure look at %s' % MBAR_OVERLAP_PDF
+            print '\nFor a nicer figure look at %s' % consts.MBAR_OVERLAP_PDF
         return (Deltaf_ij, dDeltaf_ij)
     return (Deltaf_ij[0,K-1]/P.beta_report, dDeltaf_ij[0,K-1]/P.beta_report)
 
@@ -344,9 +330,9 @@ class naturalcubicspline:
             self.wk[k,:] = w
             self.wsum += w
 
-    def interpolate(self,y,xnew):
+    def interpolate(self, y, xnew):
         if len(self.x) != len(y):
-            parser.error("\nThe length of 'y' should be consistent with that of 'self.x'. I cannot perform linear algebra operations.")
+            raise SystemExit('Inconsistent vector lengths in interpolate.')
         # get the array of actual coefficients by multiplying the coefficient matrix by the values
         a = numpy.dot(self.AW,y)
         b = numpy.dot(self.BW,y)
@@ -655,7 +641,7 @@ def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
     else:
         printLine('%9s:  ' % segments[-1], str_dat, dFs[-1], ddFs[-1])
     # Store results.
-    outfile = open(os.path.join(P.output_directory, RESULTS_FILE), 'w')
+    outfile = open(os.path.join(P.output_directory, consts.RESULTS_FILE), 'w')
     outfile.write('# Command line: %s\n\n' % ' '.join(sys.argv) )
     outfile.writelines(outtext)
     outfile.close()
@@ -666,16 +652,16 @@ def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
     P.ddFs     = ddFs
     P.dFs      = dFs
 
-    outfile = open(os.path.join(P.output_directory, RESULTS_PICKLE), 'w')
+    outfile = open(os.path.join(P.output_directory, consts.RESULTS_PICKLE), 'w')
     pickle.dump(P, outfile)
     outfile.close()
 
     print '\n'+w*'*'
     for i in [" The above table has been stored in ",
-              " " + P.output_directory + "%s " % RESULTS_FILE,
+              " " + P.output_directory + "%s " % consts.RESULTS_FILE,
               " while the full-precision data ",
               " (along with the simulation profile) in ",
-              " " + P.output_directory + "%s " % RESULTS_PICKLE]:
+              " " + P.output_directory + "%s " % consts.RESULTS_PICKLE]:
         print str_align.format('{:^40}'.format(i))
     print w*'*'
 
@@ -724,14 +710,16 @@ def dF_t(K, shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij):
         pl.xticks(f_ts, ['%.2f' % i for i in f_ts])
         pl.tick_params(axis='x', color='#D2B9D3')
         pl.tick_params(axis='y', color='#D2B9D3')
-        pl.savefig(os.path.join(P.output_directory, DF_T_PDF))
+        pl.savefig(os.path.join(P.output_directory, consts.DF_T_PDF))
         pl.close(fig)
         return
 
     if not 'MBAR' in P.methods:
-        parser.error("\nCurrent version of the dF(t) analysis works with MBAR only and the method is not found in the list.")
+        raise SystemExit('Current version of the dF(t) analysis works with '
+                         'MBAR only and the method is not found in the list.')
     if not (P.snap_size[0] == numpy.array(P.snap_size)).all(): # this could be circumvented
-        parser.error("\nThe snapshot size isn't the same for all the files; cannot perform the dF(t) analysis.")
+        raise SystemExit("The snapshot interval isn't the same for all the "
+                         "files; cannot perform the dF(t) analysis.")
 
     # Define a list of bForwrev equidistant time frames at which the free energy is to be estimated; count up the snapshots embounded between the time frames.
     n_tf = P.bForwrev + 1
@@ -788,12 +776,12 @@ def dF_t(K, shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij):
     print "%10s -- %s\n%10s -- %-10s %16s %15.3f +- %5.3f\n%s" % (ts[-1], ts[-1], '('+ts[0], ts[-1]+')', 'XXXXXX', F_df[-1], F_ddf[-1], 70*'-')
 
     # Plot the forward and reverse dF(t); store the data points in the text file.
-    print "Plotting data to the file %s...\n" % DF_T_PDF
+    print "Plotting data to the file %s...\n" % consts.DF_T_PDF
     plotdFvsTime([float(i) for i in ts[1:]], [float(i) for i in ts[:-1]], F_df, R_df, F_ddf, R_ddf)
     outtext = ["%12s %10s %-10s %17s %10s %s\n" % ('Time (ps)', 'Forward', P.units, 'Time (ps)', 'Reverse', P.units)]
     outtext+= ["%10s %11.3f +- %5.3f %18s %11.3f +- %5.3f\n" % (ts[1:][i], F_df[i], F_ddf[i], ts[:-1][i], R_df[i], R_ddf[i]) for i in range(len(F_df))]
 
-    outfile = open(os.path.join(P.output_directory, DF_T_FILE), 'w')
+    outfile = open(os.path.join(P.output_directory, consts.DF_T_FILE), 'w')
     outfile.writelines(outtext)
     outfile.close()
 
@@ -838,7 +826,7 @@ def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
         leg = pl.legend(lines, tuple(P.methods), loc=3, ncol=2, prop=FP(size=10), fancybox=True)
         leg.get_frame().set_alpha(0.5)
         pl.title('The free energy change breakdown', fontsize = 12)
-        pl.savefig(os.path.join(P.output_directory, DF_STATE_LONG_PDF),
+        pl.savefig(os.path.join(P.output_directory, consts.DF_STATE_LONG_PDF),
                    bbox_inches='tight')
         pl.close(fig)
         return
@@ -877,7 +865,7 @@ def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
             ndx += 1
         leg = ax.legend(lines, tuple(P.methods), loc=0, ncol=2, prop=FP(size=8), title='$\mathrm{\Delta G\/%s\/}\mathit{vs.}\/\mathrm{lambda\/pair}$' % P.units, fancybox=True)
         leg.get_frame().set_alpha(0.5)
-        pl.savefig(os.path.join(P.output_directory, DF_STATE_PDF),
+        pl.savefig(os.path.join(P.output_directory, consts.DF_STATE_PDF),
                    bbox_inches='tight')
         pl.close(fig)
         return
@@ -1013,7 +1001,7 @@ def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
                 for l in lege.legendHandles:
                     l.set_linewidth(10)
 
-        pl.savefig(os.path.join(P.output_directory, DHDL_TI_PDF))
+        pl.savefig(os.path.join(P.output_directory, consts.DHDL_TI_PDF))
         pl.close(fig)
         return
 
@@ -1062,7 +1050,7 @@ def plotCFM(K,u_kln, N_k, df_allk, ddf_allk, num_bins=100):
             pl.xlim(xx_i.min(), xx_i.max())
         pl.annotate(r'$\mathrm{\Delta U_{i,i+1}\/(reduced\/units)}$', xy=(0.5, 0.03), xytext=(0.5, 0), xycoords=('figure fraction', 'figure fraction'), size=20+sf, textcoords='offset points', va='center', ha='center', color='#151B54')
         pl.annotate(r'$\mathrm{\Delta g_{i+1,i}\/(reduced\/units)}$', xy=(0.06, 0.5), xytext=(0, 0.5), rotation=90, xycoords=('figure fraction', 'figure fraction'), size=20+sf, textcoords='offset points', va='center', ha='center', color='#151B54')
-        pl.savefig(os.path.join(P.output_directory, CFM_PDF))
+        pl.savefig(os.path.join(P.output_directory, consts.CFM_PDF))
         pl.close(fig)
         return
 
@@ -1179,16 +1167,16 @@ def main(P):
         nsnapshots, lv, dhdlt, u_klt = parser.parse(P)
 
 
-    # NOTE: parser may have changed P.methods, may want to ask parser of
+    # NOTE: parser may have changed P.methods -> may want to ask parser of
     #       supported methods befor actual parsing
     if P.overlap and not 'MBAR' in P.methods:
-        print("WARNING: MBAR is not in 'methods'; can't plot the overlap "
+        print("WARNING: MBAR is not in 'methods'; cannot plot the overlap "
               "matrix.")
         P.overlap = False
 
     # FIXME: really need to test for FEP analysis
     if P.bCFM and (not 'MBAR' in P.methods or not 'BAR' in P.methods):
-        print("WARNING: BAR/MBAR are not in 'methods'; can't perform "
+        print("WARNING: BAR/MBAR are not in 'methods'; cannot perform "
               "Curve-Fitting-Method.")
         P.bCFM = False
 
