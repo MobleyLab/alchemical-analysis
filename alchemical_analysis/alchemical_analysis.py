@@ -60,7 +60,7 @@ parser.add_option('-v', '--verbose', dest = 'verbose', help = 'Verbose option. D
 parser.add_option('-w', '--overlap', dest = 'overlap', help = 'Print out and plot the overlap matrix. Default: False.', default = False, action = 'store_true')
 parser.add_option('-x', '--ignoreWL', dest = 'bIgnoreWL', help = 'Do not check whether the WL weights are equilibrated. No log file needed as an accompanying input.', default = False, action = 'store_true')
 parser.add_option('-y', '--tolerance', dest = 'relative_tolerance', help = "Convergence criterion for the energy estimates with BAR and MBAR. Default: 1e-10.", default = 1e-10, type=float)
-parser.add_option('-z', '--initialize', dest = 'init_with', help = 'The initial MBAR free energy guess; either \'BAR\' or \'zeroes\'. Default: \'BAR\'.', default = 'BAR')
+parser.add_option('-z', '--initialize', dest = 'init_with', help = 'The initial MBAR free energy guess; either \'BAR\' or \'zeros\'. Default: \'BAR\'.', default = 'BAR')
 
 #===================================================================================================
 # FUNCTIONS: Miscellanea.
