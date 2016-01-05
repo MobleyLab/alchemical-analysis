@@ -37,7 +37,13 @@ import pymbar
 
 __version__ = '1.1.0'
 
+TI_METHODS = set(['TI', 'TI-CUBIC'])
+BAR_METHODS = set(['DEXP', 'IEXP', 'GINS', 'GDEL', 'BAR', 'UBAR', 'RBAR',
+                  'MBAR'])
+ALL_METHODS = TI_METHODS | BAR_METHODS
+DEFAULT_METHODS = set(['TI', 'TI-CUBIC', 'DEXP', 'IEXP', 'BAR', 'MBAR'])
 
+ 
 
 #===================================================================================================
 # FUNCTIONS: Miscellanea.
@@ -46,11 +52,13 @@ __version__ = '1.1.0'
 def getMethods(string):
     """Returns a list of the methods the free energy is to be estimated with."""
 
-    all_methods = ['TI','TI-CUBIC','DEXP','IEXP','GINS','GDEL','BAR','UBAR','RBAR','MBAR']
-    methods     = ['TI','TI-CUBIC','DEXP','IEXP','BAR','MBAR']
-
     if not string:
-        return methods
+        return DEFAULT_METHODS
+
+    if string == 'ALL':
+        return ALL_METHODS
+
+    methods = DEFAULT_METHODS
 
     def addRemove(string):
         operation = string[0]
@@ -62,12 +70,12 @@ def getMethods(string):
             elif c=='_':
                 method += '-'
             elif (c=='-' or c=='+'):
-                if method in all_methods:
+                if method in ALL_METHODS:
                     if operation=='-':
-                        if method in methods:
+                        if method in DEFAULT_METHODS:
                             methods.remove(method)
                     else:
-                        if not method in methods:
+                        if not method in DEFAULT_METHODS:
                             methods.append(method)
                     method = ''
                     operation = c
@@ -77,17 +85,16 @@ def getMethods(string):
                 parser.error("\nUnknown character '%s' in the method string is found." % c)
         return
 
-    if string=='ALL':
-        methods = all_methods
+    primo = string[0]
+
+    if primo.isalpha():
+        methods = string.replace('+', ' ').replace('_', '-').split()
+        methods = [m for m in methods if m in ALL_METHODS]
+    elif primo=='+' or primo=='-':
+        addRemove(string)
     else:
-        primo = string[0]
-        if primo.isalpha():
-            methods = string.replace('+', ' ').replace('_', '-').split()
-            methods = [m for m in methods if m in all_methods]
-        elif primo=='+' or primo=='-':
-            addRemove(string)
-        else:
-            parser.error("\nUnknown character '%s' in the method string is found." % primo)
+        parser.error("\nUnknown character '%s' in the method string is found." % primo)
+
     return methods
 
 # FIXME: consistent units between parser and main code
@@ -638,7 +645,7 @@ def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
         printLine('%9s:  ' % segments[-1], str_dat, dFs[-1], ddFs[-1])
     # Store results.
     outfile = open(os.path.join(P.output_directory, 'results.txt'), 'w')
-    outfile.write('# Command line was: %s\n\n' % ' '.join(sys.argv) )
+    outfile.write('# Command line: %s\n\n' % ' '.join(sys.argv) )
     outfile.writelines(outtext)
     outfile.close()
 
@@ -980,8 +987,11 @@ def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
 
         if not P.software == 'sire':
             lege = ax.legend(prop=FP(size=14), frameon=False, loc=1)
-            for l in lege.legendHandles:
-                l.set_linewidth(10)
+
+            # FIXME: this happens when TI_CUBIC without Ti
+            if lege:
+                for l in lege.legendHandles:
+                    l.set_linewidth(10)
 
         pl.savefig(os.path.join(P.output_directory, 'dhdl_TI.pdf'))
         pl.close(fig)
@@ -989,6 +999,7 @@ def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
 
     plotdFvsLambda1()
     plotdFvsLambda2()
+
     if ('TI' in P.methods or 'TI-CUBIC' in P.methods):
         plotTI()
 
@@ -1128,7 +1139,8 @@ def main(P):
     The main command line routine.
     """
 
-    print('Command line was: %s\n' % ' '.join(sys.argv))
+    print('\n=== Alchemical Analysis %s ===\n\nCommand line: %s\n' %
+          (__version__, ' '.join(sys.argv)))
 
     parser_top = 'parsers'
     module = parser_top + '.' + P.software
@@ -1147,7 +1159,8 @@ def main(P):
         nsnapshots, lv, dhdlt, u_klt = parser.parse(P)
 
 
-    # NOTE: parser may have changed P.methods
+    # NOTE: parser may have changed P.methods, may want to ask parser of
+    #       supported methods befor actual parsing
     if P.overlap and not 'MBAR' in P.methods:
         print("WARNING: MBAR is not in 'methods'; can't plot the overlap "
               "matrix.")
@@ -1190,6 +1203,7 @@ def main(P):
 
     print('Estimating the free energy change with %s...' %
           ', '.join(P.methods)).replace(', MBAR', '')
+
     df_allk, ddf_allk = estimatePairs(N_k, lv.shape, lchange, dlam, ave_dhdl,
                                       std_dhdl, u_kln, cubspl, mapl,
                                       Deltaf_ij, dDeltaf_ij)
@@ -1221,7 +1235,7 @@ if __name__ == "__main__":
        'An open tool implementing some recommended practices for analyzing '
        'alchemical free energy calculations.')
 
-    parser.add_argument('-a', '--software', help="Package\'s name the data "
+    parser.add_argument('-a', '--software', help="Package's name the data "
                         "files come from. Default: Gromacs.",
                         default='Gromacs',
                         choices=('Gromacs', 'Sire',  'Desmond', 'AMBER'))
@@ -1250,7 +1264,7 @@ if __name__ == "__main__":
                         'Give a string of lambda indices separated by \'-\' and '
                         'they will be removed from the analysis. (Another '
                         'approach is to have only the files of interest present '
-                        'in the directory). Default: None.')
+                        'in the directory). Default: None.', default='')
     parser.add_argument('-m', '--methods', help=
                         'A list of the methods to esitimate the free energy '
                         'with. Default: [TI, TI-CUBIC, DEXP, IEXP, BAR, MBAR]. '
@@ -1261,7 +1275,7 @@ if __name__ == "__main__":
                         'on the other hand, will call [TI-CUBIC, GDEL]. \'all\' '
                         'calls the full list of supported methods [TI, '
                         'TI-CUBIC, DEXP, IEXP, GINS, GDEL, BAR, UBAR, RBAR, '
-                        'MBAR].')
+                        'MBAR].', default='')
     parser.add_argument('-n', '--uncorr', help="The observable to be used for "
                         "the autocorrelation analysis; either 'dhdl' "
                         "(default) or 'dE'. In the latter case the energy "
@@ -1270,7 +1284,7 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--out', dest='output_directory', help=
                         'Directory in which the output files produced by this '
                         'script will be stored. Default: Same as '
-                        'datafile_directory.')
+                        'datafile_directory.', default='')
     parser.add_argument('-p', '--prefix', help="Prefix for datafile sets, i.e. "
                         "'dhdl' (default).", default='dhdl')
     parser.add_argument('-q', '--suffix', help="Suffix for datafile sets, i.e. "
@@ -1305,7 +1319,7 @@ if __name__ == "__main__":
     parser.add_argument('-z', '--initialize', dest='init_with',
                         help="The initial MBAR free energy guess. Default: "
                         "'BAR'.", default='BAR',
-                        choices=('BAR', 'zeroes'))
+                        choices=('BAR', 'zeros'))
     parser.add_argument('--version', action='version',
                         version='%(prog)s {}'.format(__version__))
 

@@ -71,7 +71,7 @@ def parse(P):
    fs = glob('%s/%s*%s' % datafile_tuple)
    K = len(fs)
 
-   P.methods = ['TI', 'TI-CUBIC']
+   P.methods = set(['TI', 'TI-CUBIC'])
 
    if not K:
       raise SystemExit("\nERROR!\nNo files found within directory '%s' with prefix '%s' and suffix '%s': check your inputs." % datafile_tuple)

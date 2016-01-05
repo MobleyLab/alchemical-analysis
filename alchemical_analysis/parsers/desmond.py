@@ -89,7 +89,7 @@ def parse(P):
    # FIXME: need a better mechanism for this
    P.prefix='gibbs'
    P.suffix='dE'
-   P.methods=['BAR']
+   P.methods=set(['BAR'])
 
    datafile_tuple = P.datafile_directory, P.prefix, P.suffix
    fs = [ F(filename) for filename in glob( '%s/%s*%s' % datafile_tuple ) ]
