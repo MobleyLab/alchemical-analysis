@@ -273,14 +273,14 @@ def _extrapol(x, y, scheme):
     return y0, y1
 
 
-def _print_comps(comps, ncomp):
+def _print_comps(comps, ncomp, units, conv):
     """
     Print out per-force-field-term free energy components and
     resulting dG.
     """
     
     print('\nThe correlated gradient (DV/DL) components from '
-          '_every_single_ step (kcal/mol):\n')
+          '_every_single_ step %s:\n' % units)
 
     fmt = 'Lambda ' + '%10s' * ncomp
     print(fmt % tuple(DVDL_COMPS))
@@ -300,7 +300,7 @@ def _print_comps(comps, ncomp):
 
         for Ene in Enes:
             for j in range(ncomp):
-                ave[j] += Ene[j]
+                ave[j] += Ene[j] * conv
 
         ave = [a / len(Enes) for a in ave] # len(Enes) = no. of time steps/file
         ene_comp.append(ave)            # tansposed later to compute dG
@@ -348,13 +348,14 @@ def readDataAmber(P):
     """
 
     P.lv_names = [r'all']               # legend for plotting
+    P.bExpanded = False
 
     # FIXME: this should happen in the main code
-    datafile_tuple = P.datafile_directory, P.prefix, P.suffix
-    filenames = glob.glob('%s/%s*%s' % datafile_tuple)
+    datafile_tuple = P.datafile_directory, os.sep, P.prefix, P.suffix
+    filenames = glob.glob('%s%s%s*%s' % datafile_tuple)
 
     if not len(filenames):
-        raise SystemExit("\nERROR!\nNo files found within directory '%s' with "
+        raise SystemExit("\nERROR: no files found within directory '%s' with "
                          "prefix '%s' and suffix '%s': check your inputs."
                          % datafile_tuple)
 
@@ -593,7 +594,7 @@ def readDataAmber(P):
         raise SystemExit('ERROR: gradient samples have been found for %i '
                          'lambda%s:\n%s\n       but MBAR data has %i:\n%s\n' %
                          (ndvdl, 's' if ndvdl > 1 else '',
-                          ','.join([str(l) for l in lvals]),
+                          ', '.join([str(l) for l in lvals]),
                           len(mbar_lambdas),
                           ', '.join([str(float(l)) for l in mbar_lambdas]) ) )
 
@@ -607,6 +608,15 @@ def readDataAmber(P):
 
     if len(T_uniq) != 1:
         raise SystemExit('ERROR: Not all files have the same temperature (T).')
+
+    # P.beta has been computed with P.temperature from the command line
+    T = T_uniq.pop()
+    P.beta *= P.temperature / T
+    P.beta_report *= P.temperature / T
+    P.temperature = T
+
+    # FIXME: check if ntpr is consistent across all input files
+    P.snap_size = [dt_uniq.pop() * ntpr]
 
     start_from = int(round(P.equiltime / (ntpr * float(dt))))
     print('\nSkipping first %d steps (= %f ps)\n' % (start_from, P.equiltime))
@@ -625,11 +635,21 @@ def readDataAmber(P):
     else:
         u_klt = None
 
+    # FIXME: needs centralised solution
+    if P.units == '(kcal/mol)':
+        Econv = 1.0
+    elif P.units == '(kJ/mol)':
+        Econv = 4.184
+    elif P.units == '(k_BT)':
+        Econv = P.beta
+    else:
+        raise SystemExit('ERROR: unknown units %s' % P.units)
+
     ave = []
 
     for i, clambda in enumerate(lvals):
         vals = dvdl_all[clambda][start_from:]
-        ave.append(np.average(vals))
+        ave.append(np.average(vals) * Econv)
 
         dhdlt[i][0][:len(vals)] = np.array(vals)
 
@@ -670,18 +690,18 @@ def readDataAmber(P):
         frand = y1 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
         dhdlt = np.append(dhdlt, [[frand]], 0)
 
-    print('\nThe gradients (DV/DL) from the correlated samples (kcal/mol):\n\n'
-          'Lambda   gradient')
+    print('\nThe gradients (DV/DL) from the correlated samples %s:\n\n'
+          'Lambda   gradient' % P.units)
 
     sep = '-' * (7 + 9 + 1)             # format plus 1 space
     print('%s' % sep)
 
     for clambda, dvdl in zip(lvals, ave):
-        print('%7.5f %9.3f' % (clambda, dvdl) )
+        print('%7.5f %9.3f' % (clambda, dvdl))
 
     print('%s\n   dG = %9.3f' % (sep, np.trapz(ave, lvals)))
 
-    _print_comps(dvdl_comps_all, len(DVDL_COMPS))
+    _print_comps(dvdl_comps_all, len(DVDL_COMPS), P.units, Econv)
 
     print('\n')
 
