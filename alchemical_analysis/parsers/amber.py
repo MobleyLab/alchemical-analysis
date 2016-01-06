@@ -47,6 +47,7 @@ from collections import defaultdict
 
 import numpy as np
 
+from logger import logger
 import consts
 
 
@@ -282,15 +283,15 @@ def _print_comps(comps, ncomp, units, conv):
     resulting dG.
     """
     
-    print('\nThe correlated gradient (DV/DL) components from '
-          '_every_single_ step %s:\n' % units)
+    logger.info('\nThe correlated gradient (DV/DL) components from '
+                '_every_single_ step %s:\n' % units)
 
     fmt = 'Lambda ' + '%10s' * ncomp
-    print(fmt % tuple(DVDL_COMPS))
+    logger.info(fmt % tuple(DVDL_COMPS))
 
     fmt = '%7.5f' + ' %9.3f' * ncomp
     sep = '-' * (7 + 10 * ncomp)     # format plus ncomp spaces
-    print('%s' % sep)
+    logger.info('%s' % sep)
 
     x_comp = sorted(comps)
     ene_comp = []
@@ -309,16 +310,16 @@ def _print_comps(comps, ncomp, units, conv):
         ene_comp.append(ave)            # tansposed later to compute dG
 
         lstr = (clambda,) + tuple(ave)
-        print(fmt % lstr)
+        logger.info(fmt % lstr)
 
-    print('%s\n   dG =' % sep),
+    outtext = ['%s\n   dG =' % sep]
 
     for ene in zip(*ene_comp):
         x_ene = x_comp
         y_ene = ene
 
         if not all(y_ene):
-            print(' %8.3f' % 0.0),
+            outtext.append('  %8.3f' % 0.0)
             continue
 
         ya, yb = _extrapol(x_comp, y_ene, 'polyfit')
@@ -331,7 +332,9 @@ def _print_comps(comps, ncomp, units, conv):
             x_ene = x_ene + [1.0]
             y_ene = np.append(y_ene, yb)
 
-        print(' %8.3f' % np.trapz(y_ene, x_ene)),
+        outtext.append('  %8.3f' % np.trapz(y_ene, x_ene))
+
+    logger.info(''.join(outtext))
 
 
 def any_none(sequence):
@@ -367,7 +370,7 @@ def parse(P):
     pmemd = False
 
     for filename in filenames:
-        print('Loading in data from %s... ' % filename),
+        logger.info('Loading in data from %s... ' % filename),
 
         file_datum = FEData()
         finished = False
@@ -377,15 +380,15 @@ def parse(P):
             line = secp.skip_lines(5)
 
             if not line:
-                print('  WARNING: file does not contain any useful data, '
-                      'ignoring file')
+                logger.warn('  file does not contain any useful data, '
+                            'ignoring file')
                 continue
 
             if 'PMEMD' in line:
                 pmemd = True
 
             if not secp.skip_after('^   2.  CONTROL  DATA  FOR  THE  RUN'):
-                print('  WARNING: no CONTROL DATA found, ignoring file')
+                logger.warn('  no CONTROL DATA found, ignoring file')
                 continue
 
             # NOTE: sections must be searched for in order
@@ -410,7 +413,7 @@ def parse(P):
                                             ['clambda'], '^---')
 
             if clambda is None:
-                print('  WARNING: no free energy section found, ignoring file')
+                logger.warn('  no free energy section found, ignoring file')
                 continue
 
             mbar_ndata = 0
@@ -435,9 +438,9 @@ def parse(P):
                 clambda_str = '%6.4f' % clambda
 
                 if clambda_str not in mbar_lambdas:
-                    print('\n  WARNING: lambda %s not contained in set of '
-                          'MBAR lambdas: %s\nNot using MBAR.' %
-                          (clambda_str, ', '.join(mbar_lambdas)))
+                    logger.warn('\n  lambda %s not contained in set of '
+                                'MBAR lambdas: %s\nNot using MBAR.' %
+                                (clambda_str, ', '.join(mbar_lambdas)))
 
                     have_mbar = False
                 else:
@@ -448,13 +451,13 @@ def parse(P):
                         file_datum.mbar_energies.append([])
 
             if not secp.skip_after('^   3.  ATOMIC '):
-                print('  WARNING: no ATOMIC section found, ignoring file\n')
+                logger.warn('  no ATOMIC section found, ignoring file\n')
                 continue
 
             t0, = secp.extract_section('^ begin time', '^$', ['coords'])
 
             if not secp.skip_after('^   4.  RESULTS'):
-                print('  WARNING: no RESULTS section found, ignoring file\n')
+                logger.warn('  no RESULTS section found, ignoring file\n')
                 continue
 
             file_datum.clambda = clambda
@@ -520,30 +523,30 @@ def parse(P):
 
 
             if high_E_cnt:
-                print('\n  WARNING: %i MBAR energ%s > 0.0 kcal/mol' %
+                logger.warn('  %i MBAR energ%s > 0.0 kcal/mol' %
                       (high_E_cnt, 'ies are' if high_E_cnt > 1 else 'y is') )
 
 
         # -- end of parsing current file --
 
-        print('%i data points, %i DV/DL averages' % (nensec, nenav))
+        logger.info('  %i data points, %i DV/DL averages' % (nensec, nenav))
 
         file_datum.component_gradients.extend(comps)
         file_data.append(file_datum)
 
         if not finished:
-            print('  WARNING: prematurely terminated run')
+            logger.warn('  prematurely terminated run')
 
         if not nensec:
-            print('  WARNING: File %s does not contain any DV/DL data\n' %
-                  filename)
+            logger.warn('  File %s does not contain any DV/DL data\n' %
+                        filename)
 
     # -- all file parsing done --
 
 
     # NOTE: lambda sorting is not required because data is collected in dict
     #       which is later sorted on the keys
-    print('\nSorting input data by starting time')
+    logger.info('\nSorting input data by starting time')
 
     file_data.sort(key=lambda fd: fd.t0)
 
@@ -590,7 +593,7 @@ def parse(P):
         if 'MBAR' in P.methods:
             P.methods.remove('MBAR')
 
-        print('\nNote: BAR/MBAR results are not computed.')
+        logger.info('\nNote: BAR/MBAR results are not computed.')
     elif len(dvdl_all) != len(mbar_lambdas):
         ndvdl = len(dvdl_all)
         raise SystemExit('ERROR: gradient samples have been found for %i '
@@ -622,7 +625,8 @@ def parse(P):
     P.snap_size = [dt_uniq.pop() * ntpr]
 
     start_from = int(round(P.equiltime / (ntpr * float(dt))))
-    print('\nSkipping first %d steps (= %f ps)\n' % (start_from, P.equiltime))
+    logger.info('\nSkipping first %d steps (= %f ps)\n' %
+                (start_from, P.equiltime))
 
     # FIXME: compute maximum number of MBAR energy sections
     K = len(lvals)
@@ -670,7 +674,8 @@ def parse(P):
     y0, y1 = _extrapol(lvals, ave, 'polyfit')
 
     if y0:
-        print('Note: extrapolating missing gradient for lambda = 0.0: %f' % y0)
+        logger.info('Note: extrapolating missing gradient for lambda = 0.0: %f'
+                    % y0)
 
         K += 1
         lvals.insert(0, 0.0)
@@ -683,7 +688,8 @@ def parse(P):
         dhdlt = np.insert(dhdlt, 0, frand, 0)
 
     if y1:
-        print('Note: extrapolating missing gradient for lambda = 1.0: %f' % y1)
+        logger.info('Note: extrapolating missing gradient for lambda = 1.0: %f'
+                    % y1)
 
         K += 1
         lvals.append(1.0)
@@ -693,20 +699,20 @@ def parse(P):
         frand = y1 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
         dhdlt = np.append(dhdlt, [[frand]], 0)
 
-    print('\nThe gradients (DV/DL) from the correlated samples %s:\n\n'
+    logger.info('\nThe gradients (DV/DL) from the correlated samples %s:\n\n'
           'Lambda   gradient' % P.units)
 
     sep = '-' * (7 + 9 + 1)             # format plus 1 space
-    print('%s' % sep)
+    logger.info('%s' % sep)
 
     for clambda, dvdl in zip(lvals, ave):
-        print('%7.5f %9.3f' % (clambda, dvdl))
+        logger.info('%7.5f %9.3f' % (clambda, dvdl))
 
-    print('%s\n   dG = %9.3f' % (sep, np.trapz(ave, lvals)))
+    logger.info('%s\n   dG = %9.3f' % (sep, np.trapz(ave, lvals)))
 
     _print_comps(dvdl_comps_all, len(DVDL_COMPS), P.units, Econv)
 
-    print('\n')
+    logger.info('\n')
 
     # FIXME: make this a parser dependent option
     with open(os.path.join(P.output_directory, 'grads.dat'), 'w') as gfile:
