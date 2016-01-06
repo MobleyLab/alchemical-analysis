@@ -33,6 +33,7 @@ import pickle                           # for full-precision data storage
 import numpy
 import pymbar
 
+from common import GeneralException, ParserException, log_and_raise
 import consts
 
 
@@ -81,11 +82,12 @@ def getMethods(string):
                     method = ''
                     operation = c
                 else:
-                    raise SystemExit("There is no '%s' in the list of "
-                                     "supported methods." % method)
+                    log_and_raise("There is no '%s' in the list of "
+                                  "supported methods." % method,
+                                  GeneralException)
             else:
-                raise SystemExit("Unknown character '%s' in the method "
-                                 "string is found." % c)
+                log_and_raise("Unknown character '%s' in the method "
+                              "string is found." % c, GeneralException)
         return
 
     primo = string[0]
@@ -96,8 +98,8 @@ def getMethods(string):
     elif primo=='+' or primo=='-':
         addRemove(string)
     else:
-        raise SystemExit("Unknown character '%s' in the method string is "
-                         "found." % primo)
+        log_and_raise("Unknown character '%s' in the method string is "
+                      "found." % primo, GeneralException)
 
     return methods
 
@@ -117,8 +119,9 @@ def checkUnitsAndMore(units):
         beta_report = 1
         units = '(k_BT)'
     else:
-        raise SystemExit("I don't understand the unit type '%s': the only "
-                         "options 'kJ', 'kcal', and 'kBT'" % units)
+        log_and_raise("I don't understand the unit type '%s': the only "
+                      "options 'kJ', 'kcal', and 'kBT'" % units,
+                      GeneralException)
 
     return units, beta, beta_report
 
@@ -343,7 +346,8 @@ class naturalcubicspline:
 
     def interpolate(self, y, xnew):
         if len(self.x) != len(y):
-            raise SystemExit('Inconsistent vector lengths in interpolate.')
+            log_and_raise('Inconsistent vector lengths in interpolate.',
+                          GeneralException)
         # get the array of actual coefficients by multiplying the coefficient matrix by the values
         a = numpy.dot(self.AW,y)
         b = numpy.dot(self.BW,y)
@@ -732,11 +736,13 @@ def dF_t(K, shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij):
         return
 
     if not 'MBAR' in P.methods:
-        raise SystemExit('Current version of the dF(t) analysis works with '
-                         'MBAR only and the method is not found in the list.')
+        log_and_raise('Current version of the dF(t) analysis works with '
+                      'MBAR only and the method is not found in the list.',
+                      GeneralException)
     if not (P.snap_size[0] == numpy.array(P.snap_size)).all(): # this could be circumvented
-        raise SystemExit("The snapshot interval isn't the same for all the "
-                         "files; cannot perform the dF(t) analysis.")
+        log_and_raise("The snapshot interval isn't the same for all the "
+                      "files; cannot perform the dF(t) analysis.",
+                      GeneralException)
 
     # Define a list of bForwrev equidistant time frames at which the free energy is to be estimated; count up the snapshots embounded between the time frames.
     n_tf = P.bForwrev + 1
@@ -1198,12 +1204,15 @@ def main(P):
 
         parser = __import__(module, fromlist='*')
     except ImportError:
-        raise SystemExit('%s parser not implemented or not registered.' %
-                          parser_name)
+        log_and_raise('%s parser not implemented or not registered.' %
+                      parser_name, SystemExit)
     else:
         logger.info('--- Parser %s starts ---\n' % parser_name)
 
-        nsnapshots, lv, dhdlt, u_klt = parser.parse(P)
+        try:
+            nsnapshots, lv, dhdlt, u_klt = parser.parse(P)
+        except ParserException as e:
+            raise SystemExit(e)
 
         logger.info('--- Parser %s finished ---' % parser_name)
 

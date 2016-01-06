@@ -9,6 +9,9 @@ import re                       # for regular expressions
 from glob import glob           # for pathname matching
 from collections import Counter # for counting elements in an array
 
+from logger import logger
+from common import log_and_raise
+import consts
 import unixlike                 # some implemented unixlike commands
 
 #===================================================================================================
@@ -25,11 +28,13 @@ def parse(P):
       def sortedHelper(self):
          meat = os.path.basename(self.filename).replace(P.prefix, '').replace(P.suffix, '')
          l = [i for i in re.split('\.|-|_', meat) if i]
+
          try:
             self.state = l[0] = int(l[0]) # Will be of use for selective MBAR analysis.
          except:
-            print("\nERROR!\nFile's prefix should be followed by a numerical character. Cannot sort the files.\n")
-            raise
+            log_and_raise("File's prefix should be followed by a "
+                          "numerical character. Cannot sort the files.\n")
+
          return tuple(l)
 
       def get_snapsize(self):
@@ -75,7 +80,8 @@ def parse(P):
                u_klt[state, state+1, :nsnapshots[state]] = data[ 2 , :]*4.184*P.beta
             return
 
-         print("Loading in data from %s (%s) ...") % (self.filename, 'state %d' % state)
+         logger.info("Loading in data from %s (%s) ..."
+                     % (self.filename, 'state %d' % state)
          data = numpy.fromiter(iter_func(), dtype=float)
          if not self.len_first == self.len_last:
             data = data[: -self.len_last]
@@ -96,7 +102,9 @@ def parse(P):
    n_files = len(fs)
 
    if not n_files:
-      raise SystemExit("\nERROR!\nNo files found within directory '%s' with prefix '%s' and suffix '%s': check your inputs." % datafile_tuple)
+      log_and_raise("No files found within directory '%s' "
+                    "with prefix '%s' and suffix '%s': check your inputs."
+                    % datafile_tuple)
    if n_files > 1:
       fs = sorted(fs, key=F.sortedHelper)
 
@@ -124,7 +132,9 @@ def parse(P):
       equilsnapshots  = int(equiltime/f.snap_size)
       f.skip_lines   += equilsnapshots
       nsnapshots[nf] += unixlike.wcPy(f.filename) - f.skip_lines - 1*bLenConsistency
-      print("First %s ps (%s snapshots) will be discarded due to equilibration from file %s...") % (equiltime, equilsnapshots, f.filename)
+      logger.info("First %s ps (%s snapshots) will be discarded due to "
+                  "equilibration from file %s..." %
+                  (equiltime, equilsnapshots, f.filename) )
 
    #===================================================================================================
    # Preliminaries: Load in equilibrated data.

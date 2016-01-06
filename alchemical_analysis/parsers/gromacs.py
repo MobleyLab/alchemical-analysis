@@ -1,5 +1,7 @@
 ######################################################################
-# Alchemical Analysis: An open tool implementing some recommended practices for analyzing alchemical free energy calculations
+# Alchemical Analysis: An open tool implementing some recommended practices
+# for analyzing alchemical free energy calculations
+#
 # Copyright 2011-2015 UC Irvine and the Authors
 #
 # Authors: Pavel Klimovich, Michael Shirts and David Mobley
@@ -24,7 +26,11 @@ import re                       # for regular expressions
 from glob import glob           # for pathname matching
 from collections import Counter # for counting elements in an array
 
+from logger import logger
+from common import log_and_raise
+import consts
 import unixlike                 # some implemented unixlike commands
+
 
 #===================================================================================================       
 # FUNCTIONS: This is the Gromacs dhdl.xvg file parser.     
@@ -46,9 +52,10 @@ def parse(P):
          l = [i for i in re.split('\.|-|_', meat) if i]
          try:
             self.state = l[0] = int(l[0]) # Will be of use for selective MBAR analysis.
-         except:
-            print "\nERROR!\nFile's prefix should be followed by a numerical character. Cannot sort the files.\n"
-            raise
+         except:                        # FIXME: what exception
+            log_and_raise("File's prefix should be followed by a numerical "
+                          "character. Cannot sort the files.\n")
+
          return tuple(l)
  
       def readHeader(self):
@@ -62,7 +69,8 @@ def parse(P):
          self.bExpanded  = False
          self.temperature= False
  
-         print "Reading metadata from %s..." % self.filename
+         logger.info('Reading metadata from %s...' % self.filename)
+
          with open(self.filename,'r') as infile:
             for line in infile:
  
@@ -139,7 +147,10 @@ def parse(P):
                   u_klt[state, s1:s2, nsnapshots_l[state]:nsnapshots_r[state]] = P.beta * data[mask_read_uklt, :]
             return
  
-         print "Loading in data from %s (%s) ..." % (self.filename, "all states" if self.bExpanded else 'state %d' % state)
+         logger.infop('Loading in data from %s (%s) ...' %
+                      (self.filename,
+                       "all states" if self.bExpanded else 'state %d' % state))
+
          data = numpy.fromiter(iter_func(), dtype=float)
          if not self.len_first == self.len_last:
             data = data[: -self.len_last]
@@ -157,16 +168,29 @@ def parse(P):
          """By parsing the .log file of the expanded-ensemble simulation
          find out the time in ps when the WL equilibration has been reached.
          Return the greater of WLequiltime and equiltime."""
+
          if not(P.bIgnoreWL):
             logfilename = self.filename.replace('.xvg', '.log')
+
             if not os.path.isfile(logfilename):
-               raise SystemExit("\nERROR!\nThe .log file '%s' is needed to figure out when the Wang-Landau weights have been equilibrated, and it was not found.\nYou may rerun with the -x flag and the data will be discarded to 'equiltime', not bothering\nwith the extraction of the information on when the WL weights equilibration was reached.\nOtherwise, put the proper log file into the directory which is subject to the analysis." % logfilename)
+               log_and_raise("The .log file '%s' is needed to figure out when "
+                             "the Wang-Landau weights have been equilibrated, "
+                             "and it was not found.\nYou may rerun with the "
+                             "-x flag and the data will be discarded to "
+                             "'equiltime', not bothering\nwith the extraction "
+                             "of the information on when the WL weights "
+                             "equilibration was reached.\nOtherwise, put the "
+                             "proper log file into the directory which is "
+                             "subject to the analysis." % logfilename)
             try:
                with open(logfilename, 'r') as infile:
                   dt = float(unixlike.grepPy(infile, s='delta-t').split()[-1])
                   WLstep = int(unixlike.grepPy(infile, s='equilibrated').split()[1].replace(':', ''))
-            except:
-               print "\nERROR!\nThe Wang-Landau weights haven't equilibrated yet.\nIf you comprehend the consequences,\nrerun with the -x flag and the data\nwill be discarded to 'equiltime'.\n"
+            except:                     # FIXME: what exception
+               log_and_raise("The Wang-Landau weights haven't equilibrated "
+                             "yet.\nIf you comprehend the consequences,\n"
+                             "rerun with the -x flag and the data\nwill be "
+                             "discarded to 'equiltime'.\n"
                raise
             WLtime = WLstep * dt
          else:
@@ -182,16 +206,19 @@ def parse(P):
    n_files = len(fs)
    
    if not n_files:
-      raise SystemExit("\nERROR!\nNo files found within directory '%s' with prefix '%s' and suffix '%s': check your inputs." % datafile_tuple)
+      log_and_raise("No files found within directory '%s' with prefix '%s' "
+                    "and suffix '%s': check your inputs." % datafile_tuple)
    if n_files > 1:
       fs = sorted(fs, key=F.sortedHelper)
    
    if P.bSkipLambdaIndex:
       try:
          lambdas_to_skip = [int(l) for l in unixlike.trPy(P.bSkipLambdaIndex, '-').split()]
-      except:
-         print '\nERROR!\nDo not understand the format of the string that follows -k.\nIt should be a string of lambda indices linked by "-".\n'
-         raise
+      except:                           # FIXME: what exception
+         log_and_raise('Do not understand the format of the string that '
+                       'follows -k.\nIt should be a string of lambda indices '
+                       'linked by "-".\n'
+
       fs = [f for f in fs if not f.state in lambdas_to_skip]
       n_files = len(fs)
    
@@ -205,13 +232,16 @@ def parse(P):
    
          if not f.lv_names == lv_names:
             if not len(f.lv_names) == n_components:
-               raise SystemExit("\nERROR!\nFiles do not contain the same number of lambda gradient components; I cannot combine the data.")
+               log_and_raise('Files do not contain the same number of lambda '
+                             'gradient components; I cannot combine the data.')
             else:
-               raise SystemExit("\nERROR!\nThe lambda gradient components have different names; I cannot combine the data.")
+               log_and_raise('The lambda gradient components have different '
+                             'names; I cannot combine the data.')
          if not f.bPV == bPV:
-            raise SystemExit("\nERROR!\nSome files contain the PV energies, some do not; I cannot combine the files.")
+            log_and_raise('Some files contain the PV energies, some do not; I '
+                          'cannot combine the files.')
          if not f.temperature == temperature: # compare against a string, not a float.
-            raise SystemExit("\nERROR!\nTemperature is not the same in all .xvg files.")
+            log_and_raise('Temperature is not the same in all .xvg files.')
    
       else:
    
@@ -223,9 +253,10 @@ def parse(P):
             P.beta *= P.temperature/temperature_float
             P.beta_report *= P.temperature/temperature_float
             P.temperature = temperature_float
-            print "Temperature is %s K." % temperature
+            logger.info('Temperature is %s K.' % temperature)
          else:
-            print "Temperature not present in xvg files. Using %g K." % P.temperature
+            logger.info('Temperature not present in xvg files. Using %g K.'
+                        % P.temperature)
 
          n_components = len(lv_names)
          bPV = f.bPV
@@ -241,7 +272,8 @@ def parse(P):
    # Scenario #1: Each file has all the dE columns -- can use MBAR.
    if len(ndE_unique) == 1: # [K]
       if not numpy.array([i == lv[0] for i in lv]).all():
-         raise SystemExit("\nERROR!\nArrays of lambda vectors are different; I cannot combine the data.")
+         log_and_raise('Arrays of lambda vectors are different; I cannot '
+                       'combine the data.')
       else:
          lv = lv[0]
          # Handle the case when only some particular files/lambdas are given.
@@ -261,17 +293,25 @@ def parse(P):
       else:
          lv = lv[ndE_unique.argmax()]
       if 'MBAR' in P.methods:
-         print "\nNumber of states is NOT the same for all simulations; I'm assuming that we only evaluate"
-         print "nearest neighbor states, and so cannot use MBAR, removing the method."
+         logger.info("\nNumber of states is NOT the same for all simulations; "
+                     "I'm assuming that we only evaluate nearest neighbor "
+                     "states, and so cannot use MBAR, removing the method."
          P.methods.remove('MBAR')
-      print "\nStitching together the dhdl files. I am assuming that the files are numbered in order of"
-      print "increasing lambda; otherwise, results will not be correct."
+
+      logger.info('\nStitching together the dhdl files. I am assuming that '
+                  'the files are numbered in order of')
+      logger.info('increasing lambda; otherwise, results will not be correct.')
    
    else:
-      print "The files contain the number of the dE columns I cannot deal with; will terminate.\n\n%-10s %s " % ("# of dE's", "File")
+      logger.info('The files contain the number of the dE columns I cannot '
+                  'deal with; will terminate.\n\n%-10s %s ' %
+                  ("# of dE's", "File"))
       for nf, f in enumerate(fs):
-         print "%6d     %s" % (ndE[nf], f.filename)
-      raise SystemExit("\nERROR!\nThere are more than 3 groups of files (%s, to be exact) each having different number of the dE columns; I cannot combine the data." % len(ndE_unique))
+         logger.info('%6d     %s' % (ndE[nf], f.filename))
+
+      log_and_raise('There are more than 3 groups of files (%s, to be exact) '
+                    'each having different number of the dE columns; I cannot '
+                    'combine the data.' % len(ndE_unique))
    
    lv = numpy.array(lv, float) # *** Lambda vectors.
    K  = len(lv)                # *** Number of lambda states.
@@ -302,7 +342,9 @@ def parse(P):
          f.skip_lines   += equilsnapshots
          nsnapshots[nf,nf] += unixlike.wcPy(f.filename) - f.skip_lines - 1*bLenConsistency
    
-      print "First %s ps (%s snapshots) will be discarded due to equilibration from file %s..." % (equiltime, equilsnapshots, f.filename)
+      logger.info('First %s ps (%s snapshots) will be discarded due to '
+                  'equilibration from file %s...' %
+                  (equiltime, equilsnapshots, f.filename))
    
    #===================================================================================================
    # Preliminaries IV: Load in equilibrated data.

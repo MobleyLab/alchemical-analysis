@@ -21,6 +21,9 @@
 import numpy
 from glob import glob # for pathname matching
 
+from logger import logger
+from common import log_and_raise
+import consts
 import unixlike       # some implemented unixlike commands
 
 #===================================================================================================
@@ -38,7 +41,9 @@ def parse(P):
          self.skip_lines = 0  # Number of lines from the top that are to be skipped.
          snap_size       = [] # Time from first two snapshots to determine snapshot's size.
 
-         print "Reading metadata from %-*s" % (len_fstring+1, self.filename+';'),
+         logg.info('Reading metadata from %-*s' %
+                   (len_fstring+1, self.filename+';') )
+
          with open(self.filename,'r') as infile:
             for line in infile:
 
@@ -53,13 +58,17 @@ def parse(P):
                   if len(snap_size) > 1:
                      self.snap_size = numpy.diff(snap_size)[0]
                      break
+
             equilsnapshots  = int(P.equiltime/self.snap_size)
             self.skip_lines += equilsnapshots
             nsnapshots.append(unixlike.wcPy(infile) + 2 - equilsnapshots)
-            print "first %s ps (%s snapshots) will be discarded due to equilibration..." % (P.equiltime, equilsnapshots)
+
+            logger.info('first %s ps (%s snapshots) will be discarded due '
+                        'to equilibration...' % (P.equiltime, equilsnapshots) )
 
       def loadtxtSire(self, state):
-         print "Loading in data from %-*s (state %d) ..." % (len_fstring, self.filename, state)
+         logger.info('Loading in data from %-*s (state %d) ...'
+                     % (len_fstring, self.filename, state) )
          try: #Numpy 1.1 removes skiprows
             dhdlt[state, :, :nsnapshots[state]] = numpy.genfromtxt(self.filename, dtype=float, skiprows=self.skip_lines, usecols=1)
          except TypeError:
@@ -74,7 +83,9 @@ def parse(P):
    P.methods = ['TI', 'TI-CUBIC']
 
    if not K:
-      raise SystemExit("\nERROR!\nNo files found within directory '%s' with prefix '%s' and suffix '%s': check your inputs." % datafile_tuple)
+      log_and_raise("No files found within directory '%s' with prefix '%s' "
+                    "and suffix '%s': check your inputs." % datafile_tuple)
+
    len_fstring = max([len(i) for i in fs])
 
    n_components = 1
@@ -82,7 +93,7 @@ def parse(P):
    nsnapshots   = []
    P.lv_names   = ['']
    fs = [ F(filename) for filename in fs ]
-   print ''
+
    fs = sorted(fs, key=lambda f: f.lv)
    lv, nsnapshots = zip(*sorted(zip(lv, nsnapshots)))
    lv = numpy.array(lv, float)
@@ -94,6 +105,5 @@ def parse(P):
 
    for nf, f in enumerate(fs):
       f.loadtxtSire(nf)
-   print ''
 
    return nsnapshots, lv, dhdlt, u_klt

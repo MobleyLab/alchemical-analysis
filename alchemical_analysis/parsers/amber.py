@@ -47,7 +47,8 @@ from collections import defaultdict
 
 import numpy as np
 
-from logger import logger
+from logger import logger               # FIXME: maybe pass this in?
+from common import log_and_raise
 import consts
 
 
@@ -113,7 +114,7 @@ class SectionParser(object):
             self.fileh = open_it(self.filename, 'rb')
             self.filesize = os.stat(self.filename).st_size
         except IOError:
-            raise SystemExit('ERROR: cannot open file %s' % filename)
+            logger.exception('cannot open file %s' % filename)
 
         self.lineno = 0
 
@@ -214,7 +215,7 @@ class SectionParser(object):
     def __exit__(self, typ, value, traceback):
         self.close()
 
-
+ 
 def _process_mbar_lambdas(secp):
     """
     Extract the lambda points used to compute MBAR energies from an
@@ -271,8 +272,7 @@ def _extrapol(x, y, scheme):
         if 1.0 not in x:
             y1 = sum(coeffs)
     else:
-        raise SystemExit('ERROR: Unsupported extrapolation scheme: %s' %
-                         scheme)
+        log_and_raise('Unsupported extrapolation scheme: %s' % scheme)
 
     return y0, y1
 
@@ -361,9 +361,9 @@ def parse(P):
     filenames = glob.glob('%s%s%s*%s' % datafile_tuple)
 
     if not len(filenames):
-        raise SystemExit("\nERROR: no files found within directory '%s' with "
-                         "prefix '%s' and suffix '%s': check your inputs."
-                         % datafile_tuple)
+        log_and_raise("no files found within directory '%s' with "
+                      "prefix '%s' and suffix '%s': check your inputs."
+                      % (P.datafile_directory, P.prefix, P.suffix) )
 
 
     file_data = []
@@ -406,8 +406,8 @@ def parse(P):
             # FIXME: is it reasonable to support non-constT?
             #        probably just for BAR related methods
             if not T:
-                raise SystemExit('ERROR: Non-constant temperature MD not '
-                                 'currently supported')
+                log_and_raise('Non-constant temperature MD not '
+                              'currently supported')
 
             clambda, = secp.extract_section('^Free energy options:', '^$',
                                             ['clambda'], '^---')
@@ -583,7 +583,7 @@ def parse(P):
     lvals = sorted(clambda_uniq)
 
     if not dvdl_all:
-        raise SystemExit('ERROR: No DV/DL data found')
+        log_and_raise('No DV/DL data found')
 
     if not have_mbar:
         # FIXME: needs to be handled by main code
@@ -596,23 +596,22 @@ def parse(P):
         logger.info('\nNote: BAR/MBAR results are not computed.')
     elif len(dvdl_all) != len(mbar_lambdas):
         ndvdl = len(dvdl_all)
-        raise SystemExit('ERROR: gradient samples have been found for %i '
-                         'lambda%s:\n%s\n       but MBAR data has %i:\n%s\n' %
-                         (ndvdl, 's' if ndvdl > 1 else '',
-                          ', '.join([str(l) for l in lvals]),
-                          len(mbar_lambdas),
-                          ', '.join([str(float(l)) for l in mbar_lambdas]) ) )
+        log_and_raise('gradient samples have been found for %i '
+                      'lambda%s:\n%s\n       but MBAR data has %i:\n%s\n' %
+                      (ndvdl, 's' if ndvdl > 1 else '',
+                       ', '.join([str(l) for l in lvals]),
+                       len(mbar_lambdas),
+                       ', '.join([str(float(l)) for l in mbar_lambdas]) ) )
 
     for found, uniq in zip(t0_found.values(), t0_uniq.values() ):
         if len(found) != len(uniq):
-            raise SystemExit('ERROR: Same starting time occurs multiple '
-                             'times.')
+            log_and_raise('Same starting time occurs multiple times.')
 
     if len(dt_uniq) != 1:
-        raise SystemExit('ERROR: Not all files have the same time step (dt).')
+        log_and_raise('Not all files have the same time step (dt).')
 
     if len(T_uniq) != 1:
-        raise SystemExit('ERROR: Not all files have the same temperature (T).')
+        log_and_raise('Not all files have the same temperature (T).')
 
 
     # P.beta has been computed with P.temperature from the command line
@@ -652,7 +651,7 @@ def parse(P):
     elif P.units == '(k_BT)':
         Econv = P.beta
     else:
-        raise SystemExit('ERROR: unknown units %s' % P.units)
+        log_and_raise('unknown units %s' % P.units)
 
     for i, clambda in enumerate(lvals):
         vals = dvdl_all[clambda][start_from:]
@@ -700,7 +699,7 @@ def parse(P):
         dhdlt = np.append(dhdlt, [[frand]], 0)
 
     logger.info('\nThe gradients (DV/DL) from the correlated samples %s:\n\n'
-          'Lambda   gradient' % P.units)
+                'Lambda   gradient' % P.units)
 
     sep = '-' * (7 + 9 + 1)             # format plus 1 space
     logger.info('%s' % sep)

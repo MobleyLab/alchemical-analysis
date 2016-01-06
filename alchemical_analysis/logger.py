@@ -37,6 +37,7 @@ class MyFormatter(logging.Formatter):
         return result
 
 
+# FIXME: replace with log file?
 logging.basicConfig(level=logging.INFO, filename=os.devnull)
 logger = logging.getLogger(__name__)
 

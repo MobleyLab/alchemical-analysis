@@ -1,5 +1,8 @@
 import re
 
+from common import GeneralException, log_and_raise
+
+
 #===================================================================================================
 # FUNCTIONS: The unix-like helpers.
 #===================================================================================================
@@ -79,8 +82,14 @@ def grepFromSection(f, section, *stringhe, **kwargs):
                i += 1 # Will account for the initial 0 when leaving the loop.
          except StopIteration:
             pass
+
          if not len(found)==len(stringhe):
-            raise SystemExit("\nERROR!\nSection '%s' of file '%s' does not contain \
-string(s): %s." % (section, f.name, ', '.join([s for s in stringhe if s not in found])))
-         return i+n, list(found[s] for s in stringhe)
-   raise SystemExit("\nERROR!\nThere is no section '%s' in file '%s'." % (section, f.name))
+            log_and_raise("Section '%s' of file '%s' does not contain"
+                          "string(s): %s." %
+                          ((section, f.name,
+                            ', '.join([s for s in stringhe if s not in found])))
+                          return i+n, list(found[s] for s in stringhe),
+                          GeneralException)
+
+   log_and_raise("\nERROR!\nThere is no section '%s' in file '%s'." %
+                 (section, f.name), GeneralException)
