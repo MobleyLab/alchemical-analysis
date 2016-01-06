@@ -283,15 +283,15 @@ def _print_comps(comps, ncomp, units, conv):
     resulting dG.
     """
     
-    logger.info('\nThe correlated gradient (DV/DL) components from '
-                '_every_single_ step %s:\n' % units)
+    outtext = ['\nThe correlated gradient (DV/DL) components from '
+               '_every_single_ step %s:\n' % units]
 
-    fmt = 'Lambda ' + '%10s' * ncomp
-    logger.info(fmt % tuple(DVDL_COMPS))
+    fmt = 'Lambda ' + '%10s' * ncomp + '\n'
+    outtext.append(fmt % tuple(DVDL_COMPS))
 
-    fmt = '%7.5f' + ' %9.3f' * ncomp
+    fmt = '%7.5f' + ' %9.3f' * ncomp + '\n'
     sep = '-' * (7 + 10 * ncomp)     # format plus ncomp spaces
-    logger.info('%s' % sep)
+    outtext.append('%s\n' % sep)
 
     x_comp = sorted(comps)
     ene_comp = []
@@ -310,9 +310,9 @@ def _print_comps(comps, ncomp, units, conv):
         ene_comp.append(ave)            # tansposed later to compute dG
 
         lstr = (clambda,) + tuple(ave)
-        logger.info(fmt % lstr)
+        outtext.append(fmt % lstr)
 
-    outtext = ['%s\n   dG =' % sep]
+    outtext.append('%s\n   dG =' % sep)
 
     for ene in zip(*ene_comp):
         x_ene = x_comp
@@ -334,7 +334,7 @@ def _print_comps(comps, ncomp, units, conv):
 
         outtext.append('  %8.3f' % np.trapz(y_ene, x_ene))
 
-    logger.info(''.join(outtext))
+    return outtext
 
 
 def any_none(sequence):
@@ -378,15 +378,15 @@ def parse(P):
             line = secp.skip_lines(5)
 
             if not line:
-                logger.warn('  file does not contain any useful data, '
-                            'ignoring file')
+                logger.warn('%s does not contain any useful data, '
+                            'ignoring file' % filename)
                 continue
 
             if 'PMEMD' in line:
                 pmemd = True
 
             if not secp.skip_after('^   2.  CONTROL  DATA  FOR  THE  RUN'):
-                logger.warn('  no CONTROL DATA found, ignoring file')
+                logger.warn('no CONTROL DATA found, ignoring %s' % filename)
                 continue
 
             # NOTE: sections must be searched for in order
@@ -411,7 +411,8 @@ def parse(P):
                                             ['clambda'], '^---')
 
             if clambda is None:
-                logger.warn('  no free energy section found, ignoring file')
+                logger.warn('no free energy section found, ignoring %s' %
+                            filename)
                 continue
 
             mbar_ndata = 0
@@ -436,8 +437,8 @@ def parse(P):
                 clambda_str = '%6.4f' % clambda
 
                 if clambda_str not in mbar_lambdas:
-                    logger.warn('\n  lambda %s not contained in set of '
-                                'MBAR lambdas: %s\nNot using MBAR.' %
+                    logger.warn('lambda %s not contained in set of MBAR '
+                                'lambdas: %s\nNot using MBAR.' %
                                 (clambda_str, ', '.join(mbar_lambdas)))
 
                     have_mbar = False
@@ -449,13 +450,15 @@ def parse(P):
                         file_datum.mbar_energies.append([])
 
             if not secp.skip_after('^   3.  ATOMIC '):
-                logger.warn('  no ATOMIC section found, ignoring file\n')
+                logger.warn('no ATOMIC section found, ignoring %s\n' %
+                            filename)
                 continue
 
             t0, = secp.extract_section('^ begin time', '^$', ['coords'])
 
             if not secp.skip_after('^   4.  RESULTS'):
-                logger.warn('  no RESULTS section found, ignoring file\n')
+                logger.warn('no RESULTS section found, ignoring %s\n' %
+                            filename)
                 continue
 
             file_datum.clambda = clambda
@@ -529,7 +532,7 @@ def parse(P):
 
         # -- end of parsing current file --
 
-        logger.info('Loaded in data from %s:  %i data points, '
+        logger.info('Loaded in data from %s: %i data points, '
                     '%i DV/DL averages%s' % (filename, nensec, nenav,
                                              warntext))
 
@@ -537,11 +540,10 @@ def parse(P):
         file_data.append(file_datum)
 
         if not finished:
-            logger.warn('  prematurely terminated run')
+            logger.warn('prematurely terminated run')
 
         if not nensec:
-            logger.warn('  File %s does not contain any DV/DL data\n' %
-                        filename)
+            logger.warn('File %s does not contain any DV/DL data\n' % filename)
 
     # -- all file parsing done --
 
@@ -595,7 +597,7 @@ def parse(P):
         if 'MBAR' in P.methods:
             P.methods.remove('MBAR')
 
-        logger.info('\nNote: BAR/MBAR results are not computed.')
+        logger.warn('BAR/MBAR results are not computed.')
     elif len(dvdl_all) != len(mbar_lambdas):
         ndvdl = len(dvdl_all)
         log_and_raise('gradient samples have been found for %i '
@@ -675,8 +677,7 @@ def parse(P):
     y0, y1 = _extrapol(lvals, ave, 'polyfit')
 
     if y0:
-        logger.info('Note: extrapolating missing gradient for lambda = 0.0: %f'
-                    % y0)
+        logger.warn('extrapolating missing gradient for lambda = 0.0: %f' % y0)
 
         K += 1
         lvals.insert(0, 0.0)
@@ -689,8 +690,7 @@ def parse(P):
         dhdlt = np.insert(dhdlt, 0, frand, 0)
 
     if y1:
-        logger.info('Note: extrapolating missing gradient for lambda = 1.0: %f'
-                    % y1)
+        logger.warn('extrapolating missing gradient for lambda = 1.0: %f' % y1)
 
         K += 1
         lvals.append(1.0)
@@ -700,20 +700,21 @@ def parse(P):
         frand = y1 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
         dhdlt = np.append(dhdlt, [[frand]], 0)
 
-    logger.info('\nThe gradients (DV/DL) from the correlated samples %s:\n\n'
-                'Lambda   gradient' % P.units)
+    outtext = ['\nThe gradients (DV/DL) from the correlated samples %s:\n\n'
+                'Lambda   gradient\n' % P.units]
 
     sep = '-' * (7 + 9 + 1)             # format plus 1 space
-    logger.info('%s' % sep)
+    outtext.append('%s\n' % sep)
 
     for clambda, dvdl in zip(lvals, ave):
-        logger.info('%7.5f %9.3f' % (clambda, dvdl))
+        outtext.append('%7.5f %9.3f\n' % (clambda, dvdl))
 
-    logger.info('%s\n   dG = %9.3f' % (sep, np.trapz(ave, lvals)))
+    outtext.append('%s\n   dG = %9.3f\n' % (sep, np.trapz(ave, lvals)))
 
-    _print_comps(dvdl_comps_all, len(DVDL_COMPS), P.units, Econv)
+    outtext2 = _print_comps(dvdl_comps_all, len(DVDL_COMPS), P.units, Econv)
+    outtext.extend(outtext2)
 
-    logger.info('\n')
+    logger.info(''.join(outtext) + '\n')
 
     # FIXME: make this a parser dependent option
     with open(os.path.join(P.output_directory, 'grads.dat'), 'w') as gfile:
