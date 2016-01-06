@@ -370,8 +370,6 @@ def parse(P):
     pmemd = False
 
     for filename in filenames:
-        logger.info('Loading in data from %s... ' % filename),
-
         file_datum = FEData()
         finished = False
         comps = []
@@ -470,6 +468,7 @@ def parse(P):
             old_nstep = -1
             old_comp_nstep = -1
             high_E_cnt = 0
+            warntext = ''
 
             in_comps = False
 
@@ -523,13 +522,16 @@ def parse(P):
 
 
             if high_E_cnt:
-                logger.warn('  %i MBAR energ%s > 0.0 kcal/mol' %
-                      (high_E_cnt, 'ies are' if high_E_cnt > 1 else 'y is') )
+                warntext = ('; %i MBAR energ%s > 0.0 kcal/mol' %
+                            (high_E_cnt, 'ies are'if high_E_cnt > 1
+                             else 'y is'))
 
 
         # -- end of parsing current file --
 
-        logger.info('  %i data points, %i DV/DL averages' % (nensec, nenav))
+        logger.info('Loaded in data from %s:  %i data points, '
+                    '%i DV/DL averages%s' % (filename, nensec, nenav,
+                                             warntext))
 
         file_datum.component_gradients.extend(comps)
         file_data.append(file_datum)
