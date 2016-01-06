@@ -648,9 +648,9 @@ def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
               " being either 'coul-lambda' or 'fep-lambda'. "]
 
     w = 12 + (1+len(str_dash))*len(P.methods)
-    str_align = '{:I^%d}' % w
+    str_align = '{:I^%d}\n' % w
 
-    if len(P.lv_names)>1:
+    if len(P.lv_names) > 1:
         for i in range(len(segments)):
             printLine('%9s:  ' % segments[i], str_dat, dFs[i], ddFs[i])
         for i in remark:
@@ -675,11 +675,11 @@ def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
 
     outtext.append('\n' + w*'*' + '\n')
 
-    for i in [" The above table has been stored in ",
-              " " + P.output_directory + "/%s " % consts.RESULTS_FILE,
-              " while the full-precision data ",
-              " (along with the simulation profile) in ",
-              " " + P.output_directory + "/%s " % consts.RESULTS_PICKLE]:
+    for i in (' The above table has been stored in ',
+              ' ' + P.output_directory + '/%s ' % consts.RESULTS_FILE,
+              ' while the full-precision data ',
+              ' (along with the simulation profile) in ',
+              ' ' + P.output_directory + '/%s ' % consts.RESULTS_PICKLE):
         outtext.append(str_align.format('{:^40}'.format(i)))
 
     outtext.append('\n' + w*'*')

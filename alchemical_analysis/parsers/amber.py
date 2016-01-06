@@ -284,10 +284,9 @@ def _print_comps(comps, ncomp, units, conv):
     """
     
     outtext = ['\nThe correlated gradient (DV/DL) components from '
-               '_every_single_ step %s:\n' % units]
+               '_every_single_ step {}:\n'.format(units)]
 
-    fmt = 'Lambda ' + '%10s' * ncomp + '\n'
-    outtext.append(fmt % tuple(DVDL_COMPS))
+    outtext.append('Lambda {}\n'.format(ncomp * '{:>10}').format(*DVDL_COMPS))
 
     fmt = '%7.5f' + ' %9.3f' * ncomp + '\n'
     sep = '-' * (7 + 10 * ncomp)     # format plus ncomp spaces
