@@ -114,7 +114,7 @@ class SectionParser(object):
             self.fileh = open_it(self.filename, 'rb')
             self.filesize = os.stat(self.filename).st_size
         except IOError:
-            logger.exception('cannot open file %s' % filename)
+            log_and_raise('cannot open file: %s' % filename)
 
         self.lineno = 0
 

@@ -147,6 +147,6 @@ def parse(P):
    for nf, f in enumerate(fs):
       f.iter_loadtxt(nf)
 
-   # FIXME there's something fundamentally wrong as CAL2JOULE should be remove
-   #       but gives wrong results
+   # FIXME there's something fundamentally wrong as CAL2JOULE should be removed
+   #       but gives wrong results: see checkUnitsAndMore()
    return nsnapshots, lv, None, u_klt * consts.CAL2JOULE * P.beta
