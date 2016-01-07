@@ -41,6 +41,3 @@ class MyFormatter(logging.Formatter):
 logging.basicConfig(level=logging.INFO, filename=os.devnull)
 logger = logging.getLogger(__name__)
 
-hdlr = logging.StreamHandler(sys.stdout)
-hdlr.setFormatter(MyFormatter())
-logging.root.addHandler(hdlr)

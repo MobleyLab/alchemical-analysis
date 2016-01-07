@@ -1291,9 +1291,14 @@ def main(P):
 if __name__ == "__main__":
     import argparse
 
-    from logger import logger
+    import logging
+    from logger import logger, MyFormatter
     logger.disabled = False
 
+
+    hdlr = logging.StreamHandler(sys.stdout)
+    hdlr.setFormatter(MyFormatter())
+    logging.root.addHandler(hdlr)
 
     parser = argparse.ArgumentParser(description=
        'An open tool implementing some recommended practices for analyzing '
