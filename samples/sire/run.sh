@@ -1,15 +1,12 @@
 ../../alchemical_analysis//alchemical_analysis.py \
-  -a AMBER \
-  -m all \
+  -a Sire \
+  -m ti+ti-cubic \
   -d data \
-  -p '[01].*/ti00[2-9]' \
-  -q out \
+  -p actual_grad_ \
+  -q dat \
   -o . \
   -r 5 \
   -u kcal \
   -s 0 \
-  -c \
-  -f 10 \
   -g \
-  -w \
   > run.log

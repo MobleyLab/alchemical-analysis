@@ -41,7 +41,7 @@ def parse(P):
          self.skip_lines = 0  # Number of lines from the top that are to be skipped.
          snap_size       = [] # Time from first two snapshots to determine snapshot's size.
 
-         logg.info('Reading metadata from %-*s' %
+         logger.info('Reading metadata from %-*s' %
                    (len_fstring+1, self.filename+';') )
 
          with open(self.filename,'r') as infile:

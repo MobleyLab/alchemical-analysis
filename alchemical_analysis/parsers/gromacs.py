@@ -136,20 +136,20 @@ def parse(P):
             if not bSelective_MBAR:
                r1, r2 = ( read_dhdl_end, read_dhdl_end + (ndE[state] if not self.bExpanded else K) )
                if bPV:
-                  u_klt[state, s1:s2, nsnapshots_l[state]:nsnapshots_r[state]] = P.beta * ( data[r1:r2, :] + data[-1,:] )
+                  u_klt[state, s1:s2, nsnapshots_l[state]:nsnapshots_r[state]] =  ( data[r1:r2, :] + data[-1,:] )
                else:
-                  u_klt[state, s1:s2, nsnapshots_l[state]:nsnapshots_r[state]] = P.beta * data[r1:r2, :]
+                  u_klt[state, s1:s2, nsnapshots_l[state]:nsnapshots_r[state]] =  data[r1:r2, :]
             else: # can't do slicing; prepare a mask (slicing is thought to be faster/less memory consuming than masking)
                mask_read_uklt = numpy.array( [0]*read_dhdl_end + [1 if (k in sel_states) else 0 for k in range(ndE[0])] + ([0] if bPV else []), bool )
                if bPV:
-                  u_klt[state, s1:s2, nsnapshots_l[state]:nsnapshots_r[state]] = P.beta * ( data[mask_read_uklt, :] + data[-1,:] )
+                  u_klt[state, s1:s2, nsnapshots_l[state]:nsnapshots_r[state]] =  ( data[mask_read_uklt, :] + data[-1,:] )
                else:
-                  u_klt[state, s1:s2, nsnapshots_l[state]:nsnapshots_r[state]] = P.beta * data[mask_read_uklt, :]
+                  u_klt[state, s1:s2, nsnapshots_l[state]:nsnapshots_r[state]] =  data[mask_read_uklt, :]
             return
  
-         logger.infop('Loading in data from %s (%s) ...' %
-                      (self.filename,
-                       "all states" if self.bExpanded else 'state %d' % state))
+         logger.info('Loading in data from %s (%s) ...' %
+                     (self.filename,
+                      "all states" if self.bExpanded else 'state %d' % state))
 
          data = numpy.fromiter(iter_func(), dtype=float)
          if not self.len_first == self.len_last:
@@ -190,7 +190,7 @@ def parse(P):
                log_and_raise("The Wang-Landau weights haven't equilibrated "
                              "yet.\nIf you comprehend the consequences,\n"
                              "rerun with the -x flag and the data\nwill be "
-                             "discarded to 'equiltime'.\n"
+                             "discarded to 'equiltime'.\n")
                raise
             WLtime = WLstep * dt
          else:
@@ -217,7 +217,7 @@ def parse(P):
       except:                           # FIXME: what exception
          log_and_raise('Do not understand the format of the string that '
                        'follows -k.\nIt should be a string of lambda indices '
-                       'linked by "-".\n'
+                       'linked by "-".\n')
 
       fs = [f for f in fs if not f.state in lambdas_to_skip]
       n_files = len(fs)
@@ -295,7 +295,7 @@ def parse(P):
       if 'MBAR' in P.methods:
          logger.info("\nNumber of states is NOT the same for all simulations; "
                      "I'm assuming that we only evaluate nearest neighbor "
-                     "states, and so cannot use MBAR, removing the method."
+                     "states, and so cannot use MBAR, removing the method.")
          P.methods.remove('MBAR')
 
       logger.info('\nStitching together the dhdl files. I am assuming that '
@@ -360,4 +360,4 @@ def parse(P):
       nsnapshots_r = nsnapshots[:nf+2, :].sum(axis=0)
       f.iter_loadtxt(nf)
 
-   return nsnapshots.sum(axis=0), lv, dhdlt, u_klt
+   return nsnapshots.sum(axis=0), lv, dhdlt, u_klt * P.beta

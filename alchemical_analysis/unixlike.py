@@ -57,6 +57,7 @@ def grepFromSection(f, section, *stringhe, **kwargs):
    """From section 'section' of file 'f' extract the values of strings 'stringhe'."""
    n = 0 if not 'n' in kwargs else kwargs['n']
    f_tell_0 = f.tell()==0 # Will need later to adjust 'i'.
+
    for i, line in enumerate(f):
       if section in line:
          if not stringhe:
@@ -65,6 +66,7 @@ def grepFromSection(f, section, *stringhe, **kwargs):
             nsteps = [int(el) for el in line.split() if el.isdigit()][0]
             return (i+n, nsteps)
          found = {}
+
          try:
             line = f.next() # The first line after the line with 'section'.
             i += 1
@@ -86,10 +88,11 @@ def grepFromSection(f, section, *stringhe, **kwargs):
          if not len(found)==len(stringhe):
             log_and_raise("Section '%s' of file '%s' does not contain"
                           "string(s): %s." %
-                          ((section, f.name,
-                            ', '.join([s for s in stringhe if s not in found])))
-                          return i+n, list(found[s] for s in stringhe),
+                          (section, f.name,
+                           ', '.join([s for s in stringhe if s not in found])),
                           GeneralException)
+
+            return i+n, list(found[s] for s in stringhe)
 
    log_and_raise("\nERROR!\nThere is no section '%s' in file '%s'." %
                  (section, f.name), GeneralException)

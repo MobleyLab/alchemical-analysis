@@ -66,6 +66,7 @@ def getMethods(string):
         operation = string[0]
         string = string[1:]+'+'
         method = ''
+
         for c in string:
             if c.isalnum():
                 method += c
@@ -77,8 +78,9 @@ def getMethods(string):
                         if method in consts.DEFAULT_METHODS:
                             methods.remove(method)
                     else:
-                        if not method in consts.DEFAULT_METHODS:
+                        if method not in consts.DEFAULT_METHODS:
                             methods.append(method)
+
                     method = ''
                     operation = c
                 else:
@@ -106,8 +108,8 @@ def getMethods(string):
 # FIXME: consistent units between parser and main code
 def checkUnitsAndMore(units):
 
-    beta = 1.0 / (consts.kB * P.temperature)
-    b_kcal = P.software not in ('sire', 'amber')
+    beta = 1.0 / (consts.kB * P.temperature)  # kB in kJ/mol/K
+    b_kcal = P.software not in ('amber', 'desmond', 'sire')
 
     if units == 'kJ':
         beta_report = beta / consts.CAL2JOULE**b_kcal
@@ -527,10 +529,10 @@ def estimatePairs(N_k, shape, lchange, dlam, ave_dhdl, std_dhdl, u_kln,
 # FUNCTIONS: All done with calculations; summarize and print stats.
 #===================================================================================================
 
-def totalEnergies(shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
+def totalEnergies(lv, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
                   df_allk, ddf_allk):
 
-    K, n_components = shape
+    K, n_components = lv.shape
 
     # Count up the charging states.
     startcoul = 0
@@ -1266,7 +1268,7 @@ def main(P):
                                       std_dhdl, u_kln, cubspl, mapl,
                                       Deltaf_ij, dDeltaf_ij)
 
-    totalEnergies(lv.shape, lchange, dlam, std_dhdl, cubspl, Deltaf_ij,
+    totalEnergies(lv, lchange, dlam, std_dhdl, cubspl, Deltaf_ij,
                   dDeltaf_ij, df_allk, ddf_allk)
 
     if P.bForwrev:

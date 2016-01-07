@@ -1,9 +1,11 @@
+# NOTE: there is more simulation data contained in directory data
+
 ../../alchemical_analysis//alchemical_analysis.py \
-  -a AMBER \
+  -a Gromacs \
   -m all \
-  -d data \
-  -p '[01].*/ti00[2-9]' \
-  -q out \
+  -d data/3-methylindole-11steps \
+  -p dhdl \
+  -q xvg \
   -o . \
   -r 5 \
   -u kcal \

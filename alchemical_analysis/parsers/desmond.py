@@ -66,22 +66,24 @@ def parse(P):
             #Energies stored in:
             #   Reverse: data[1,:]
             #   Forward: data[2,:]
-            #Desmond unit input: kcal/mol, conversion factor 4.184kJ/kcal
+            #Desmond unit input: kcal/mol
             #P.beta from alchemical_analysis.py in kJ/mol/K
             #Return: u_klt contains energies of adjacent lambdas only
 
             data = data.T
+
             if state == 0:
-               u_klt[state, state+1 , :nsnapshots[state]] = data[ 2 , : ]*4.184*P.beta
+               u_klt[state, state+1, :nsnapshots[state]] = data[2, :]
             elif state == K:
-               u_klt[state, state-1 , :nsnapshots[state]] = data[ 2 , : ]*4.184*P.beta
+               u_klt[state, state-1, :nsnapshots[state]] = data[2, :]
             else:
-               u_klt[state, state-1, :nsnapshots[state]] = data[ 1 , :]*4.184*P.beta
-               u_klt[state, state+1, :nsnapshots[state]] = data[ 2 , :]*4.184*P.beta
+               u_klt[state, state-1, :nsnapshots[state]] = data[1, :]
+               u_klt[state, state+1, :nsnapshots[state]] = data[2, :]
+
             return
 
          logger.info("Loading in data from %s (%s) ..."
-                     % (self.filename, 'state %d' % state)
+                     % (self.filename, 'state %d' % state))
          data = numpy.fromiter(iter_func(), dtype=float)
          if not self.len_first == self.len_last:
             data = data[: -self.len_last]
@@ -145,5 +147,6 @@ def parse(P):
    for nf, f in enumerate(fs):
       f.iter_loadtxt(nf)
 
-   # 3rd value None because not gradients provided
-   return nsnapshots, lv, None, u_klt
+   # FIXME there's something fundamentally wrong as CAL2JOULE should be remove
+   #       but gives wrong results
+   return nsnapshots, lv, None, u_klt * consts.CAL2JOULE * P.beta
