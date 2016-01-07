@@ -109,7 +109,7 @@ p50
 I00
 sS'units'
 p51
-S'(kcal/mol)'
+S'(kJ/mol)'
 p52
 sS'df_allk'
 p53
@@ -666,7 +666,7 @@ p306
 I50
 sS'beta_report'
 p307
-F0.40359852979970584
+F0.09646236371885894
 sS'relative_tolerance'
 p308
 F1e-10

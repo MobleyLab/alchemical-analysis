@@ -165,7 +165,7 @@ Rp75
 sg18
 g32
 (g36
-S'\x7f5J\xfeo\x94\xad?'
+S'x5J\xfeo\x94\xad?'
 p76
 tp77
 Rp78
@@ -236,7 +236,7 @@ Rp106
 sg18
 g32
 (g36
-S'\x7f5J\xfeo\x94\xad?'
+S'x5J\xfeo\x94\xad?'
 p107
 tp108
 Rp109
@@ -858,7 +858,7 @@ Rp383
 sg159
 g32
 (g36
-S'\x00g\x94\r\xdc3\x98\xbf'
+S'\x00h\x94\r\xdc3\x98\xbf'
 p384
 tp385
 Rp386
@@ -929,7 +929,7 @@ Rp414
 sg159
 g32
 (g36
-S'\x00v\x8cw\x9a\xc5\xa7\xbf'
+S'\x80u\x8cw\x9a\xc5\xa7\xbf'
 p415
 tp416
 Rp417
@@ -1233,7 +1233,7 @@ Rp532
 sg159
 g32
 (g36
-S'\\\xba3\xaa\xeaE\x86?'
+S'\xc7\xb93\xaa\xeaE\x86?'
 p533
 tp534
 Rp535
@@ -1304,7 +1304,7 @@ Rp563
 sg159
 g32
 (g36
-S'0\xe0\xe7\x1cw\xee\x82?'
+S'\xd9\xdf\xe7\x1cw\xee\x82?'
 p564
 tp565
 Rp566
@@ -1375,7 +1375,7 @@ Rp594
 sg159
 g32
 (g36
-S'*37W\x96Q\x80?'
+S'$37W\x96Q\x80?'
 p595
 tp596
 Rp597
@@ -1446,7 +1446,7 @@ Rp625
 sg159
 g32
 (g36
-S'\xf0\xd1\x9c|\x04\x9b|?'
+S'\xc4\xd1\x9c|\x04\x9b|?'
 p626
 tp627
 Rp628
@@ -1517,7 +1517,7 @@ Rp656
 sg159
 g32
 (g36
-S'\xe5\xb7\x94\xcc/\x86y?'
+S'\xd5\xb7\x94\xcc/\x86y?'
 p657
 tp658
 Rp659
@@ -1588,7 +1588,7 @@ Rp687
 sg159
 g32
 (g36
-S'Kl\xcec\xbf0w?'
+S'5l\xcec\xbf0w?'
 p688
 tp689
 Rp690
@@ -1659,7 +1659,7 @@ Rp718
 sg159
 g32
 (g36
-S'\x07\xde\x84\x9c\x89uu?'
+S'\xfb\xdd\x84\x9c\x89uu?'
 p719
 tp720
 Rp721
@@ -1730,7 +1730,7 @@ Rp749
 sg159
 g32
 (g36
-S'\xbc\x03\xa3ND?t?'
+S'\xcf\x03\xa3ND?t?'
 p750
 tp751
 Rp752
@@ -1872,7 +1872,7 @@ Rp811
 sg159
 g32
 (g36
-S"\x82\xa5\x07S'Ps?"
+S"M\xa5\x07S'Ps?"
 p812
 tp813
 Rp814

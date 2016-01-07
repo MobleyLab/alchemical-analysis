@@ -8,7 +8,7 @@
   -q xvg \
   -o . \
   -r 5 \
-  -u kcal \
+  -u kJ \
   -s 0 \
   -c \
   -f 10 \

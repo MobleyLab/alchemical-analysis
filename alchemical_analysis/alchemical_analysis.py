@@ -109,7 +109,7 @@ def getMethods(string):
 def checkUnitsAndMore(units):
 
     beta = 1.0 / (consts.kB * P.temperature)  # kB in kJ/mol/K
-    b_kcal = P.software not in ('amber', 'desmond', 'sire')
+    b_kcal = int(P.software in ('amber', 'sire'))
 
     if units == 'kJ':
         beta_report = beta / consts.CAL2JOULE**b_kcal
@@ -1394,8 +1394,8 @@ if __name__ == "__main__":
     if not P.output_directory:
         P.output_directory = P.datafile_directory
 
-    P.units, P.beta, P.beta_report = checkUnitsAndMore(P.units)
     P.software = P.software.lower()
+    P.units, P.beta, P.beta_report = checkUnitsAndMore(P.units)
     P.methods = getMethods(P.methods.upper())
 
     if any((P.bForwrev, P.breakdown, P.bCFM, P.overlap)):
