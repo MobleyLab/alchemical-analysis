@@ -1324,38 +1324,37 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description=
        'An open tool implementing some recommended practices for analyzing '
-       'alchemical free energy calculations.')
+       'alchemical free energy calculations.',
+       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('-a', '--software', help="Package's name the data "
-                        "files come from. Default: Gromacs.",
-                        default='Gromacs',
+                        "files come from.", default='Gromacs',
                         choices=('Gromacs', 'Sire',  'Desmond', 'AMBER'))
     parser.add_argument('-c', '--cfm', dest='bCFM', help=
-                        'The Curve-Fitting-Method-based consistency inspector. '
-                        'Default: False.', action='store_true')
+                        'The Curve-Fitting-Method-based consistency inspector.',
+                        action='store_true')
     parser.add_argument('-d', '--dir', dest='datafile_directory', help=
-                        'Directory in which data files are stored. Default: '
-                        'Current directory.', default='.')
+                        'Directory in which data files are stored.',
+                        default='.', metavar = 'DIR')
     parser.add_argument('-f', '--forwrev', dest='bForwrev', help=
                         'Plotting the free energy change as a function of time '
                         'in both directions. The number of time points (an '
-                        'integer) is to be followed the flag. Default: 0',
-                        default=0, type=int)
+                        'integer) is to be followed the flag.',
+                        default=0, type=int, metavar='N')
     parser.add_argument('-g', '--breakdown', help='Plotting the free energy '
                         'differences evaluated for each pair of adjacent '
-                        'states for all methods. Default: False.',
-                        action='store_true')
+                        'states for all methods.', action='store_true')
     parser.add_argument('-i', '--threshold', dest='uncorr_threshold', help=
                         'Proceed with correlated samples if the number of '
                         'uncorrelated samples is found to be less than this '
                         'number. If 0 is given, the time series analysis will '
-                        'not be performed at all. Default: 50.', default=50,
-                        type=int)
+                        'not be performed at all.', default=50,
+                        type=int, metavar='N')
     parser.add_argument('-k', '--koff', dest='bSkipLambdaIndex', help=
-                        'Give a string of lambda indices separated by \'-\' and '
-                        'they will be removed from the analysis. (Another '
-                        'approach is to have only the files of interest present '
-                        'in the directory). Default: None.', default='')
+                        'Give a string of lambda indices separated by \'-\' '
+                        'and they will be removed from the analysis. (Another '
+                        'approach is to have only the files of interest '                               'present in the directory).', default='',
+                        metavar='SKIP')
     parser.add_argument('-m', '--methods', help=
                         'A list of the methods to esitimate the free energy '
                         'with. Default: [TI, TI-CUBIC, DEXP, IEXP, BAR, MBAR]. '
@@ -1374,8 +1373,7 @@ if __name__ == "__main__":
                         "lambda) are used.", default='dhdl')
     parser.add_argument('-o', '--out', dest='output_directory', help=
                         'Directory in which the output files produced by this '
-                        'script will be stored. Default: Same as '
-                        'datafile_directory.', default='')
+                        'script will be stored.', default='', metavar='DIR')
     parser.add_argument('-p', '--prefix', help="Prefix for datafile sets, i.e. "
                         "'dhdl' (default).", default='dhdl')
     parser.add_argument('-q', '--suffix', help="Suffix for datafile sets, i.e. "
@@ -1384,32 +1382,30 @@ if __name__ == "__main__":
                         "the free energies are to be reported with. No "
                         "worries, this is for the text output only; the "
                         "full-precision data will be stored in "
-                        "'results.pickle'. Default: 3.", default=3, type=int)
+                        "'results.pickle'.", default=3, type=int, metavar='N')
     parser.add_argument('-s', '--skiptime', dest='equiltime', help=
                         "Discard data prior to this specified time as "
-                        "'equilibration' data. Units picoseconds. Default: "
-                        "0 ps.", default=0.0, type=float)
-    parser.add_argument('-t', '--temperature', help="Temperature in K. "
-                        "Default: 298 K.", default=298.0, type=float)
-    parser.add_argument('-u', '--units', help="Units to report energies. "
-                        "Default: 'kJ'", default='kJ',
-                        choices=('kJ', 'kcal', 'kBT'))
-    parser.add_argument('-v', '--verbose', help='Verbose option. Default: '
-                        'False.', action='store_true')
+                        "'equilibration' data. Units picoseconds.",
+                        default=0.0, type=float, metavar='X')
+    parser.add_argument('-t', '--temperature', help="Temperature in K. ",
+                        default=298.0, type=float, metavar='X')
+    parser.add_argument('-u', '--units', help="Units to report energies. ",
+                        default='kJ', choices=('kJ', 'kcal', 'kBT'))
+    parser.add_argument('-v', '--verbose', help='Verbose option.',
+                        action='store_true')
     parser.add_argument('-w', '--overlap', help='Print out and plot the '
-                        'overlap matrix. Default: False.', action='store_true')
+                        'overlap matrix.', action='store_true')
     parser.add_argument('-x', '--ignoreWL', dest='bIgnoreWL', help=
                         'Do not check whether the WL weights are '
                         'equilibrated. No log file needed as an accompanying '
                         'input.', action='store_true')
     parser.add_argument('-y', '--tolerance', dest='relative_tolerance',
                         help='Convergence criterion for the energy estimates '
-                        'with BAR and MBAR. Default: 1e-10.',
-                        default=1e-10, type=float)
+                        'with BAR and MBAR.', default=1e-10, type=float,
+                        metavar='X')
     parser.add_argument('-z', '--initialize', dest='init_with',
-                        help="The initial MBAR free energy guess. Default: "
-                        "'BAR'.", default='BAR',
-                        choices=('BAR', 'zeros'))
+                        help="The initial MBAR free energy guess.",
+                        default='BAR', choices=('BAR', 'zeros'))
     parser.add_argument('--parser_options',
                         help="Software (see -a) dependant options separated by"
                         "'%s' and '%s'." % (PAIRS_SEP, KEYVAL_SEP), default='')
