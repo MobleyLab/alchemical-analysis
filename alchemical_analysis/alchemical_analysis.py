@@ -1359,13 +1359,13 @@ if __name__ == "__main__":
                         'A list of the methods to esitimate the free energy '
                         'with. Default: [TI, TI-CUBIC, DEXP, IEXP, BAR, MBAR]. '
                         'To add/remove methods to the above list provide a '
-                        'string formed of the method strings preceded with +/-. '
-                        'For example, \'-ti_cubic+gdel\' will turn methods into '
-                        '[TI, DEXP, IEXP, BAR, MBAR, GDEL]. \'ti_cubic+gdel\', '
-                        'on the other hand, will call [TI-CUBIC, GDEL]. \'all\' '
-                        'calls the full list of supported methods [TI, '
-                        'TI-CUBIC, DEXP, IEXP, GINS, GDEL, BAR, UBAR, RBAR, '
-                        'MBAR].', default='')
+                        'string formed of the method strings preceded with '
+                        '+/-. For example, \'-ti_cubic+gdel\' will turn '
+                        'methods into %s. \'ti_cubic+gdel\', on the other '
+                        'hand, will call [TI-CUBIC, GDEL]. \'all\' calls the '
+                        'full list of supported methods: %s.' %
+                        (list(consts.DEFAULT_METHODS),
+                         list(consts.ALL_METHODS)), default='')
     parser.add_argument('-n', '--uncorr', help="The observable to be used for "
                         "the autocorrelation analysis; either 'dhdl' "
                         "(default) or 'dE'. In the latter case the energy "
@@ -1406,7 +1406,7 @@ if __name__ == "__main__":
     parser.add_argument('-z', '--initialize', dest='init_with',
                         help="The initial MBAR free energy guess.",
                         default='BAR', choices=('BAR', 'zeros'))
-    parser.add_argument('--parser_options',
+    parser.add_argument('--parser_options', metavar='OPTIONS',
                         help="Software (see -a) dependant options separated by"
                         "'%s' and '%s'." % (PAIRS_SEP, KEYVAL_SEP), default='')
     parser.add_argument('--version', action='version',
