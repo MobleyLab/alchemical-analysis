@@ -52,12 +52,20 @@ from common import log_and_raise
 import consts
 
 
+
+PARSER_OPTIONS = ('write_grads', 'write_mbar_all', 'write_mbar_ave')
+GRADS_FILE = 'grads.dat'
+MBAR_ALL_FILE = 'mbar_all.dat'
+MBAR_AVE_FILE = 'mbar_ave.dat'
+
 DVDL_COMPS = ['BOND', 'ANGLE', 'DIHED', '1-4 NB', '1-4 EEL', 'VDWAALS',
               'EELEC', 'RESTRAINT']
+
 _FP_RE = r'[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?'
 _RND_SCALE = 1e-3
 _RND_SCALE_HALF = _RND_SCALE / 2.0
 
+# FIXME: should probably be common to all parsers
 _MAGIC_CMPR = {
     '\x1f\x8b\x08': ('gzip', 'GzipFile'),  # last byte is compression method
     '\x42\x5a\x68': ('bz2', 'BZ2File')
@@ -346,7 +354,86 @@ def any_none(sequence):
     return False
 
 
-def parse(P):
+def _write_grads(filename, maxn, dt, lvals, dvdl_all):
+    """
+    Write out optional gradient file.
+    """
+
+    with open(filename, 'w') as gfile:
+        gfile.write('# gradients (DV/DL) for lambdas: %s\n' %
+                    ' '.join('%s' % l for l in lvals) )
+
+        for i in range(maxn):
+            gfile.write('%f ' % (i * dt) )
+
+            for clambda in lvals:
+                try:
+                    val = dvdl_all[clambda][i]
+                except IndexError:
+                    val = 0.0
+
+                gfile.write('%f ' % val)
+
+            gfile.write('\n')
+
+
+def _write_mbar_all(filename, K, maxn, dt, lvals, u_klt):
+    """
+    Write out optional MBAR energies file.
+    """
+
+    with open(filename, 'w') as mfile:
+        mfile.write('# MBAR reduced energies for lambdas: %s\n' %
+                    ' '.join('%s' % l for l in lvals) )
+
+        for i in range(K):
+            mfile.write('# lambda = %f \n' % lvals[i])
+
+            for t in range(maxn):
+                mfile.write('%f ' % (t * dt))
+
+                for j in range(K):
+                    mfile.write('%f ' % u_klt[i][j][t])
+
+                mfile.write('\n')
+
+            mfile.write('\n')
+
+
+def _write_mbar_ave(filename, K, lvals, u_klt):
+    """
+    Write out optional MBAR averages file.
+    """
+
+    with open(filename, 'w') as mfile:
+        mfile.write('# MBAR reduced energy averages for lambdas: %s\n' %
+                    ' '.join('%s' % l for l in lvals) )
+
+        for i in range(K):
+            for j in range(K):
+                mfile.write('%f ' % u_klt[i][j].mean())
+
+            mfile.write('\n')
+
+
+def _extract_options(options):
+    """Compare the options against a list of known options and return a new
+    dict."""
+
+    new_options = {}
+
+    # FIXME: check if unknown keys in options and inform user
+
+    for key in PARSER_OPTIONS:
+        if key in options:
+            new_options[key] = options[key]
+        else:
+            new_options[key] = None
+
+    return new_options
+
+
+def parse(P, options={}):
     """
     Parse free energy gradients and MBAR data from an AMBER MDOUT file. Also
     read the meta data from the header sections in the file.
@@ -364,6 +451,8 @@ def parse(P):
                       "prefix '%s' and suffix '%s': check your inputs."
                       % (P.datafile_directory, P.prefix, P.suffix) )
 
+
+    opts = _extract_options(options)
 
     file_data = []
     pmemd = False
@@ -715,23 +804,15 @@ def parse(P):
 
     logger.info(''.join(outtext) + '\n')
 
-    # FIXME: make this a parser dependent option
-    with open(os.path.join(P.output_directory, 'grads.dat'), 'w') as gfile:
-        gfile.write('# gradients (DV/DL) for lambdas: %s\n' %
-                    ' '.join('%s' % l for l in lvals) )
-
-        for i in range(maxn):
-            gfile.write('%f ' % (i * dt) )
-
-            for clambda in lvals:
-                try:
-                    val = dvdl_all[clambda][i]
-                except IndexError:
-                    val = 0.0
-
-                gfile.write('%f ' % val)
-
-            gfile.write('\n')
-
+    if opts['write_grads']:
+        _write_grads(os.path.join(P.output_directory, opts['write_grads']),
+                     maxn, dt, lvals, dvdl_all)
+    if opts['write_mbar_all']:
+        _write_mbar_all(os.path.join(P.output_directory,
+                                     opts['write_mbar_all']),
+                        K, maxn, dt, lvals, u_klt)
+    if opts['write_mbar_ave']:
+        _write_mbar_ave(os.path.join(P.output_directory,
+                                     opts['write_mbar_ave']), K, lvals, u_klt)
 
     return (np.array(nsnapshots), np.array(lvals).reshape(K, 1), dhdlt, u_klt)
