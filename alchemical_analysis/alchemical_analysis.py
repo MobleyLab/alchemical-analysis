@@ -1332,7 +1332,7 @@ if __name__ == "__main__":
                         choices=('Gromacs', 'Sire',  'Desmond', 'AMBER'))
     parser.add_argument('-c', '--cfm', dest='bCFM', help=
                         'The Curve-Fitting-Method-based consistency inspector. '
-                        'Default: False.', default=False, action='store_true')
+                        'Default: False.', action='store_true')
     parser.add_argument('-d', '--dir', dest='datafile_directory', help=
                         'Directory in which data files are stored. Default: '
                         'Current directory.', default='.')
@@ -1342,8 +1342,8 @@ if __name__ == "__main__":
                         'integer) is to be followed the flag. Default: 0',
                         default=0, type=int)
     parser.add_argument('-g', '--breakdown', help='Plotting the free energy '
-                        'differences evaluated for each pair of adjacent states '
-                        'for all methods. Default: False.', default=False,
+                        'differences evaluated for each pair of adjacent '
+                        'states for all methods. Default: False.',
                         action='store_true')
     parser.add_argument('-i', '--threshold', dest='uncorr_threshold', help=
                         'Proceed with correlated samples if the number of '
@@ -1395,14 +1395,13 @@ if __name__ == "__main__":
                         "Default: 'kJ'", default='kJ',
                         choices=('kJ', 'kcal', 'kBT'))
     parser.add_argument('-v', '--verbose', help='Verbose option. Default: '
-                        'False.', default=False, action='store_true')
+                        'False.', action='store_true')
     parser.add_argument('-w', '--overlap', help='Print out and plot the '
-                        'overlap matrix. Default: False.',
-                        default=False, action='store_true')
+                        'overlap matrix. Default: False.', action='store_true')
     parser.add_argument('-x', '--ignoreWL', dest='bIgnoreWL', help=
                         'Do not check whether the WL weights are '
                         'equilibrated. No log file needed as an accompanying '
-                        'input.', default=False, action='store_true')
+                        'input.', action='store_true')
     parser.add_argument('-y', '--tolerance', dest='relative_tolerance',
                         help='Convergence criterion for the energy estimates '
                         'with BAR and MBAR. Default: 1e-10.',
