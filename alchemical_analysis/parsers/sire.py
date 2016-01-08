@@ -30,7 +30,7 @@ import unixlike       # some implemented unixlike commands
 # FUNCTIONS: This is the Sire lambda gradient file parser.
 #===================================================================================================
 
-def parse(P):
+def parse(P, options={}):
    """Read in Sire's output files; return nsnapshots, lv, dhdlt, and u_klt."""
 
    class F:

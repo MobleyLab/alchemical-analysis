@@ -18,7 +18,7 @@ import unixlike                 # some implemented unixlike commands
 # FUNCTIONS: This is the Desmond gibbs.N.dE file parser.
 #===================================================================================================
 
-def parse(P):
+def parse(P, options={}):
 
    class F:
 

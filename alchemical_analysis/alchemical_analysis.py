@@ -1163,6 +1163,26 @@ def plotCFM(K,u_kln, N_k, df_allk, ddf_allk, num_bins=100):
 # MAIN
 #===================================================================================================
 
+PAIRS_SEP = ':'
+KEYVAL_SEP = '='
+
+def split_key_pairs(strng):
+    """Split a strng separated by PAIRS_SEP and KEYVAL_SEP."""
+
+    result = {}
+
+    for pairs in strng.split(PAIRS_SEP):
+        pair = pairs.split(KEYVAL_SEP)
+        lp = len(pair)
+
+        if lp > 1:
+            result[pair[0]] = pair[1]
+        elif lp == 1:
+            result[pair[0]] = True
+
+    return result
+
+
 def timer(func):
     """Simple decorator to time a function."""
 
@@ -1197,6 +1217,7 @@ def main(P):
     logger.info('\n=== Alchemical Analysis %s ===\n\nCommand line: %s\n' %
           (__version__, ' '.join(sys.argv)))
 
+    parser_options = split_key_pairs(P.parser_options)
     parser_name = P.software.title()
     parser_top = 'parsers'
     module = parser_top + '.' + P.software
@@ -1215,7 +1236,7 @@ def main(P):
         logger.info('--- Parser %s starts ---\n' % parser_name)
 
         try:
-            nsnapshots, lv, dhdlt, u_klt = parser.parse(P)
+            nsnapshots, lv, dhdlt, u_klt = parser.parse(P, parser_options)
         except ParserException as e:
             raise SystemExit(e)
 
@@ -1390,6 +1411,9 @@ if __name__ == "__main__":
                         help="The initial MBAR free energy guess. Default: "
                         "'BAR'.", default='BAR',
                         choices=('BAR', 'zeros'))
+    parser.add_argument('--parser_options',
+                        help="Software (see -a) dependant options separated by"
+                        "'%s' and '%s'." % (PAIRS_SEP, KEYVAL_SEP), default='')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {}'.format(__version__))
 

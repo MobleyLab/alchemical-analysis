@@ -36,7 +36,7 @@ import unixlike                 # some implemented unixlike commands
 # FUNCTIONS: This is the Gromacs dhdl.xvg file parser.     
 #===================================================================================================       
 
-def parse(P):
+def parse(P, options={}):
    """Read in .xvg files; return nsnapshots, lv, dhdlt, and u_klt."""
    
    class F:

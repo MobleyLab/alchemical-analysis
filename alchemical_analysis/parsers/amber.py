@@ -807,10 +807,12 @@ def parse(P, options={}):
     if opts['write_grads']:
         _write_grads(os.path.join(P.output_directory, opts['write_grads']),
                      maxn, dt, lvals, dvdl_all)
+
     if opts['write_mbar_all']:
         _write_mbar_all(os.path.join(P.output_directory,
                                      opts['write_mbar_all']),
                         K, maxn, dt, lvals, u_klt)
+
     if opts['write_mbar_ave']:
         _write_mbar_ave(os.path.join(P.output_directory,
                                      opts['write_mbar_ave']), K, lvals, u_klt)
