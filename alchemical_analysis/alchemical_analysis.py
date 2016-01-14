@@ -55,13 +55,13 @@ if False:
 def getMethods(string):
     """Returns a list of the methods the free energy is to be estimated with."""
 
+    methods = list(consts.DEFAULT_METHODS)
+
     if not string:
-        return consts.DEFAULT_METHODS
+        return methods
 
     if string == 'ALL':
-        return consts.ALL_METHODS
-
-    methods = consts.DEFAULT_METHODS
+        return list(consts.ALL_METHODS)
 
     def addRemove(string):
         operation = string[0]
