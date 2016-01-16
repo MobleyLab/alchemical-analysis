@@ -406,10 +406,12 @@ def _write_mbar_ave(filename, K, lvals, u_klt):
     """
 
     with open(filename, 'w') as mfile:
-        mfile.write('# MBAR reduced energy averages for lambdas: %s\n' %
+        mfile.write('# MBAR reduced energy averages\n %s\n' %
                     ' '.join('%s' % l for l in lvals) )
 
         for i in range(K):
+            mfile.write('%f ' % lvals[i])
+
             for j in range(K):
                 mfile.write('%f ' % u_klt[i][j].mean())
 
@@ -808,12 +810,12 @@ def parse(P, options={}):
         _write_grads(os.path.join(P.output_directory, opts['write_grads']),
                      maxn, dt, lvals, dvdl_all)
 
-    if opts['write_mbar_all']:
+    if opts['write_mbar_all'] and have_mbar:
         _write_mbar_all(os.path.join(P.output_directory,
                                      opts['write_mbar_all']),
                         K, maxn, dt, lvals, u_klt)
 
-    if opts['write_mbar_ave']:
+    if opts['write_mbar_ave'] and have_mbar:
         _write_mbar_ave(os.path.join(P.output_directory,
                                      opts['write_mbar_ave']), K, lvals, u_klt)
 

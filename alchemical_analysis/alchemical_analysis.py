@@ -1406,7 +1406,7 @@ if __name__ == "__main__":
     parser.add_argument('-z', '--initialize', dest='init_with',
                         help="The initial MBAR free energy guess.",
                         default='BAR', choices=('BAR', 'zeros'))
-    parser.add_argument('--parser_options', metavar='OPTIONS',
+    parser.add_argument('--parser-options', metavar='OPTIONS',
                         help="Software (see -a) dependant options separated by"
                         "'%s' and '%s'." % (PAIRS_SEP, KEYVAL_SEP), default='')
     parser.add_argument('--version', action='version',
