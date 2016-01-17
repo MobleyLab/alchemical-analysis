@@ -46,6 +46,7 @@ import glob
 from collections import defaultdict
 
 import numpy as np
+import numpy.ma as ma
 
 from logger import logger               # FIXME: maybe pass this in?
 from common import log_and_raise
@@ -413,7 +414,8 @@ def _write_mbar_ave(filename, K, lvals, u_klt):
             mfile.write('%f ' % lvals[i])
 
             for j in range(K):
-                mfile.write('%f ' % u_klt[i][j].mean())
+                mx = ma.masked_equal(u_klt[i][j], float('Inf'))
+                mfile.write('%f ' % mx.mean())
 
             mfile.write('\n')
 
