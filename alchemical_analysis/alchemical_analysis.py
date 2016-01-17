@@ -797,9 +797,10 @@ def dF_t(K, shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij):
         _, N_k, u_kln = uncorrelate(shape, dhdlt, u_klt, sta, fin)
         R_df[i+1], R_ddf[i+1] = estimatewithMBAR(K, u_kln, N_k, P.relative_tolerance)
 
-    logger.info('\n   The free energies %s evaluated by using the trajectory'
-                'snaphots corresponding to various time intervals for both the'
-                'reverse and forward (in parentheses) direction.\n' % P.units)
+    logger.info('\n  The free energies %s evaluated by using the trajectory '
+                'snaphots corresponding to various time intervals for both '
+                'the reverse and forward (in parentheses) direction.\n' %
+                P.units)
     logger.info('%s\n %20s %19s %20s\n%s' %
                 (70*'-', 'Time interval, ps', 'Reverse', 'Forward', 70*'-'))
     logger.info('%10s -- %s\n%10s -- %-10s %11.3f +- %5.3f %16s\n' %

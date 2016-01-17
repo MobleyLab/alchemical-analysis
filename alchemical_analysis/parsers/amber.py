@@ -809,16 +809,30 @@ def parse(P, options={}):
     logger.info(''.join(outtext) + '\n')
 
     if opts['write_grads']:
-        _write_grads(os.path.join(P.output_directory, opts['write_grads']),
+        if opts['write_grads'] == True:
+            filename = GRADS_FILE
+        else:
+            filename = opts['write_grads']
+
+        _write_grads(os.path.join(P.output_directory, filename),
                      maxn, dt, lvals, dvdl_all)
 
     if opts['write_mbar_all'] and have_mbar:
-        _write_mbar_all(os.path.join(P.output_directory,
-                                     opts['write_mbar_all']),
+        if opts['write_mbar_all'] == True:
+            filename = MBAR_ALL_FILE
+        else:
+            filename = opts['write_mbar_all']
+
+        _write_mbar_all(os.path.join(P.output_directory, filename),
                         K, maxn, dt, lvals, u_klt)
 
     if opts['write_mbar_ave'] and have_mbar:
-        _write_mbar_ave(os.path.join(P.output_directory,
-                                     opts['write_mbar_ave']), K, lvals, u_klt)
+        if opts['write_mbar_ave'] == True:
+            filename = MBAR_AVE_FILE
+        else:
+            filename = opts['write_mbar_ave']
+
+        _write_mbar_ave(os.path.join(P.output_directory, filename),
+                        K, lvals, u_klt)
 
     return (np.array(nsnapshots), np.array(lvals).reshape(K, 1), dhdlt, u_klt)
