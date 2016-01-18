@@ -40,6 +40,7 @@ do NOT set t as the code depends on a correctly set begin time
 ######################################################################
 
 
+import sys
 import os
 import re
 import glob
@@ -394,7 +395,13 @@ def _write_mbar_all(filename, K, maxn, dt, lvals, u_klt):
                 mfile.write('%f ' % (t * dt))
 
                 for j in range(K):
-                    mfile.write('%f ' % u_klt[i][j][t])
+                    E = u_klt[i][j][t]
+
+                    # FXIME: use a value closer to the Fortran format?
+                    if E == float('Inf'):
+                        E = sys.float_info.max
+
+                    mfile.write('%g ' % E)
 
                 mfile.write('\n')
 
