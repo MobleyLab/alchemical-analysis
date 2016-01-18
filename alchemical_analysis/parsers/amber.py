@@ -55,7 +55,8 @@ import consts
 
 
 
-PARSER_OPTIONS = ('write_grads', 'write_mbar_all', 'write_mbar_ave')
+PARSER_OPTIONS = ('write_grads', 'write_mbar_all', 'write_mbar_ave',
+                  'grad_extrapolate')
 GRADS_FILE = 'grads.dat'
 MBAR_ALL_FILE = 'mbar_all.dat'
 MBAR_AVE_FILE = 'mbar_ave.dat'
@@ -521,10 +522,11 @@ def parse(P, options={}):
                                                           'bar_intervall'],
                                                          '^---')
 
+            # FIXME: thhis only works with a modified sander
             # sander is just too cumbersome with MBAR, e.g. terminator is not
             # '^---', no end-states, etc
-            if not pmemd:
-                have_mbar = False
+            #if not pmemd:
+            #    have_mbar = False
 
             # FIXME: what other methods depend on MBAR data?
             if 'BAR' not in P.methods and 'MBAR' not in P.methods:
@@ -586,7 +588,7 @@ def parse(P, options={}):
 
                     for lmbda, E in enumerate(mbar):
                         # NOTE: should be ok for pymbar because exp(-u)
-                        if E > 0.0:
+                        if E == float('Inf'):
                             high_E_cnt += 1
 
                         file_datum.mbar_energies[lmbda].append(E - E_ref)
@@ -624,9 +626,9 @@ def parse(P, options={}):
 
 
             if high_E_cnt:
-                warntext = ('; %i MBAR energ%s > 0.0 kcal/mol' %
-                            (high_E_cnt, 'ies are'if high_E_cnt > 1
-                             else 'y is'))
+                warntext = ('; %i MBAR energ%s not displayed' %
+                            (high_E_cnt, 'ies were'if high_E_cnt > 1
+                             else 'y was'))
 
 
         # -- end of parsing current file --
@@ -772,32 +774,35 @@ def parse(P, options={}):
         u_klt = P.beta * u_klt
 
 
-    # sander does not sample end-points...
-    y0, y1 = _extrapol(lvals, ave, 'polyfit')
+    if opts['grad_extrapolate']:
+        # sander does not sample end-points...
+        y0, y1 = _extrapol(lvals, ave, 'polyfit')
 
-    if y0:
-        logger.warn('extrapolating missing gradient for lambda = 0.0: %f' % y0)
+        if y0:
+            logger.warn('extrapolating missing gradient for lambda = 0.0: %f'
+                        % y0)
 
-        K += 1
-        lvals.insert(0, 0.0)
-        nsnapshots.insert(0, maxn)
-        ave.insert(0, y0)
+            K += 1
+            lvals.insert(0, 0.0)
+            nsnapshots.insert(0, maxn)
+            ave.insert(0, y0)
 
-        # we need a little bit of noise to get the statistics, otherwise
-        # covariance will be zero and program will terminate with error
-        frand = y0 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
-        dhdlt = np.insert(dhdlt, 0, frand, 0)
+            # we need a little bit of noise to get the statistics, otherwise
+            # covariance will be zero and program will terminate with error
+            frand = y0 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
+            dhdlt = np.insert(dhdlt, 0, frand, 0)
 
-    if y1:
-        logger.warn('extrapolating missing gradient for lambda = 1.0: %f' % y1)
+        if y1:
+            logger.warn('extrapolating missing gradient for lambda = 1.0: %f'
+                        % y1)
 
-        K += 1
-        lvals.append(1.0)
-        nsnapshots.append(maxn)
-        ave.append(y1)
+            K += 1
+            lvals.append(1.0)
+            nsnapshots.append(maxn)
+            ave.append(y1)
 
-        frand = y1 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
-        dhdlt = np.append(dhdlt, [[frand]], 0)
+            frand = y1 + _RND_SCALE * np.random.rand(maxn) - _RND_SCALE_HALF
+            dhdlt = np.append(dhdlt, [[frand]], 0)
 
     outtext = ['\nThe gradients (DV/DL) from the correlated samples %s:\n\n'
                 'Lambda   gradient\n' % P.units]
