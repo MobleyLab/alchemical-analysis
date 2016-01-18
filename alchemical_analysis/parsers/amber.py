@@ -808,6 +808,8 @@ def parse(P, options={}):
 
     logger.info(''.join(outtext) + '\n')
 
+    out_dt = dt * ntpr
+
     if opts['write_grads']:
         if opts['write_grads'] == True:
             filename = GRADS_FILE
@@ -815,7 +817,7 @@ def parse(P, options={}):
             filename = opts['write_grads']
 
         _write_grads(os.path.join(P.output_directory, filename),
-                     maxn, dt, lvals, dvdl_all)
+                     maxn, out_dt, lvals, dvdl_all)
 
     if opts['write_mbar_all'] and have_mbar:
         if opts['write_mbar_all'] == True:
@@ -824,7 +826,7 @@ def parse(P, options={}):
             filename = opts['write_mbar_all']
 
         _write_mbar_all(os.path.join(P.output_directory, filename),
-                        K, maxn, dt, lvals, u_klt)
+                        K, maxn, out_dt, lvals, u_klt)
 
     if opts['write_mbar_ave'] and have_mbar:
         if opts['write_mbar_ave'] == True:
