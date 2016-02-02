@@ -43,7 +43,7 @@ parser = OptionParser()
 parser.add_option('-a', '--software', dest = 'software', help = 'Package\'s name the data files come from: Gromacs, Sire, Desmond, or AMBER. Default: Gromacs.', default = 'Gromacs')
 parser.add_option('-c', '--cfm', dest = 'bCFM', help = 'The Curve-Fitting-Method-based consistency inspector. Default: False.', default = False, action = 'store_true')
 parser.add_option('-d', '--dir', dest = 'datafile_directory', help = 'Directory in which data files are stored. Default: Current directory.', default = '.')
-parser.add_option('-f', '--forwrev', dest = 'bForwrev', help = 'Plotting the free energy change as a function of time in both directions. The number of time points (an integer) is to be followed the flag. Default: 0', default = 0, type=int)
+parser.add_option('-f', '--forwrev', dest = 'bForwrev', help = 'Plot the free energy change as a function of time in both directions, with the specified number of points in the time plot. The number of time points (an integer) must be provided. Default: 0', default = 0, type=int)
 parser.add_option('-g', '--breakdown', dest = 'breakdown', help = 'Plotting the free energy differences evaluated for each pair of adjacent states for all methods. Default: False.', default = False, action = 'store_true')
 parser.add_option('-i', '--threshold', dest = 'uncorr_threshold', help = 'Proceed with correlated samples if the number of uncorrelated samples is found to be less than this number. If 0 is given, the time series analysis will not be performed at all. Default: 50.', default = 50, type=int)
 parser.add_option('-k', '--koff', dest = 'bSkipLambdaIndex', help = 'Give a string of lambda indices separated by \'-\' and they will be removed from the analysis. (Another approach is to have only the files of interest present in the directory). Default: None.', default = '')
@@ -750,13 +750,20 @@ def dF_t():
    increment = 1./(n_tf-1)
    if P.bExpanded:
       from collections import Counter # for counting elements in an array
-      tf = numpy.arange(0,1+increment,increment)*(numpy.sum(nsnapshots)-1)+1
+      #tf = numpy.arange(0,1+increment,increment)*(numpy.sum(nsnapshots)-1)+1
+      tf = numpy.linspace(0.0, 1.0, n_tf)*(numpy.sum(nsnapshots)-1)+1
       tf[0] = 0
       for i in range(n_tf-1):
          nss = Counter(extract_states[tf[i]:tf[i+1]])
          nss_tf[i+1] = numpy.array([nss[j] for j in range(K)])
    else:
-      tf = numpy.arange(0,1+increment,increment)*(max(nsnapshots)-1)+1
+      #print "Increment:", increment
+      #print "Max snapshots:", max(nsnapshots)
+      #tf = numpy.arange(0,1+increment,increment)*(max(nsnapshots)-1)+1
+      tf = numpy.linspace(0.0, 1.0, n_tf)*(max(nsnapshots)-1)+1
+      #print tf, tf_new
+      #print len(tf), len(tf_new)
+      #print("Pausing."), raw_input()
       tf[0] = 0
       for i in range(n_tf-1):
          nss_tf[i+1] = numpy.array([min(j, tf[i+1]) for j in nsnapshots]) - numpy.sum(nss_tf[:i+1],axis=0)
