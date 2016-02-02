@@ -48,7 +48,7 @@ parser.add_option('-g', '--breakdown', dest = 'breakdown', help = 'Plotting the 
 parser.add_option('-i', '--threshold', dest = 'uncorr_threshold', help = 'Proceed with correlated samples if the number of uncorrelated samples is found to be less than this number. If 0 is given, the time series analysis will not be performed at all. Default: 50.', default = 50, type=int)
 parser.add_option('-k', '--koff', dest = 'bSkipLambdaIndex', help = 'Give a string of lambda indices separated by \'-\' and they will be removed from the analysis. (Another approach is to have only the files of interest present in the directory). Default: None.', default = '')
 parser.add_option('-m', '--methods', dest = 'methods', help = 'A list of the methods to esitimate the free energy with. Default: [TI, TI-CUBIC, DEXP, IEXP, BAR, MBAR]. To add/remove methods to the above list provide a string formed of the method strings preceded with +/-. For example, \'-ti_cubic+gdel\' will turn methods into [TI, DEXP, IEXP, BAR, MBAR, GDEL]. \'ti_cubic+gdel\', on the other hand, will call [TI-CUBIC, GDEL]. \'all\' calls the full list of supported methods [TI, TI-CUBIC, DEXP, IEXP, GINS, GDEL, BAR, UBAR, RBAR, MBAR].', default = '')
-parser.add_option('-n', '--uncorr', dest = 'uncorr', help = 'The observable to be used for the autocorrelation analysis; either \'dhdl\' (default) or \'dE\'. In the latter case the energy differences dE_{i,i+1} (dE_{i,i-1} for the last lambda) are used.', default = 'dhdl')
+parser.add_option('-n', '--uncorr', dest = 'uncorr', help = 'The observable to be used for the autocorrelation analysis; either \'dhdl_all\' (obtained as a sum over all energy components) or \'dhdl\' (obtained as a sum over those energy components that are changing; default) or \'dE\'. In the latter case the energy differences dE_{i,i+1} (dE_{i,i-1} for the last lambda) are used.', default = 'dhdl')
 parser.add_option('-o', '--out', dest = 'output_directory', help = 'Directory in which the output files produced by this script will be stored. Default: Same as datafile_directory.', default = '')
 parser.add_option('-p', '--prefix', dest = 'prefix', help = 'Prefix for datafile sets, i.e.\'dhdl\' (default).', default = 'dhdl')
 parser.add_option('-q', '--suffix', dest = 'suffix', help = 'Suffix for datafile sets, i.e. \'xvg\' (default).', default = 'xvg')
@@ -171,7 +171,33 @@ def uncorrelate(sta, fin, do_dhdl=False):
    UNCORR_OBSERVABLE = {'Gromacs':P.uncorr, 'Amber':'dhdl', 'Sire':'dhdl', 'Desmond':'dE'}[P.software.title()]
 
    if UNCORR_OBSERVABLE == 'dhdl':
-      #Uncorrelate based on dhdl values at a given lambda
+      # Uncorrelate based on dhdl values at a given lambda.
+
+      for k in range(K):
+         # Sum up over those energy components that are changing.
+         dhdl_sum = numpy.sum(dhdlt[k, lchange[k], sta[k]:fin[k]], axis=0)
+         # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
+         # (alternatively, could use the energy differences -- here, we will use total dhdl).
+         g[k] = pymbar.timeseries.statisticalInefficiency(dhdl_sum)
+         indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dhdl_sum, g=g[k])) # indices of uncorrelated samples
+         N = len(indices) # number of uncorrelated samples
+         # Handle case where we end up with too few.
+         if N < P.uncorr_threshold:
+            if do_dhdl:
+               print "WARNING: Only %s uncorrelated samples found at lambda number %s; proceeding with analysis using correlated samples..." % (N, k)
+            indices = sta[k] + numpy.arange(len(dhdl_sum))
+            N = len(indices)
+         N_k[k] = N # Store the number of uncorrelated samples from state k.
+         if not (u_klt is None):
+            for l in range(K):
+               u_kln[k,l,0:N] = u_klt[k,l,indices]
+         if do_dhdl:
+            print "%6s %12s %12s %12.2f" % (k, fin[k], N_k[k], g[k])
+            for n in range(n_components):
+               dhdl[k,n,0:N] = dhdlt[k,n,indices]
+
+   if UNCORR_OBSERVABLE == 'dhdl_all':
+      # Uncorrelate based on dhdl values at a given lambda.
 
       for k in range(K):
          # Sum up over the energy components; notice, that only the relevant data is being used in the third dimension.
@@ -197,7 +223,7 @@ def uncorrelate(sta, fin, do_dhdl=False):
                dhdl[k,n,0:N] = dhdlt[k,n,indices]
 
    if UNCORR_OBSERVABLE == 'dE':
-      #Decorrelate based on energy differences between lambdas
+      # Uncorrelate based on energy differences between lambdas.
 
       for k in range(K):
          # Sum up over the energy components as above using only the relevant data; here we use energy differences
@@ -217,7 +243,6 @@ def uncorrelate(sta, fin, do_dhdl=False):
          if not (u_klt is None):
             for l in range(K):
                u_kln[k,l,0:N] = u_klt[k,l,indices]
-
 
    if do_dhdl:
       return (dhdl, N_k, u_kln)
@@ -378,11 +403,7 @@ class naturalcubicspline:
       ynew[-1] = y[-1]
       return ynew
 
-def TIprelim(lv):
-
-   # Lambda vectors spacing.
-   dlam = numpy.diff(lv, axis=0)
-
+def get_lchange(lv):
    lchange = numpy.zeros([K,n_components],bool)   # booleans for which lambdas are changing
    for j in range(n_components):
       # need to identify range over which lambda doesn't change, and not interpolate over that range.
@@ -390,9 +411,15 @@ def TIprelim(lv):
          if (lv[k+1,j]-lv[k,j] > 0):
             lchange[k,j] = True
             lchange[k+1,j] = True
+   return lchange
+
+def TIprelim(lv):
+
+   # Lambda vectors spacing.
+   dlam = numpy.diff(lv, axis=0)
 
    if 'ave_dhdl' in globals() and 'std_dhdl' in globals():
-      return lchange, dlam, globals()['ave_dhdl'], globals()['std_dhdl']
+      return dlam, globals()['ave_dhdl'], globals()['std_dhdl']
 
    # Compute <dhdl> and std(dhdl) for each component, for each lambda; multiply them by beta to make unitless.
    ave_dhdl = numpy.zeros([K,n_components],float)
@@ -401,7 +428,7 @@ def TIprelim(lv):
       ave_dhdl[k,:] = P.beta*numpy.average(dhdl[k,:,0:N_k[k]],axis=1)
       std_dhdl[k,:] = P.beta*numpy.std(dhdl[k,:,0:N_k[k]],axis=1)/numpy.sqrt(N_k[k]-1)
 
-   return lchange, dlam, ave_dhdl, std_dhdl
+   return dlam, ave_dhdl, std_dhdl
 
 def getSplines(lchange):
    # construct a map back to the original components
@@ -1193,6 +1220,7 @@ def main():
       #### u_klt[k,m,t] is the reduced potential energy of snapshot t of state k evaluated at state m
 
    K, n_components = lv.shape
+   lchange = get_lchange(lv)
    if (numpy.array(['Sire','Gromacs', 'Amber']) == P.software.title()).any():
       dhdl, N_k, u_kln = uncorrelate(sta=numpy.zeros(K, int), fin=nsnapshots, do_dhdl=True)
    elif P.software.title() == 'Desmond':
@@ -1203,7 +1231,7 @@ def main():
 
    # The TI preliminaries.
    if ('TI' in P.methods or 'TI-CUBIC' in P.methods):
-      lchange, dlam, ave_dhdl, std_dhdl = TIprelim(lv)
+      dlam, ave_dhdl, std_dhdl = TIprelim(lv)
    if 'TI-CUBIC' in P.methods:
       cubspl, mapl = getSplines(lchange)
 
@@ -1228,4 +1256,3 @@ if __name__ == "__main__":
 #===================================================================================================
 #                                   End of the script
 #===================================================================================================
-
