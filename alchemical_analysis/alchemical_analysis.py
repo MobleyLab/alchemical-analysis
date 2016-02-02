@@ -557,23 +557,27 @@ def totalEnergies():
             if lv_n == 'vdw':
                 endvdw = (lv_char != 1).sum()
             if lv_n == 'fep':
-                endcoul = (lv_char != 1).sum()
+                endcoul = (lv_char != 1).sum() #Why is this lumped with coul?
                 ndx_char = P.lv_names.index(lv_n)
             if lv_n == 'coul':
                 endcoul = (lv_char != 1).sum()
                 ndx_char = P.lv_names.index(lv_n)
-
-   # Figure out if coulomb section comes before or after vdw section
+   # Figure out where Coulomb section is, if it is present.
    if endcoul > endvdw:
+      #If it comes after the vdW section, for now assume it follows vdW (will need correcting for case where they are mixed together)
       startcoul = endvdw
       startvdw = 0
+   elif startcoul==endcoul:
+      #There is no coulomb section
+      if P.verbose: print "No Coulomb transformation present."
+      pass    
    else:
       startcoul = 0
       startvdw = endcoul
 
    segments      = ['Coulomb'  , 'vdWaals'  , 'TOTAL']
    segmentstarts = [startcoul  , startvdw   , 0      ]
-   segmentends   = [endcoul    , endvdw     , K-1    ]
+   segmentends   = [min(endcoul,K-1)    , min(endvdw,K-1)     , K-1    ]
    dFs  = []
    ddFs = []
 
