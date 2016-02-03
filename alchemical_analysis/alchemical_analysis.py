@@ -63,6 +63,18 @@ parser.add_option('-y', '--tolerance', dest = 'relative_tolerance', help = "Conv
 parser.add_option('-z', '--initialize', dest = 'init_with', help = 'The initial MBAR free energy guess; either \'BAR\' or \'zeros\'. Default: \'BAR\'.', default = 'BAR')
 
 #===================================================================================================
+#STARTUP CHECKS:
+#===================================================================================================
+
+#Check pymbar version for compatibility; we require >= 3.0.0.dev0
+import pymbar
+ver = pymbar.version.version
+ver_start = int(ver.split('.')[0])
+if ver_start < 3:
+    #If the version is too old, throw exception/ask for upgrade
+    raise(ImportError("Error: alchemical-analysis requires at least pymbar 3.0.0.dev0. Please upgrade your pymbar installation."))
+
+#===================================================================================================
 # FUNCTIONS: Miscellanea.
 #===================================================================================================
 
@@ -158,8 +170,6 @@ def uncorrelate(sta, fin, do_dhdl=False):
       if P.software.title()=='Sire':
          return dhdlt, nsnapshots, None
       return dhdlt, nsnapshots, u_klt
-
-   import pymbar     ## this is not a built-in module ##
 
    u_kln = numpy.zeros([K,K,max(fin-sta)], numpy.float64) # u_kln[k,m,n] is the reduced potential energy of uncorrelated sample index n from state k evaluated at state m
    N_k = numpy.zeros(K, int) # N_k[k] is the number of uncorrelated samples from state k
@@ -1182,10 +1192,8 @@ def main():
    P.methods = getMethods(P.methods.upper())
    P.units, P.beta, P.beta_report = checkUnitsAndMore(P.units)
 
-   if ''.join(P.methods).replace('TI-CUBIC', '').replace('TI', ''):
-      import pymbar     ## this is not a built-in module ##
    if (numpy.array([P.bForwrev, P.breakdown, P.bCFM, P.overlap]) != 0).any():
-      import matplotlib # 'matplotlib-1.1.0-1'; errors may pop up when using an earlier version
+      import matplotlib # 'matplotlib-1.1.0-1'; errors may pop up when using an earlier version. Add a version check?
       matplotlib.use('Agg')
       import matplotlib.pyplot as pl
       from matplotlib.font_manager import FontProperties as FP
