@@ -47,6 +47,17 @@ if False:
     f = open(os.devnull, 'w')
     sys.stdout = f
 
+#===================================================================================================
+#STARTUP CHECKS:
+#===================================================================================================
+
+#Check pymbar version for compatibility; we require >= 3.0.0.dev0
+import pymbar
+ver = pymbar.version.version
+ver_start = int(ver.split('.')[0])
+if ver_start < 3:
+    #If the version is too old, throw exception/ask for upgrade
+    raise(ImportError("Error: alchemical-analysis requires at least pymbar 3.0.0.dev0. Please upgrade your pymbar installation."))
 
 #===================================================================================================
 # FUNCTIONS: Miscellanea.
@@ -136,93 +147,101 @@ def checkUnitsAndMore(units):
 #===================================================================================================
 
 def uncorrelate(shape, dhdlt, u_klt, sta, fin, do_dhdl=False):
-    """Identifies uncorrelated samples and updates the arrays of the reduced potential energy and dhdlt retaining data entries of these samples only.
-       'sta' and 'fin' are the starting and final snapshot positions to be read, both are arrays of dimension K."""
-    if not P.uncorr_threshold:
-        if P.software == 'sire':
-            return dhdlt, nsnapshots, None
-        return dhdlt, nsnapshots, u_klt
+   """Identifies uncorrelated samples and updates the arrays of the reduced potential energy and dhdlt retaining data entries of these samples only.
+      'sta' and 'fin' are the starting and final snapshot positions to be read, both are arrays of dimension K."""
+   if not P.uncorr_threshold:
+      if P.software.title()=='Sire':
+         return dhdlt, nsnapshots, None
+      return dhdlt, nsnapshots, u_klt
 
-    K, n_components = shape
-    dhdl = None
+   K, n_components = shape
 
-    u_kln = numpy.zeros([K,K,max(fin-sta)], numpy.float64) # u_kln[k,m,n] is the reduced potential energy of uncorrelated sample index n from state k evaluated at state m
-    N_k = numpy.zeros(K, int) # N_k[k] is the number of uncorrelated samples from state k
-    g = numpy.zeros(K,float) # autocorrelation times for the data
-    if do_dhdl:
-        dhdl = numpy.zeros([K,n_components,max(fin-sta)], float) #dhdl is value for dhdl for each component in the file at each time.
-        logger.info('\n\nNumber of correlated and uncorrelated samples:'
-                    '\n\n%6s %12s %12s %12s\n' % ('State', 'N', 'N_k', 'N/N_k'))
+   u_kln = numpy.zeros([K,K,max(fin-sta)], numpy.float64) # u_kln[k,m,n] is the reduced potential energy of uncorrelated sample index n from state k evaluated at state m
+   N_k = numpy.zeros(K, int) # N_k[k] is the number of uncorrelated samples from state k
+   g = numpy.zeros(K,float) # autocorrelation times for the data
+   if do_dhdl:
+      dhdl = numpy.zeros([K,n_components,max(fin-sta)], float) #dhdl is value for dhdl for each component in the file at each time.
+      print "\n\nNumber of correlated and uncorrelated samples:\n\n%6s %12s %12s %12s\n" % ('State', 'N', 'N_k', 'N/N_k')
 
-#   gu = numpy.zeros([K,K], float)
-#   print 'uncorr u_klt'
-#   for k1 in range(K):
-#       for k2 in range(K):
-#           if not numpy.any(u_klt[k1,k2,:]):
-#               gu[k1][k2] = 1.0
-#           else:
-#               gu[k1][k2] = \
-#                   pymbar.timeseries.statisticalInefficiency(u_klt[k1,k2,:])
-#           print gu[k1][k2],
-#       print
+   UNCORR_OBSERVABLE = {'Gromacs':P.uncorr, 'Amber':'dhdl', 'Sire':'dhdl', 'Desmond':'dE'}[P.software.title()]
 
-    UNCORR_OBSERVABLE = {'Gromacs':P.uncorr, 'Amber':'dhdl', 'Sire':'dhdl', 'Desmond':'dE'}[P.software.title()]
+   if UNCORR_OBSERVABLE == 'dhdl':
+      # Uncorrelate based on dhdl values at a given lambda.
 
-    if UNCORR_OBSERVABLE == 'dhdl':
-        #Uncorrelate based on dhdl values at a given lambda
-
-        for k in range(K):
-            # Sum up over the energy components; notice, that only the relevant data is being used in the third dimension.
-            dhdl_sum = numpy.sum(dhdlt[k,:,sta[k]:fin[k]], axis=0)
-            # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
-            # (alternatively, could use the energy differences -- here, we will use total dhdl).
-            g[k] = pymbar.timeseries.statisticalInefficiency(dhdl_sum)
-            indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dhdl_sum, g=g[k])) # indices of uncorrelated samples
-            N = len(indices) # number of uncorrelated samples
-            # Handle case where we end up with too few.
-            if N < P.uncorr_threshold:
-                if do_dhdl:
-                    logger.warn(': Only %s uncorrelated samples found at '
-                                'lambda number %s; proceeding with analysis '
-                                'using correlated samples...' % (N, k))
-                indices = sta[k] + numpy.arange(len(dhdl_sum))
-                N = len(indices)
-            N_k[k] = N # Store the number of uncorrelated samples from state k.
-            if not (u_klt is None):
-                for l in range(K):
-                    u_kln[k,l,0:N] = u_klt[k,l,indices]
+      for k in range(K):
+         # Sum up over those energy components that are changing.
+         dhdl_sum = numpy.sum(dhdlt[k,:,sta[k]:fin[k]], axis=0)
+         # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
+         # (alternatively, could use the energy differences -- here, we will use total dhdl).
+         g[k] = pymbar.timeseries.statisticalInefficiency(dhdl_sum)
+         indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dhdl_sum, g=g[k])) # indices of uncorrelated samples
+         N = len(indices) # number of uncorrelated samples
+         # Handle case where we end up with too few.
+         if N < P.uncorr_threshold:
             if do_dhdl:
-                logger.info('%6s %12s %12s %12.2f' % (k, fin[k], N_k[k], g[k]))
-                for n in range(n_components):
-                    dhdl[k,n,0:N] = dhdlt[k,n,indices]
+               print "WARNING: Only %s uncorrelated samples found at lambda number %s; proceeding with analysis using correlated samples..." % (N, k)
+            indices = sta[k] + numpy.arange(len(dhdl_sum))
+            N = len(indices)
+         N_k[k] = N # Store the number of uncorrelated samples from state k.
+         if not (u_klt is None):
+            for l in range(K):
+               u_kln[k,l,0:N] = u_klt[k,l,indices]
+         if do_dhdl:
+            print "%6s %12s %12s %12.2f" % (k, fin[k], N_k[k], g[k])
+            for n in range(n_components):
+               dhdl[k,n,0:N] = dhdlt[k,n,indices]
 
-    # FIXME: how is this different from above and why can't this be handled
-    #        in the parser
-    if UNCORR_OBSERVABLE == 'dE':
-        #Decorrelate based on energy differences between lambdas
+   if UNCORR_OBSERVABLE == 'dhdl_all':
+      # Uncorrelate based on dhdl values at a given lambda.
 
-        for k in range(K):
-            # Sum up over the energy components as above using only the relevant data; here we use energy differences
-            # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
+      for k in range(K):
+         # Sum up over the energy components; notice, that only the relevant data is being used in the third dimension.
+         dhdl_sum = numpy.sum(dhdlt[k,:,sta[k]:fin[k]], axis=0)
+         # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
+         # (alternatively, could use the energy differences -- here, we will use total dhdl).
+         g[k] = pymbar.timeseries.statisticalInefficiency(dhdl_sum)
+         indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dhdl_sum, g=g[k])) # indices of uncorrelated samples
+         N = len(indices) # number of uncorrelated samples
+         # Handle case where we end up with too few.
+         if N < P.uncorr_threshold:
+            if do_dhdl:
+               print "WARNING: Only %s uncorrelated samples found at lambda number %s; proceeding with analysis using correlated samples..." % (N, k)
+            indices = sta[k] + numpy.arange(len(dhdl_sum))
+            N = len(indices)
+         N_k[k] = N # Store the number of uncorrelated samples from state k.
+         if not (u_klt is None):
+            for l in range(K):
+               u_kln[k,l,0:N] = u_klt[k,l,indices]
+         if do_dhdl:
+            print "%6s %12s %12s %12.2f" % (k, fin[k], N_k[k], g[k])
+            for n in range(n_components):
+               dhdl[k,n,0:N] = dhdlt[k,n,indices]
 
-            dE = u_klt[k,k+1,sta[k]:fin[k]] if not k==K-1 else u_klt[k,k-1,sta[k]:fin[k]]
+   if UNCORR_OBSERVABLE == 'dE':
+      # Uncorrelate based on energy differences between lambdas.
 
-            g[k] = pymbar.timeseries.statisticalInefficiency(dE)
-            indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dE, g=g[k])) # indices of uncorrelated samples
-            N = len(indices) # number of uncorrelated samples
-            # Handle case where we end up with too few.
-            if N < P.uncorr_threshold:
-                logger.warn('WARNING: Only %s uncorrelated samples found '
-                            'at lambda number %s; proceeding with analysis '
-                            'using correlated samples...' % (N, k))
-                indices = sta[k] + numpy.arange(len(dE))
-                N = len(indices)
-            N_k[k] = N # Store the number of uncorrelated samples from state k.
-            if not (u_klt is None):
-                for l in range(K):
-                    u_kln[k,l,0:N] = u_klt[k,l,indices]
+      for k in range(K):
+         # Sum up over the energy components as above using only the relevant data; here we use energy differences
+         # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
 
-    return dhdl, N_k, u_kln
+         dE = u_klt[k,k+1,sta[k]:fin[k]] if not k==K-1 else u_klt[k,k-1,sta[k]:fin[k]]
+
+         g[k] = pymbar.timeseries.statisticalInefficiency(dE)
+         indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dE, g=g[k])) # indices of uncorrelated samples
+         N = len(indices) # number of uncorrelated samples
+         # Handle case where we end up with too few.
+         if N < P.uncorr_threshold:
+            print "WARNING: Only %s uncorrelated samples found at lambda number %s; proceeding with analysis using correlated samples..." % (N, k)
+            indices = sta[k] + numpy.arange(len(dE))
+            N = len(indices)
+         N_k[k] = N # Store the number of uncorrelated samples from state k.
+         if not (u_klt is None):
+            for l in range(K):
+               u_kln[k,l,0:N] = u_klt[k,l,indices]
+
+   if do_dhdl:
+      return (dhdl, N_k, u_kln)
+   return (N_k, u_kln)
 
 #===================================================================================================
 # FUNCTIONS: The MBAR workhorse.
@@ -310,129 +329,132 @@ def estimatewithMBAR(K, u_kln, N_k, reltol, regular_estimate=False):
 
 class naturalcubicspline:
 
-    def __init__(self, x):
+   def __init__(self, x):
 
-        # define some space
-        L = len(x)
-        H = numpy.zeros([L,L],float)
-        M = numpy.zeros([L,L],float)
-        BW = numpy.zeros([L,L],float)
-        AW = numpy.zeros([L,L],float)
-        DW = numpy.zeros([L,L],float)
+      # define some space
+      L = len(x)
+      H = numpy.zeros([L,L],float)
+      M = numpy.zeros([L,L],float)
+      BW = numpy.zeros([L,L],float)
+      AW = numpy.zeros([L,L],float)
+      DW = numpy.zeros([L,L],float)
 
-        h = x[1:L]-x[0:L-1]
-        ih = 1.0/h
+      h = x[1:L]-x[0:L-1]
+      ih = 1.0/h
 
-        # define the H and M matrix, from p. 371 "applied numerical methods with matlab, Chapra"
-        H[0,0] = 1
-        H[L-1,L-1] = 1
-        for i in range(1,L-1):
-            H[i,i] = 2*(h[i-1]+h[i])
-            H[i,i-1] = h[i-1]
-            H[i,i+1] = h[i]
+      # define the H and M matrix, from p. 371 "applied numerical methods with matlab, Chapra"
+      H[0,0] = 1
+      H[L-1,L-1] = 1
+      for i in range(1,L-1):
+         H[i,i] = 2*(h[i-1]+h[i])
+         H[i,i-1] = h[i-1]
+         H[i,i+1] = h[i]
 
-            M[i,i] = -3*(ih[i-1]+ih[i])
-            M[i,i-1] = 3*(ih[i-1])
-            M[i,i+1] = 3*(ih[i])
+         M[i,i] = -3*(ih[i-1]+ih[i])
+         M[i,i-1] = 3*(ih[i-1])
+         M[i,i+1] = 3*(ih[i])
 
-        CW = numpy.dot(numpy.linalg.inv(H),M)  # this is the matrix translating c to weights in f.
-                                                     # each row corresponds to the weights for each c.
+      CW = numpy.dot(numpy.linalg.inv(H),M)  # this is the matrix translating c to weights in f.
+                                                   # each row corresponds to the weights for each c.
 
-        # from CW, define the other coefficient matrices
-        for i in range(0,L-1):
-            BW[i,:]    = -(h[i]/3)*(2*CW[i,:]+CW[i+1,:])
-            BW[i,i]   += -ih[i]
-            BW[i,i+1] += ih[i]
-            DW[i,:]    = (ih[i]/3)*(CW[i+1,:]-CW[i,:])
-            AW[i,i]    = 1
+      # from CW, define the other coefficient matrices
+      for i in range(0,L-1):
+         BW[i,:]    = -(h[i]/3)*(2*CW[i,:]+CW[i+1,:])
+         BW[i,i]   += -ih[i]
+         BW[i,i+1] += ih[i]
+         DW[i,:]    = (ih[i]/3)*(CW[i+1,:]-CW[i,:])
+         AW[i,i]    = 1
 
-        # Make copies of the arrays we'll be using in the future.
-        self.x  = x.copy()
-        self.AW = AW.copy()
-        self.BW = BW.copy()
-        self.CW = CW.copy()
-        self.DW = DW.copy()
+      # Make copies of the arrays we'll be using in the future.
+      self.x  = x.copy()
+      self.AW = AW.copy()
+      self.BW = BW.copy()
+      self.CW = CW.copy()
+      self.DW = DW.copy()
 
-        # find the integrating weights
-        self.wsum = numpy.zeros([L],float)
-        self.wk = numpy.zeros([L-1,L],float)
-        for k in range(0,L-1):
-            w = DW[k,:]*(h[k]**4)/4.0 + CW[k,:]*(h[k]**3)/3.0 + BW[k,:]*(h[k]**2)/2.0 + AW[k,:]*(h[k])
-            self.wk[k,:] = w
-            self.wsum += w
+      # find the integrating weights
+      self.wsum = numpy.zeros([L],float)
+      self.wk = numpy.zeros([L-1,L],float)
+      for k in range(0,L-1):
+         w = DW[k,:]*(h[k]**4)/4.0 + CW[k,:]*(h[k]**3)/3.0 + BW[k,:]*(h[k]**2)/2.0 + AW[k,:]*(h[k])
+         self.wk[k,:] = w
+         self.wsum += w
 
-    def interpolate(self, y, xnew):
-        if len(self.x) != len(y):
-            log_and_raise('Inconsistent vector lengths in interpolate.',
-                          GeneralException)
-        # get the array of actual coefficients by multiplying the coefficient matrix by the values
-        a = numpy.dot(self.AW,y)
-        b = numpy.dot(self.BW,y)
-        c = numpy.dot(self.CW,y)
-        d = numpy.dot(self.DW,y)
+   def interpolate(self,y,xnew):
+      if len(self.x) != len(y):
+         parser.error("\nThe length of 'y' should be consistent with that of 'self.x'. I cannot perform linear algebra operations.")
+      # get the array of actual coefficients by multiplying the coefficient matrix by the values
+      a = numpy.dot(self.AW,y)
+      b = numpy.dot(self.BW,y)
+      c = numpy.dot(self.CW,y)
+      d = numpy.dot(self.DW,y)
 
-        N = len(xnew)
-        ynew = numpy.zeros([N],float)
-        for i in range(N):
-            # Find the index of 'xnew[i]' it would have in 'self.x'.
-            j = numpy.searchsorted(self.x, xnew[i]) - 1
-            lamw = xnew[i] - self.x[j]
-            ynew[i] = d[j]*lamw**3 + c[j]*lamw**2 + b[j]*lamw + a[j]
-        # Preserve the terminal points.
-        ynew[0] = y[0]
-        ynew[-1] = y[-1]
-        return ynew
+      N = len(xnew)
+      ynew = numpy.zeros([N],float)
+      for i in range(N):
+         # Find the index of 'xnew[i]' it would have in 'self.x'.
+         j = numpy.searchsorted(self.x, xnew[i]) - 1
+         lamw = xnew[i] - self.x[j]
+         ynew[i] = d[j]*lamw**3 + c[j]*lamw**2 + b[j]*lamw + a[j]
+      # Preserve the terminal points.
+      ynew[0] = y[0]
+      ynew[-1] = y[-1]
+      return ynew
+
+def get_lchange(K, n_components, lv):
+   lchange = numpy.zeros([K,n_components],bool)   # booleans for which lambdas are changing
+   for j in range(n_components):
+      # need to identify range over which lambda doesn't change, and not interpolate over that range.
+      for k in range(K-1):
+         if (lv[k+1,j]-lv[k,j] > 0):
+            lchange[k,j] = True
+            lchange[k+1,j] = True
+   return lchange
 
 def TIprelim(N_k, lv, dhdl):
 
-    K, n_components = lv.shape
+   K, n_components = lv.shape
 
-    # Lambda vectors spacing.
-    dlam = numpy.diff(lv, axis=0)
+   # Lambda vectors spacing.
+   dlam = numpy.diff(lv, axis=0)
 
-    lchange = numpy.zeros([K,n_components],bool)   # booleans for which lambdas are changing
-    for j in range(n_components):
-        # need to identify range over which lambda doesn't change, and not interpolate over that range.
-        for k in range(K-1):
-            if (lv[k+1,j]-lv[k,j] > 0):
-                lchange[k,j] = True
-                lchange[k+1,j] = True
+   if 'ave_dhdl' in globals() and 'std_dhdl' in globals():
+      return dlam, globals()['ave_dhdl'], globals()['std_dhdl']
 
-    if 'ave_dhdl' in globals() and 'std_dhdl' in globals():
-        return lchange, dlam, globals()['ave_dhdl'], globals()['std_dhdl']
+   # Compute <dhdl> and std(dhdl) for each component, for each lambda; multiply them by beta to make unitless.
+   ave_dhdl = numpy.zeros([K,n_components],float)
+   std_dhdl = numpy.zeros([K,n_components],float)
+   for k in range(K):
+      ave_dhdl[k,:] = P.beta*numpy.average(dhdl[k,:,0:N_k[k]],axis=1)
+      std_dhdl[k,:] = P.beta*numpy.std(dhdl[k,:,0:N_k[k]],axis=1)/numpy.sqrt(N_k[k]-1)
 
-    # Compute <dhdl> and std(dhdl) for each component, for each lambda; multiply them by beta to make unitless.
-    ave_dhdl = numpy.zeros([K,n_components],float)
-    std_dhdl = numpy.zeros([K,n_components],float)
-    for k in range(K):
-        ave_dhdl[k,:] = P.beta*numpy.average(dhdl[k,:,0:N_k[k]],axis=1)
-        std_dhdl[k,:] = P.beta*numpy.std(dhdl[k,:,0:N_k[k]],axis=1)/numpy.sqrt(N_k[k]-1)
+   lchange = get_lchange(K, n_components, lv)
 
-    return lchange, dlam, ave_dhdl, std_dhdl
+   return lchange, dlam, ave_dhdl, std_dhdl
 
 def getSplines(lv, lchange):
 
-    K, n_components = lv.shape
+   K, n_components = lv.shape
 
-    # construct a map back to the original components
-    mapl = numpy.zeros([K,n_components],int)   # map back to the original k from the components
-    for j in range(n_components):
-        incr = 0
-        for k in range(K):
-            if (lchange[k,j]):
-                mapl[k,j] += incr
-                incr +=1
+   # construct a map back to the original components
+   mapl = numpy.zeros([K,n_components],int)   # map back to the original k from the components
+   for j in range(n_components):
+      incr = 0
+      for k in range(K):
+         if (lchange[k,j]):
+            mapl[k,j] += incr
+            incr +=1
 
-    # put together the spline weights for the different components
-    cubspl = list()
-    for j in range(n_components):
-        lv_lchange = lv[lchange[:,j],j]
-        if len(lv_lchange) == 0: # handle the all-zero lv column
-            cubspl.append(0)
-        else:
-            spl = naturalcubicspline(lv_lchange)
-            cubspl.append(spl)
-    return cubspl, mapl
+   # put together the spline weights for the different components
+   cubspl = list()
+   for j in range(n_components):
+      lv_lchange = lv[lchange[:,j],j]
+      if len(lv_lchange) == 0: # handle the all-zero lv column
+         cubspl.append(0)
+      else:
+         spl = naturalcubicspline(lv_lchange)
+         cubspl.append(spl)
+   return cubspl, mapl
 
 #===================================================================================================
 # FUNCTIONS: This one estimates dF and ddF for all pairs of adjacent states and stores them.
@@ -547,163 +569,158 @@ def estimatePairs(N_k, shape, lchange, dlam, ave_dhdl, std_dhdl, u_kln,
 def totalEnergies(lv, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
                   df_allk, ddf_allk):
 
-    K, n_components = lv.shape
+   K, n_components = lv.shape
 
-    # Count up the charging states.
-    startcoul = 0
-    endcoul = 0
-    startvdw = 0
-    endvdw = 0
-    for lv_n in ['vdw','coul','fep']:
-        if lv_n in P.lv_names:
-            _ndx_char = P.lv_names.index(lv_n)
-            lv_char = lv[:, _ndx_char]
-            if not (lv_char == lv_char[0]).all():
-                if lv_n == 'vdw':
-                    endvdw = (lv_char != 1).sum()
-                if lv_n == 'fep':
-                    endcoul = (lv_char != 1).sum()
-                    ndx_char = P.lv_names.index(lv_n)
-                if lv_n == 'coul':
-                    endcoul = (lv_char != 1).sum()
-                    ndx_char = P.lv_names.index(lv_n)
+   # Count up the charging states.
+   startcoul = 0
+   endcoul = 0
+   startvdw = 0
+   endvdw = 0
+   for lv_n in ['vdw','coul','fep']:
+      if lv_n in P.lv_names:
+         _ndx_char = P.lv_names.index(lv_n)
+         lv_char = lv[:, _ndx_char]
+         if not (lv_char == lv_char[0]).all():
+            if lv_n == 'vdw':
+                endvdw = (lv_char != 1).sum()
+            if lv_n == 'fep':
+                endcoul = (lv_char != 1).sum() #Why is this lumped with coul?
+                ndx_char = P.lv_names.index(lv_n)
+            if lv_n == 'coul':
+                endcoul = (lv_char != 1).sum()
+                ndx_char = P.lv_names.index(lv_n)
+   # Figure out where Coulomb section is, if it is present.
+   if endcoul > endvdw:
+      #If it comes after the vdW section, for now assume it follows vdW (will need correcting for case where they are mixed together)
+      startcoul = endvdw
+      startvdw = 0
+   elif startcoul==endcoul:
+      #There is no coulomb section
+      if P.verbose: print "No Coulomb transformation present."
+      pass    
+   else:
+      startcoul = 0
+      startvdw = endcoul
 
-    # Figure out if coulomb section comes before or after vdw section
-    if endcoul > endvdw:
-        startcoul = endvdw
-        startvdw = 0
-    else:
-        startcoul = 0
-        startvdw = endcoul
+   segments      = ['Coulomb'  , 'vdWaals'  , 'TOTAL']
+   segmentstarts = [startcoul  , startvdw   , 0      ]
+   segmentends   = [min(endcoul,K-1)    , min(endvdw,K-1)     , K-1    ]
+   dFs  = []
+   ddFs = []
 
-    segments      = ['Coulomb'  , 'vdWaals'  , 'TOTAL']
-    segmentstarts = [startcoul  , startvdw   , 0      ]
-    segmentends   = [endcoul    , endvdw     , K-1    ]
-    dFs  = []
-    ddFs = []
+   # Perform the energy segmentation; be pedantic about the TI cumulative ddF's (see Section 3.1 of the paper).
+   for i in range(len(segments)):
+      segment = segments[i]; segstart = segmentstarts[i]; segend = segmentends[i]
+      dF  = dict.fromkeys(P.methods, 0)
+      ddF = dict.fromkeys(P.methods, 0)
 
-    # Perform the energy segmentation; be pedantic about the TI cumulative ddF's (see Section 3.1 of the paper).
-    for i in range(len(segments)):
-        segment = segments[i]; segstart = segmentstarts[i]; segend = segmentends[i]
-        dF  = dict.fromkeys(P.methods, 0)
-        ddF = dict.fromkeys(P.methods, 0)
+      for name in P.methods:
+         if name == 'MBAR':
+            dF['MBAR']  =  Deltaf_ij[segstart, segend]
+            ddF['MBAR'] = dDeltaf_ij[segstart, segend]
 
-        for name in P.methods:
-            if name == 'MBAR':
-                dF['MBAR']  =  Deltaf_ij[segstart, segend]
-                ddF['MBAR'] = dDeltaf_ij[segstart, segend]
+         elif name[0:2] == 'TI':
+            for k in range(segstart, segend):
+               dF[name] += df_allk[k][name]
 
-            elif name[0:2] == 'TI':
-                for k in range(segstart, segend):
-                    dF[name] += df_allk[k][name]
+            if segment == 'Coulomb':
+               jlist = [ndx_char] if endcoul>0 else []
+            elif segment == 'vdWaals':
+               jlist = []
+            elif segment == 'TOTAL':
+               jlist = range(n_components)
 
-                if segment == 'Coulomb':
-                    jlist = [ndx_char] if endcoul>0 else []
-                elif segment == 'vdWaals':
-                    jlist = []
-                elif segment == 'TOTAL':
-                    jlist = range(n_components)
+            for j in jlist:
+               lj = lchange[:,j]
+               if not (lj == False).all(): # handle the all-zero lv column
+                  if name == 'TI-CUBIC':
+                     ddF[name] += numpy.dot((cubspl[j].wsum)**2,std_dhdl[lj,j]**2)
+                  elif name == 'TI':
+                     h = numpy.trim_zeros(dlam[:,j])
+                     wsum = 0.5*(numpy.append(h,0) + numpy.append(0,h))
+                     ddF[name] += numpy.dot(wsum**2,std_dhdl[lj,j]**2)
+            ddF[name] = numpy.sqrt(ddF[name])
 
-                for j in jlist:
-                    lj = lchange[:,j]
-                    if not (lj == False).all(): # handle the all-zero lv column
-                        if name == 'TI-CUBIC':
-                            ddF[name] += numpy.dot((cubspl[j].wsum)**2,std_dhdl[lj,j]**2)
-                        elif name == 'TI':
-                            h = numpy.trim_zeros(dlam[:,j])
-                            wsum = 0.5*(numpy.append(h,0) + numpy.append(0,h))
-                            ddF[name] += numpy.dot(wsum**2,std_dhdl[lj,j]**2)
-                ddF[name] = numpy.sqrt(ddF[name])
+         else:
+            for k in range(segstart,segend):
+               dF[name] += df_allk[k][name]
+               ddF[name] += (ddf_allk[k][name])**2
+            ddF[name] = numpy.sqrt(ddF[name])
 
-            else:
-                for k in range(segstart,segend):
-                    dF[name] += df_allk[k][name]
-                    ddF[name] += (ddf_allk[k][name])**2
-                ddF[name] = numpy.sqrt(ddF[name])
+      dFs.append(dF)
+      ddFs.append(ddF)
 
-        dFs.append(dF)
-        ddFs.append(ddF)
+   for name in P.methods: # 'vdWaals' = 'TOTAL' - 'Coulomb'
+      ddFs[1][name] = (ddFs[2][name]**2 - ddFs[0][name]**2)**0.5
 
-    for name in P.methods: # 'vdWaals' = 'TOTAL' - 'Coulomb'
-        ddFs[1][name] = (ddFs[2][name]**2 - ddFs[0][name]**2)**0.5
+   # Display results.
+   def printLine(str1, str2, d1=None, d2=None):
+      """Fills out the results table linewise."""
+      print str1,
+      text = str1
+      for name in P.methods:
+         if d1 == 'plain':
+            print str2,
+            text += ' ' + str2
+         if d1 == 'name':
+            print str2 % (name, P.units),
+            text += ' ' + str2 % (name, P.units)
+         if d1 and d2:
+            print str2 % (d1[name]/P.beta_report, d2[name]/P.beta_report),
+            text += ' ' + str2 % (d1[name]/P.beta_report, d2[name]/P.beta_report)
+      print ''
+      outtext.append(text + '\n')
+      return
 
-    # Display results.
-    def printLine(str1, str2, d1=None, d2=None):
-        """Fills out the results table linewise."""
-        text = str1
+   d = P.decimal
+   str_dash  = (d+7 + 6 + d+2)*'-'
+   str_dat   = ('X%d.%df  +-  X%d.%df' % (d+7, d, d+2, d)).replace('X', '%')
+   str_names = ('X%ds X-%ds' % (d+6, d+8)).replace('X', '%')
+   outtext = []
+   printLine(12*'-', str_dash, 'plain')
+   printLine('%-12s' % '   States', str_names, 'name')
+   printLine(12*'-', str_dash, 'plain')
+   for k in range(K-1):
+      printLine('%4d -- %-4d' % (k, k+1), str_dat, df_allk[k], ddf_allk[k])
+   printLine(12*'-', str_dash, 'plain')
+   remark = ["",  "A remark on the energy components interpretation: ",
+             " 'vdWaals' is computed as 'TOTAL' - 'Coulomb', where ",
+	     " 'Coulomb' is found as the free energy change between ",
+	     " the states defined by the lambda vectors (0,0,...,0) ",
+	     " and (1,0,...,0), the only varying vector component ",
+	     " being either 'coul-lambda' or 'fep-lambda'. "]
+   w = 12 + (1+len(str_dash))*len(P.methods)
+   str_align = '{:I^%d}' % w
+   if len(P.lv_names)>1:
+      for i in range(len(segments)):
+         printLine('%9s:  ' % segments[i], str_dat, dFs[i], ddFs[i])
+      for i in remark:
+         print str_align.replace('I', ' ').format(i)
+   else:
+      printLine('%9s:  ' % segments[-1], str_dat, dFs[-1], ddFs[-1])
+   # Store results.
+   outfile = open(os.path.join(P.output_directory, 'results.txt'), 'w')
+   outfile.write('# Command line was: %s\n\n' % ' '.join(sys.argv) )
+   outfile.writelines(outtext)
+   outfile.close()
 
-        for name in P.methods:
-            if d1 == 'plain':
-                text += ' ' + str2
-            if d1 == 'name':
-                text += ' ' + str2 % (name, P.units)
-            if d1 and d2:
-                text += ' ' + str2 % (d1[name]/P.beta_report,
-                                      d2[name]/P.beta_report)
-        outtext.append(text + '\n')
+   P.datafile_directory = os.getcwd()
+   P.ddf_allk = ddf_allk
+   P.df_allk  = df_allk
+   P.ddFs     = ddFs
+   P.dFs      = dFs
 
-        return
+   outfile = open(os.path.join(P.output_directory, 'results.pickle'), 'w')
+   pickle.dump(P, outfile)
+   outfile.close()
 
-    d = P.decimal
-    str_dash  = (d+7 + 6 + d+2)*'-'
-    str_dat   = ('X%d.%df  +-  X%d.%df' % (d+7, d, d+2, d)).replace('X', '%')
-    str_names = ('X%ds X-%ds' % (d+6, d+8)).replace('X', '%')
-    outtext = []
-    printLine(12*'-', str_dash, 'plain')
-    printLine('%-12s' % '   States', str_names, 'name')
-    printLine(12*'-', str_dash, 'plain')
+   print '\n'+w*'*'
+   for i in [" The above table has been stored in ", " "+P.output_directory+"/results.txt ",
+      " while the full-precision data ", " (along with the simulation profile) in ", " "+P.output_directory+"/results.pickle "]:
+      print str_align.format('{:^40}'.format(i))
+   print w*'*'
 
-    for k in range(K-1):
-        printLine('%4d -- %-4d' % (k, k+1), str_dat, df_allk[k], ddf_allk[k])
-    printLine(12*'-', str_dash, 'plain')
-
-    remark = ["",  "A remark on the energy components interpretation: ",
-              " 'vdWaals' is computed as 'TOTAL' - 'Coulomb', where ",
-              " 'Coulomb' is found as the free energy change between ",
-              " the states defined by the lambda vectors (0,0,...,0) ",
-              " and (1,0,...,0), the only varying vector component ",
-              " being either 'coul-lambda' or 'fep-lambda'. "]
-
-    w = 12 + (1+len(str_dash))*len(P.methods)
-    str_align = '{:I^%d}\n' % w
-
-    if len(P.lv_names) > 1:
-        for i in range(len(segments)):
-            printLine('%9s:  ' % segments[i], str_dat, dFs[i], ddFs[i])
-        for i in remark:
-            logger.info(str_align.replace('I', ' ').format(i))
-    else:
-        printLine('%9s:  ' % segments[-1], str_dat, dFs[-1], ddFs[-1])
-
-    with open(os.path.join(P.output_directory, consts.RESULTS_FILE), 'w') as \
-         outfile:
-        outfile.write('# Command line: %s\n\n' % ' '.join(sys.argv) )
-        outfile.writelines(outtext)
-
-    P.datafile_directory = os.getcwd()
-    P.ddf_allk = ddf_allk
-    P.df_allk  = df_allk
-    P.ddFs     = ddFs
-    P.dFs      = dFs
-
-    with open(os.path.join(P.output_directory, consts.RESULTS_PICKLE), 'w') as \
-         outfile:
-        pickle.dump(P, outfile)
-
-    outtext.append('\n' + w*'*' + '\n')
-
-    for i in (' The above table has been stored in ',
-              ' ' + P.output_directory + '/%s ' % consts.RESULTS_FILE,
-              ' while the full-precision data ',
-              ' (along with the simulation profile) in ',
-              ' ' + P.output_directory + '/%s ' % consts.RESULTS_PICKLE):
-        outtext.append(str_align.format('{:^40}'.format(i)))
-
-    outtext.append('\n' + w*'*')
-
-    logger.info(''.join(outtext))
-
-    return
+   return
 
 #===================================================================================================
 # FUNCTIONS: Free energy change vs. simulation time. Called by the -f flag.
@@ -711,140 +728,120 @@ def totalEnergies(lv, lchange, dlam, std_dhdl, cubspl, Deltaf_ij, dDeltaf_ij,
 
 def dF_t(K, shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij):
 
-    def plotdFvsTime(f_ts, r_ts, F_df, R_df, F_ddf, R_ddf):
-        """Plots the free energy change computed using the equilibrated snapshots between the proper target time frames (f_ts and r_ts)
-        in both forward (data points are stored in F_df and F_ddf) and reverse (data points are stored in R_df and R_ddf) directions."""
-        fig = pl.figure(figsize=(8,6))
-        ax = fig.add_subplot(111)
-        pl.setp(ax.spines['bottom'], color='#D2B9D3', lw=3, zorder=-2)
-        pl.setp(ax.spines['left'], color='#D2B9D3', lw=3, zorder=-2)
-        for dire in ['top', 'right']:
-            ax.spines[dire].set_color('none')
-        ax.xaxis.set_ticks_position('bottom')
-        ax.yaxis.set_ticks_position('left')
+   def plotdFvsTime(f_ts, r_ts, F_df, R_df, F_ddf, R_ddf):
+      """Plots the free energy change computed using the equilibrated snapshots between the proper target time frames (f_ts and r_ts)
+      in both forward (data points are stored in F_df and F_ddf) and reverse (data points are stored in R_df and R_ddf) directions."""
+      fig = pl.figure(figsize=(8,6))
+      ax = fig.add_subplot(111)
+      pl.setp(ax.spines['bottom'], color='#D2B9D3', lw=3, zorder=-2)
+      pl.setp(ax.spines['left'], color='#D2B9D3', lw=3, zorder=-2)
+      for dire in ['top', 'right']:
+         ax.spines[dire].set_color('none')
+      ax.xaxis.set_ticks_position('bottom')
+      ax.yaxis.set_ticks_position('left')
 
-        max_fts = max(f_ts)
-        rr_ts = [aa/max_fts for aa in f_ts[::-1]]
-        f_ts = [aa/max_fts for aa in f_ts]
-        r_ts = [aa/max_fts for aa in r_ts]
+      max_fts = max(f_ts)
+      rr_ts = [aa/max_fts for aa in f_ts[::-1]]
+      f_ts = [aa/max_fts for aa in f_ts]
+      r_ts = [aa/max_fts for aa in r_ts]
 
-        line0  = pl.fill_between([r_ts[0], f_ts[-1]], R_df[0]-R_ddf[0], R_df[0]+R_ddf[0], color='#D2B9D3', zorder=-5)
-        for i in range(len(f_ts)):
-            line1 = pl.plot([f_ts[i]]*2, [F_df[i]-F_ddf[i], F_df[i]+F_ddf[i]], color='#736AFF', ls='-', lw=3, solid_capstyle='round', zorder=1)
-        line11 = pl.plot(f_ts, F_df, color='#736AFF', ls='-', lw=3, marker='o', mfc='w', mew=2.5, mec='#736AFF', ms=12, zorder=2)
+      line0  = pl.fill_between([r_ts[0], f_ts[-1]], R_df[0]-R_ddf[0], R_df[0]+R_ddf[0], color='#D2B9D3', zorder=-5)
+      for i in range(len(f_ts)):
+         line1 = pl.plot([f_ts[i]]*2, [F_df[i]-F_ddf[i], F_df[i]+F_ddf[i]], color='#736AFF', ls='-', lw=3, solid_capstyle='round', zorder=1)
+      line11 = pl.plot(f_ts, F_df, color='#736AFF', ls='-', lw=3, marker='o', mfc='w', mew=2.5, mec='#736AFF', ms=12, zorder=2)
 
-        for i in range(len(rr_ts)):
-            line2 = pl.plot([rr_ts[i]]*2, [R_df[i]-R_ddf[i], R_df[i]+R_ddf[i]], color='#C11B17', ls='-', lw=3, solid_capstyle='round', zorder=3)
-        line22 = pl.plot(rr_ts, R_df, color='#C11B17', ls='-', lw=3, marker='o', mfc='w', mew=2.5, mec='#C11B17', ms=12, zorder=4)
+      for i in range(len(rr_ts)):
+         line2 = pl.plot([rr_ts[i]]*2, [R_df[i]-R_ddf[i], R_df[i]+R_ddf[i]], color='#C11B17', ls='-', lw=3, solid_capstyle='round', zorder=3)
+      line22 = pl.plot(rr_ts, R_df, color='#C11B17', ls='-', lw=3, marker='o', mfc='w', mew=2.5, mec='#C11B17', ms=12, zorder=4)
 
-        pl.xlim(r_ts[0], f_ts[-1])
+      pl.xlim(r_ts[0], f_ts[-1])
 
-        pl.xticks(r_ts[::2] + f_ts[-1:], fontsize=10)
-        pl.yticks(fontsize=10)
+      pl.xticks(r_ts[::2] + f_ts[-1:], fontsize=10)
+      pl.yticks(fontsize=10)
 
-        leg = pl.legend((line1[0], line2[0]), (r'$Forward$', r'$Reverse$'), loc=9, prop=FP(size=18), frameon=False)
-        pl.xlabel(r'$\mathrm{Fraction\/of\/the\/simulation\/time}$', fontsize=16, color='#151B54')
-        pl.ylabel(r'$\mathrm{\Delta G\/%s}$' % P.units, fontsize=16, color='#151B54')
-        pl.xticks(f_ts, ['%.2f' % i for i in f_ts])
-        pl.tick_params(axis='x', color='#D2B9D3')
-        pl.tick_params(axis='y', color='#D2B9D3')
-        pl.savefig(os.path.join(P.output_directory, consts.DF_T_PDF))
-        pl.close(fig)
-        return
+      leg = pl.legend((line1[0], line2[0]), (r'$Forward$', r'$Reverse$'), loc=9, prop=FP(size=18), frameon=False)
+      pl.xlabel(r'$\mathrm{Fraction\/of\/the\/simulation\/time}$', fontsize=16, color='#151B54')
+      pl.ylabel(r'$\mathrm{\Delta G\/%s}$' % P.units, fontsize=16, color='#151B54')
+      pl.xticks(f_ts, ['%.2f' % i for i in f_ts])
+      pl.tick_params(axis='x', color='#D2B9D3')
+      pl.tick_params(axis='y', color='#D2B9D3')
+      pl.savefig(os.path.join(P.output_directory, 'dF_t.pdf'))
+      pl.close(fig)
+      return
 
-    if not 'MBAR' in P.methods:
-        log_and_raise('Current version of the dF(t) analysis works with '
-                      'MBAR only and the method is not found in the list.',
-                      GeneralException)
-    if not (P.snap_size[0] == numpy.array(P.snap_size)).all(): # this could be circumvented
-        log_and_raise("The snapshot interval isn't the same for all the "
-                      "files; cannot perform the dF(t) analysis.",
-                      GeneralException)
+   if not 'MBAR' in P.methods:
+      parser.error("\nCurrent version of the dF(t) analysis works with MBAR only and the method is not found in the list.")
+   if not (P.snap_size[0] == numpy.array(P.snap_size)).all(): # this could be circumvented
+      parser.error("\nThe snapshot size isn't the same for all the files; cannot perform the dF(t) analysis.")
 
-    # Define a list of bForwrev equidistant time frames at which the free energy is to be estimated; count up the snapshots embounded between the time frames.
-    n_tf = P.bForwrev + 1
-    nss_tf = numpy.zeros([n_tf, K], int)
-    increment = 1./(n_tf-1)
-    if P.bExpanded:
-        from collections import Counter # for counting elements in an array
-        tf = numpy.arange(0,1+increment,increment)*(numpy.sum(nsnapshots)-1)+1
-        tf[0] = 0
-        for i in range(n_tf-1):
-            nss = Counter(extract_states[tf[i]:tf[i+1]])
-            nss_tf[i+1] = numpy.array([nss[j] for j in range(K)])
-    else:
-        tf = numpy.arange(0,1+increment,increment)*(max(nsnapshots)-1)+1
-        tf[0] = 0
-        for i in range(n_tf-1):
-            nss_tf[i+1] = numpy.array([min(j, tf[i+1]) for j in nsnapshots]) - numpy.sum(nss_tf[:i+1],axis=0)
+   # Define a list of bForwrev equidistant time frames at which the free energy is to be estimated; count up the snapshots embounded between the time frames.
+   n_tf = P.bForwrev + 1
+   nss_tf = numpy.zeros([n_tf, K], int)
+   increment = 1./(n_tf-1)
+   if P.bExpanded:
+      from collections import Counter # for counting elements in an array
+      #tf = numpy.arange(0,1+increment,increment)*(numpy.sum(nsnapshots)-1)+1
+      tf = numpy.linspace(0.0, 1.0, n_tf)*(numpy.sum(nsnapshots)-1)+1
+      tf[0] = 0
+      for i in range(n_tf-1):
+         nss = Counter(extract_states[tf[i]:tf[i+1]])
+         nss_tf[i+1] = numpy.array([nss[j] for j in range(K)])
+   else:
+      #print "Increment:", increment
+      #print "Max snapshots:", max(nsnapshots)
+      #tf = numpy.arange(0,1+increment,increment)*(max(nsnapshots)-1)+1
+      tf = numpy.linspace(0.0, 1.0, n_tf)*(max(nsnapshots)-1)+1
+      #print tf, tf_new
+      #print len(tf), len(tf_new)
+      #print("Pausing."), raw_input()
+      tf[0] = 0
+      for i in range(n_tf-1):
+         nss_tf[i+1] = numpy.array([min(j, tf[i+1]) for j in nsnapshots]) - numpy.sum(nss_tf[:i+1],axis=0)
 
-    # Define the real time scale (in ps) rather than a snapshot sequence.
-    ts = ["%.1f" % ((i-(i!=tf[0]))*P.snap_size[0] + P.equiltime) for i in tf]
-    # Initialize arrays to store data points to be plotted.
-    F_df  = numpy.zeros(n_tf-1, float)
-    F_ddf = numpy.zeros(n_tf-1, float)
-    R_df  = numpy.zeros(n_tf-1, float)
-    R_ddf = numpy.zeros(n_tf-1, float)
-    # Store the MBAR energy that accounts for all the equilibrated snapshots (has already been computed in the previous section).
-    F_df[-1], F_ddf[-1] = (Deltaf_ij[0,K-1]/P.beta_report, dDeltaf_ij[0,K-1]/P.beta_report)
-    R_df[0], R_ddf[0]   = (Deltaf_ij[0,K-1]/P.beta_report, dDeltaf_ij[0,K-1]/P.beta_report)
-    # Do the forward analysis.
-    logger.info('Forward dF(t) analysis...\nEstimating the free energy change '
-                'using he data up to')
-    sta = nss_tf[0]
-    for i in range(n_tf-2):
-        logger.info('%60s ps...' % ts[i+1])
-        fin = numpy.sum(nss_tf[:i+2],axis=0)
-        _, N_k, u_kln = uncorrelate(shape, dhdlt, u_klt, nss_tf[0],
-                                    numpy.sum(nss_tf[:i+2],axis=0))
-        F_df[i], F_ddf[i] = estimatewithMBAR(K, u_kln, N_k, P.relative_tolerance)
+   # Define the real time scale (in ps) rather than a snapshot sequence.
+   ts = ["%.1f" % ((i-(i!=tf[0]))*P.snap_size[0] + P.equiltime) for i in tf]
+   # Initialize arrays to store data points to be plotted.
+   F_df  = numpy.zeros(n_tf-1, float)
+   F_ddf = numpy.zeros(n_tf-1, float)
+   R_df  = numpy.zeros(n_tf-1, float)
+   R_ddf = numpy.zeros(n_tf-1, float)
+   # Store the MBAR energy that accounts for all the equilibrated snapshots (has already been computed in the previous section).
+   F_df[-1], F_ddf[-1] = (Deltaf_ij[0,K-1]/P.beta_report, dDeltaf_ij[0,K-1]/P.beta_report)
+   R_df[0], R_ddf[0]   = (Deltaf_ij[0,K-1]/P.beta_report, dDeltaf_ij[0,K-1]/P.beta_report)
+   # Do the forward analysis.
+   print "Forward dF(t) analysis...\nEstimating the free energy change using the data up to"
+   sta = nss_tf[0]
+   for i in range(n_tf-2):
+      print "%60s ps..." % ts[i+1]
+      fin = numpy.sum(nss_tf[:i+2],axis=0)
+      N_k, u_kln = uncorrelate(shape, dhdlt, u_klt, nss_tf[0],
+                               numpy.sum(nss_tf[:i+2],axis=0))
+      F_df[i], F_ddf[i] = estimatewithMBAR(u_kln, N_k, P.relative_tolerance)
+   # Do the reverse analysis.
+   print "Reverse dF(t) analysis...\nUsing the data starting from"
+   fin = numpy.sum(nss_tf[:],axis=0)
+   for i in range(n_tf-2):
+      print "%34s ps..." % ts[i+1]
+      sta = numpy.sum(nss_tf[:i+2],axis=0)
+      N_k, u_kln = uncorrelate(shape, dhdlt, u_klt, sta, fin)
+      R_df[i+1], R_ddf[i+1] = estimatewithMBAR(u_kln, N_k, P.relative_tolerance)
 
-    # Do the reverse analysis.
-    logger.info('Reverse dF(t) analysis...\nUsing the data starting from')
+   print """\n   The free energies %s evaluated by using the trajectory
+   snaphots corresponding to various time intervals for both the
+   reverse and forward (in parentheses) direction.\n""" % P.units
+   print "%s\n %20s %19s %20s\n%s" % (70*'-', 'Time interval, ps','Reverse', 'Forward', 70*'-')
+   print "%10s -- %s\n%10s -- %-10s %11.3f +- %5.3f %16s\n" % (ts[0], ts[-1], '('+ts[0], ts[0]+')', R_df[0], R_ddf[0], 'XXXXXX')
+   for i in range(1, len(ts)-1):
+      print "%10s -- %s\n%10s -- %-10s %11.3f +- %5.3f %11.3f +- %5.3f\n" % (ts[i], ts[-1], '('+ts[0], ts[i]+')', R_df[i], R_ddf[i], F_df[i-1], F_ddf[i-1])
+   print "%10s -- %s\n%10s -- %-10s %16s %15.3f +- %5.3f\n%s" % (ts[-1], ts[-1], '('+ts[0], ts[-1]+')', 'XXXXXX', F_df[-1], F_ddf[-1], 70*'-')
 
-    fin = numpy.sum(nss_tf[:],axis=0)
-    for i in range(n_tf-2):
-        logger.info('%34s ps...' % ts[i+1])
-        sta = numpy.sum(nss_tf[:i+2],axis=0)
-        _, N_k, u_kln = uncorrelate(shape, dhdlt, u_klt, sta, fin)
-        R_df[i+1], R_ddf[i+1] = estimatewithMBAR(K, u_kln, N_k, P.relative_tolerance)
-
-    logger.info('\n  The free energies %s evaluated by using the trajectory '
-                'snaphots corresponding to various time intervals for both '
-                'the reverse and forward (in parentheses) direction.\n' %
-                P.units)
-    logger.info('%s\n %20s %19s %20s\n%s' %
-                (70*'-', 'Time interval, ps', 'Reverse', 'Forward', 70*'-'))
-    logger.info('%10s -- %s\n%10s -- %-10s %11.3f +- %5.3f %16s\n' %
-                (ts[0], ts[-1], '('+ts[0], ts[0]+')', R_df[0], R_ddf[0],
-                 'XXXXXX'))
-
-    for i in range(1, len(ts)-1):
-        logger.info('%10s -- %s\n%10s -- %-10s %11.3f +- %5.3f %11.3f +- %5.3f\n'
-                    % (ts[i], ts[-1], '('+ts[0], ts[i]+')', R_df[i], R_ddf[i],
-                       F_df[i-1], F_ddf[i-1]))
-
-    logger.info("%10s -- %s\n%10s -- %-10s %16s %15.3f +- %5.3f\n%s" %
-                (ts[-1], ts[-1], '('+ts[0], ts[-1]+')', 'XXXXXX', F_df[-1],
-                 F_ddf[-1], 70*'-'))
-
-    # Plot the forward and reverse dF(t); store the data points in the text file.
-    logger.info('Plotting data to the file %s...\n' % consts.DF_T_PDF)
-
-    plotdFvsTime([float(i) for i in ts[1:]], [float(i) for i in ts[:-1]], F_df, R_df, F_ddf, R_ddf)
-
-    outtext = ["%12s %10s %-10s %17s %10s %s\n" %
-               ('Time (ps)', 'Forward', P.units, 'Time (ps)', 'Reverse',
-                P.units)]
-    outtext+= ["%10s %11.3f +- %5.3f %18s %11.3f +- %5.3f\n" %
-               (ts[1:][i], F_df[i], F_ddf[i], ts[:-1][i], R_df[i], R_ddf[i])
-               for i in range(len(F_df))]
-
-    with open(os.path.join(P.output_directory, consts.DF_T_FILE), 'w') as \
-         outfile:
-        outfile.writelines(outtext)
-
-    return
+   # Plot the forward and reverse dF(t); store the data points in the text file.
+   print "Plotting data to the file dF_t.pdf...\n\n"
+   plotdFvsTime([float(i) for i in ts[1:]], [float(i) for i in ts[:-1]], F_df, R_df, F_ddf, R_ddf)
+   outtext = ["%12s %10s %-10s %17s %10s %s\n" % ('Time (ps)', 'Forward', P.units, 'Time (ps)', 'Reverse', P.units)]
+   outtext+= ["%10s %11.3f +- %5.3f %18s %11.3f +- %5.3f\n" % (ts[1:][i], F_df[i], F_ddf[i], ts[:-1][i], R_df[i], R_ddf[i]) for i in range(len(F_df))]
+   outfile = open(os.path.join(P.output_directory, 'dF_t.txt'), 'w'); outfile.writelines(outtext); outfile.close()
+   return
 
 #===================================================================================================
 # FUNCTIONS: Free energy change breakdown (into lambda-pair dFs). Called by the -g flag.

@@ -745,6 +745,16 @@ def parse(P, options={}):
     else:
         u_klt = None
 
+    # FIXME: needs centralised solution
+    if P.units == '(kcal/mol)':
+        Econv = 1.0
+    elif P.units == '(kJ/mol)':
+        Econv = 4.184
+    elif P.units == '(k_BT)':
+        Econv = P.beta
+    else:
+        raise SystemExit('ERROR: unknown units %s' % P.units)
+
     ave = []
 
     # FIXME: needs centralised solution
