@@ -522,11 +522,10 @@ def parse(P, options={}):
                                                           'bar_intervall'],
                                                          '^---')
 
-            # FIXME: thhis only works with a modified sander
             # sander is just too cumbersome with MBAR, e.g. terminator is not
-            # '^---', no end-states, etc
-            #if not pmemd:
-            #    have_mbar = False
+            # '^---', MBAR summary in wrong section, no end-states, etc
+            if not pmemd:
+                have_mbar = False
 
             # FIXME: what other methods depend on MBAR data?
             if 'BAR' not in P.methods and 'MBAR' not in P.methods:

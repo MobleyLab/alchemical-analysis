@@ -154,6 +154,18 @@ def uncorrelate(shape, dhdlt, u_klt, sta, fin, do_dhdl=False):
         logger.info('\n\nNumber of correlated and uncorrelated samples:'
                     '\n\n%6s %12s %12s %12s\n' % ('State', 'N', 'N_k', 'N/N_k'))
 
+#   gu = numpy.zeros([K,K], float)
+#   print 'uncorr u_klt'
+#   for k1 in range(K):
+#       for k2 in range(K):
+#           if not numpy.any(u_klt[k1,k2,:]):
+#               gu[k1][k2] = 1.0
+#           else:
+#               gu[k1][k2] = \
+#                   pymbar.timeseries.statisticalInefficiency(u_klt[k1,k2,:])
+#           print gu[k1][k2],
+#       print
+
     UNCORR_OBSERVABLE = {'Gromacs':P.uncorr, 'Amber':'dhdl', 'Sire':'dhdl', 'Desmond':'dE'}[P.software.title()]
 
     if UNCORR_OBSERVABLE == 'dhdl':
