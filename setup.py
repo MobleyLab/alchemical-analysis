@@ -69,7 +69,6 @@ setup(
     # simple. Or you can use find_packages().
     #packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     packages=find_packages(),
-    py_modules=['parser_gromacs','parser_amber','parser_sire','unixlike'],
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
@@ -102,10 +101,10 @@ setup(
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
-    scripts={"alchemical_analysis/alchemical_analysis.py","alchemical_analysis/parser_gromacs.py","alchemical_analysis/unixlike.py"},
+    #scripts={},
     entry_points={
         'console_scripts': [
-            'alchemical_analysis=alchemical_analysis:main',
+            'alchemical_analysis=alchemical_analysis.alchemical_analysis:main',
         ],
     },
 )
