@@ -25,7 +25,12 @@ doi = {10.1007/s10822-015-9840-9}
 
 #### Prerequisites
 
-Alchemical Analysis requires the `pymbar` module (we recommend installation via conda, but other options are also available). Python 2 is required.
+Alchemical Analysis requires the `pymbar` module (we recommend
+installation via conda, but other options are also available). Version
+3.0.0.dev0 or above is required. The latest version of pymbar can be found
+[here](https://github.com/choderalab/pymbar).
+
+Python 2 is required.
 
 #### Installation
 
