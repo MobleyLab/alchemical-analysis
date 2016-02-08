@@ -27,6 +27,7 @@
 ## Not a built-in module. Will be called from main, whenever needed. ##
 ## import pymbar      Multistate Bennett Acceptance Ratio estimator. ##
 
+import sys
 import numpy
 import pickle                       # for full-precision data storage
 from   optparse import OptionParser # for parsing command-line options
@@ -39,14 +40,15 @@ import pdb                          # for debugging
 #===================================================================================================
 
 parser = OptionParser()
-parser.add_option('-a', '--software', dest = 'software', help = 'Package\'s name the data files come from: Gromacs, Sire, or AMBER. Default: Gromacs.', default = 'Gromacs')
+parser.add_option('-a', '--software', dest = 'software', help = 'Package\'s name the data files come from: Gromacs, Sire, Desmond, or AMBER. Default: Gromacs.', default = 'Gromacs')
 parser.add_option('-c', '--cfm', dest = 'bCFM', help = 'The Curve-Fitting-Method-based consistency inspector. Default: False.', default = False, action = 'store_true')
 parser.add_option('-d', '--dir', dest = 'datafile_directory', help = 'Directory in which data files are stored. Default: Current directory.', default = '.')
-parser.add_option('-f', '--forwrev', dest = 'bForwrev', help = 'Plotting the free energy change as a function of time in both directions. The number of time points (an integer) is to be followed the flag. Default: 0', default = 0, type=int)
+parser.add_option('-f', '--forwrev', dest = 'bForwrev', help = 'Plot the free energy change as a function of time in both directions, with the specified number of points in the time plot. The number of time points (an integer) must be provided. Default: 0', default = 0, type=int)
 parser.add_option('-g', '--breakdown', dest = 'breakdown', help = 'Plotting the free energy differences evaluated for each pair of adjacent states for all methods. Default: False.', default = False, action = 'store_true')
 parser.add_option('-i', '--threshold', dest = 'uncorr_threshold', help = 'Proceed with correlated samples if the number of uncorrelated samples is found to be less than this number. If 0 is given, the time series analysis will not be performed at all. Default: 50.', default = 50, type=int)
 parser.add_option('-k', '--koff', dest = 'bSkipLambdaIndex', help = 'Give a string of lambda indices separated by \'-\' and they will be removed from the analysis. (Another approach is to have only the files of interest present in the directory). Default: None.', default = '')
 parser.add_option('-m', '--methods', dest = 'methods', help = 'A list of the methods to esitimate the free energy with. Default: [TI, TI-CUBIC, DEXP, IEXP, BAR, MBAR]. To add/remove methods to the above list provide a string formed of the method strings preceded with +/-. For example, \'-ti_cubic+gdel\' will turn methods into [TI, DEXP, IEXP, BAR, MBAR, GDEL]. \'ti_cubic+gdel\', on the other hand, will call [TI-CUBIC, GDEL]. \'all\' calls the full list of supported methods [TI, TI-CUBIC, DEXP, IEXP, GINS, GDEL, BAR, UBAR, RBAR, MBAR].', default = '')
+parser.add_option('-n', '--uncorr', dest = 'uncorr', help = 'The observable to be used for the autocorrelation analysis; either \'dhdl_all\' (obtained as a sum over all energy components) or \'dhdl\' (obtained as a sum over those energy components that are changing; default) or \'dE\'. In the latter case the energy differences dE_{i,i+1} (dE_{i,i-1} for the last lambda) are used.', default = 'dhdl')
 parser.add_option('-o', '--out', dest = 'output_directory', help = 'Directory in which the output files produced by this script will be stored. Default: Same as datafile_directory.', default = '')
 parser.add_option('-p', '--prefix', dest = 'prefix', help = 'Prefix for datafile sets, i.e.\'dhdl\' (default).', default = 'dhdl')
 parser.add_option('-q', '--suffix', dest = 'suffix', help = 'Suffix for datafile sets, i.e. \'xvg\' (default).', default = 'xvg')
@@ -58,7 +60,19 @@ parser.add_option('-v', '--verbose', dest = 'verbose', help = 'Verbose option. D
 parser.add_option('-w', '--overlap', dest = 'overlap', help = 'Print out and plot the overlap matrix. Default: False.', default = False, action = 'store_true')
 parser.add_option('-x', '--ignoreWL', dest = 'bIgnoreWL', help = 'Do not check whether the WL weights are equilibrated. No log file needed as an accompanying input.', default = False, action = 'store_true')
 parser.add_option('-y', '--tolerance', dest = 'relative_tolerance', help = "Convergence criterion for the energy estimates with BAR and MBAR. Default: 1e-10.", default = 1e-10, type=float)
-parser.add_option('-z', '--initialize', dest = 'init_with', help = 'The initial MBAR free energy guess; either \'BAR\' or \'zeroes\'. Default: \'BAR\'.', default = 'BAR')
+parser.add_option('-z', '--initialize', dest = 'init_with', help = 'The initial MBAR free energy guess; either \'BAR\' or \'zeros\'. Default: \'BAR\'.', default = 'BAR')
+
+#===================================================================================================
+#STARTUP CHECKS:
+#===================================================================================================
+
+#Check pymbar version for compatibility; we require >= 3.0.0.dev0
+import pymbar
+ver = pymbar.version.version
+ver_start = int(ver.split('.')[0])
+if ver_start < 3:
+    #If the version is too old, throw exception/ask for upgrade
+    raise(ImportError("Error: alchemical-analysis requires at least pymbar 3.0.0.dev0. Please upgrade your pymbar installation."))
 
 #===================================================================================================
 # FUNCTIONS: Miscellanea.
@@ -69,7 +83,7 @@ def getMethods(string):
 
    all_methods = ['TI','TI-CUBIC','DEXP','IEXP','GINS','GDEL','BAR','UBAR','RBAR','MBAR']
    methods     = ['TI','TI-CUBIC','DEXP','IEXP','BAR','MBAR']
-   if (numpy.array(['Sire', 'Amber']) == P.software.title()).any():
+   if (numpy.array(['Sire']) == P.software.title()).any():
       methods = ['TI','TI-CUBIC']
    if not string:
       return methods
@@ -114,11 +128,6 @@ def getMethods(string):
 
 def checkUnitsAndMore(units):
 
-   # If using Gromacs we can read in the temperature directly from dhdl.xvg
-   if P.software.title() == 'Gromacs':
-      import parser_gromacs
-      P.temperature = parser_gromacs.readTempGromacs(P)
-
    kB = 1.3806488*6.02214129/1000.0 # Boltzmann's constant (kJ/mol/K).
    beta = 1./(kB*P.temperature)
 
@@ -147,12 +156,12 @@ def timeStatistics(stime):
    etime = ttt_time.time()
    tm = int((etime-stime)/60.)
    th = int(tm/60.)
-   ts = '%.2f' % (etime-stime-60*(tm+60*th)) 
+   ts = '%.2f' % (etime-stime-60*(tm+60*th))
    return th, tm, ts, ttt_time.asctime()
 
 #===================================================================================================
 # FUNCTIONS: The autocorrelation analysis.
-#===================================================================================================   
+#===================================================================================================
 
 def uncorrelate(sta, fin, do_dhdl=False):
    """Identifies uncorrelated samples and updates the arrays of the reduced potential energy and dhdlt retaining data entries of these samples only.
@@ -162,43 +171,96 @@ def uncorrelate(sta, fin, do_dhdl=False):
          return dhdlt, nsnapshots, None
       return dhdlt, nsnapshots, u_klt
 
-   import pymbar     ## this is not a built-in module ##
-
    u_kln = numpy.zeros([K,K,max(fin-sta)], numpy.float64) # u_kln[k,m,n] is the reduced potential energy of uncorrelated sample index n from state k evaluated at state m
    N_k = numpy.zeros(K, int) # N_k[k] is the number of uncorrelated samples from state k
    g = numpy.zeros(K,float) # autocorrelation times for the data
    if do_dhdl:
       dhdl = numpy.zeros([K,n_components,max(fin-sta)], float) #dhdl is value for dhdl for each component in the file at each time.
       print "\n\nNumber of correlated and uncorrelated samples:\n\n%6s %12s %12s %12s\n" % ('State', 'N', 'N_k', 'N/N_k')
-   for k in range(K):
-      # Sum up over the energy components; notice, that only the relevant data is being used in the third dimension.
-      dhdl_sum = numpy.sum(dhdlt[k,:,sta[k]:fin[k]], axis=0)
-      # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
-      # (alternatively, could use the energy differences -- here, we will use total dhdl).
-      g[k] = pymbar.timeseries.statisticalInefficiency(dhdl_sum)
-      indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dhdl_sum, g=g[k])) # indices of uncorrelated samples
-      N = len(indices) # number of uncorrelated samples
-      # Handle case where we end up with too few.
-      if N < P.uncorr_threshold:
+
+   UNCORR_OBSERVABLE = {'Gromacs':P.uncorr, 'Amber':'dhdl', 'Sire':'dhdl', 'Desmond':'dE'}[P.software.title()]
+
+   if UNCORR_OBSERVABLE == 'dhdl':
+      # Uncorrelate based on dhdl values at a given lambda.
+
+      for k in range(K):
+         # Sum up over those energy components that are changing.
+         dhdl_sum = numpy.sum(dhdlt[k, lchange[k], sta[k]:fin[k]], axis=0)
+         # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
+         # (alternatively, could use the energy differences -- here, we will use total dhdl).
+         g[k] = pymbar.timeseries.statisticalInefficiency(dhdl_sum)
+         indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dhdl_sum, g=g[k])) # indices of uncorrelated samples
+         N = len(indices) # number of uncorrelated samples
+         # Handle case where we end up with too few.
+         if N < P.uncorr_threshold:
+            if do_dhdl:
+               print "WARNING: Only %s uncorrelated samples found at lambda number %s; proceeding with analysis using correlated samples..." % (N, k)
+            indices = sta[k] + numpy.arange(len(dhdl_sum))
+            N = len(indices)
+         N_k[k] = N # Store the number of uncorrelated samples from state k.
+         if not (u_klt is None):
+            for l in range(K):
+               u_kln[k,l,0:N] = u_klt[k,l,indices]
          if do_dhdl:
+            print "%6s %12s %12s %12.2f" % (k, fin[k], N_k[k], g[k])
+            for n in range(n_components):
+               dhdl[k,n,0:N] = dhdlt[k,n,indices]
+
+   if UNCORR_OBSERVABLE == 'dhdl_all':
+      # Uncorrelate based on dhdl values at a given lambda.
+
+      for k in range(K):
+         # Sum up over the energy components; notice, that only the relevant data is being used in the third dimension.
+         dhdl_sum = numpy.sum(dhdlt[k,:,sta[k]:fin[k]], axis=0)
+         # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
+         # (alternatively, could use the energy differences -- here, we will use total dhdl).
+         g[k] = pymbar.timeseries.statisticalInefficiency(dhdl_sum)
+         indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dhdl_sum, g=g[k])) # indices of uncorrelated samples
+         N = len(indices) # number of uncorrelated samples
+         # Handle case where we end up with too few.
+         if N < P.uncorr_threshold:
+            if do_dhdl:
+               print "WARNING: Only %s uncorrelated samples found at lambda number %s; proceeding with analysis using correlated samples..." % (N, k)
+            indices = sta[k] + numpy.arange(len(dhdl_sum))
+            N = len(indices)
+         N_k[k] = N # Store the number of uncorrelated samples from state k.
+         if not (u_klt is None):
+            for l in range(K):
+               u_kln[k,l,0:N] = u_klt[k,l,indices]
+         if do_dhdl:
+            print "%6s %12s %12s %12.2f" % (k, fin[k], N_k[k], g[k])
+            for n in range(n_components):
+               dhdl[k,n,0:N] = dhdlt[k,n,indices]
+
+   if UNCORR_OBSERVABLE == 'dE':
+      # Uncorrelate based on energy differences between lambdas.
+
+      for k in range(K):
+         # Sum up over the energy components as above using only the relevant data; here we use energy differences
+         # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
+
+         dE = u_klt[k,k+1,sta[k]:fin[k]] if not k==K-1 else u_klt[k,k-1,sta[k]:fin[k]]
+
+         g[k] = pymbar.timeseries.statisticalInefficiency(dE)
+         indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dE, g=g[k])) # indices of uncorrelated samples
+         N = len(indices) # number of uncorrelated samples
+         # Handle case where we end up with too few.
+         if N < P.uncorr_threshold:
             print "WARNING: Only %s uncorrelated samples found at lambda number %s; proceeding with analysis using correlated samples..." % (N, k)
-         indices = sta[k] + numpy.arange(len(dhdl_sum))
-         N = len(indices)
-      N_k[k] = N # Store the number of uncorrelated samples from state k.
-      if not (u_klt is None):
-         for l in range(K):
-            u_kln[k,l,0:N] = u_klt[k,l,indices]
-      if do_dhdl:
-         print "%6s %12s %12s %12.2f" % (k, fin[k], N_k[k], g[k])
-         for n in range(n_components):
-            dhdl[k,n,0:N] = dhdlt[k,n,indices]
+            indices = sta[k] + numpy.arange(len(dE))
+            N = len(indices)
+         N_k[k] = N # Store the number of uncorrelated samples from state k.
+         if not (u_klt is None):
+            for l in range(K):
+               u_kln[k,l,0:N] = u_klt[k,l,indices]
+
    if do_dhdl:
       return (dhdl, N_k, u_kln)
    return (N_k, u_kln)
 
 #===================================================================================================
 # FUNCTIONS: The MBAR workhorse.
-#===================================================================================================   
+#===================================================================================================
 
 def estimatewithMBAR(u_kln, N_k, reltol, regular_estimate=False):
    """Computes the MBAR free energy given the reduced potential and the number of relevant entries in it."""
@@ -209,7 +271,7 @@ def estimatewithMBAR(u_kln, N_k, reltol, regular_estimate=False):
       max_prob = O.max()
       fig = pl.figure(figsize=(K/2.,K/2.))
       fig.add_subplot(111, frameon=False, xticks=[], yticks=[])
-   
+
       for i in range(K):
          if i!=0:
             pl.axvline(x=i, ls='-', lw=0.5, color='k', alpha=0.25)
@@ -217,6 +279,8 @@ def estimatewithMBAR(u_kln, N_k, reltol, regular_estimate=False):
          for j in range(K):
             if O[j,i] < 0.005:
                ii = ''
+            elif O[j,i] > 0.995:
+               ii = '1.00'
             else:
                ii = ("%.2f" % O[j,i])[1:]
             alf = O[j,i]/max_prob
@@ -243,7 +307,7 @@ def estimatewithMBAR(u_kln, N_k, reltol, regular_estimate=False):
       pl.plot(numpy.array(cx[2:-3])+1, cy[1:-4], 'k-', lw=2.0)
       pl.plot(cx[1:-2], numpy.array(cy[:-3])-1, 'k-', lw=2.0)
       pl.plot(cx[1:-4], numpy.array(cy[:-5])-2, 'k-', lw=2.0)
-   
+
       pl.xlim(-1, K)
       pl.ylim(0, K+1)
       pl.savefig(os.path.join(P.output_directory, 'O_MBAR.pdf'), bbox_inches='tight', pad_inches=0.0)
@@ -255,10 +319,10 @@ def estimatewithMBAR(u_kln, N_k, reltol, regular_estimate=False):
    MBAR = pymbar.mbar.MBAR(u_kln, N_k, verbose = P.verbose, relative_tolerance = reltol, initialize = P.init_with)
    # Get matrix of dimensionless free energy differences and uncertainty estimate.
    (Deltaf_ij, dDeltaf_ij, theta_ij ) = MBAR.getFreeEnergyDifferences(uncertainty_method='svd-ew', return_theta = True)
-   if P.verbose: 
+   if P.verbose:
       print "Matrix of free energy differences\nDeltaf_ij:\n%s\ndDeltaf_ij:\n%s" % (Deltaf_ij, dDeltaf_ij)
    if regular_estimate:
-      if P.overlap: 
+      if P.overlap:
          print "The overlap matrix is..."
          O = MBAR.computeOverlap()[2]
          for k in range(K):
@@ -273,7 +337,7 @@ def estimatewithMBAR(u_kln, N_k, reltol, regular_estimate=False):
 
 #===================================================================================================
 # FUNCTIONS: Thermodynamic integration.
-#===================================================================================================   
+#===================================================================================================
 
 class naturalcubicspline:
 
@@ -331,7 +395,7 @@ class naturalcubicspline:
    def interpolate(self,y,xnew):
       if len(self.x) != len(y):
          parser.error("\nThe length of 'y' should be consistent with that of 'self.x'. I cannot perform linear algebra operations.")
-      # get the array of actual coefficients by multiplying the coefficient matrix by the values  
+      # get the array of actual coefficients by multiplying the coefficient matrix by the values
       a = numpy.dot(self.AW,y)
       b = numpy.dot(self.BW,y)
       c = numpy.dot(self.CW,y)
@@ -349,21 +413,23 @@ class naturalcubicspline:
       ynew[-1] = y[-1]
       return ynew
 
-def TIprelim(lv):
-
-   # Lambda vectors spacing.
-   dlam = numpy.diff(lv, axis=0)
-
-   lchange = numpy.zeros([K,n_components],bool)   # booleans for which lambdas are changing 
+def get_lchange(lv):
+   lchange = numpy.zeros([K,n_components],bool)   # booleans for which lambdas are changing
    for j in range(n_components):
       # need to identify range over which lambda doesn't change, and not interpolate over that range.
       for k in range(K-1):
          if (lv[k+1,j]-lv[k,j] > 0):
             lchange[k,j] = True
             lchange[k+1,j] = True
+   return lchange
+
+def TIprelim(lv):
+
+   # Lambda vectors spacing.
+   dlam = numpy.diff(lv, axis=0)
 
    if 'ave_dhdl' in globals() and 'std_dhdl' in globals():
-      return lchange, dlam, globals()['ave_dhdl'], globals()['std_dhdl']
+      return dlam, globals()['ave_dhdl'], globals()['std_dhdl']
 
    # Compute <dhdl> and std(dhdl) for each component, for each lambda; multiply them by beta to make unitless.
    ave_dhdl = numpy.zeros([K,n_components],float)
@@ -372,7 +438,7 @@ def TIprelim(lv):
       ave_dhdl[k,:] = P.beta*numpy.average(dhdl[k,:,0:N_k[k]],axis=1)
       std_dhdl[k,:] = P.beta*numpy.std(dhdl[k,:,0:N_k[k]],axis=1)/numpy.sqrt(N_k[k]-1)
 
-   return lchange, dlam, ave_dhdl, std_dhdl
+   return dlam, ave_dhdl, std_dhdl
 
 def getSplines(lchange):
    # construct a map back to the original components
@@ -397,29 +463,29 @@ def getSplines(lchange):
 
 #===================================================================================================
 # FUNCTIONS: This one estimates dF and ddF for all pairs of adjacent states and stores them.
-#===================================================================================================   
+#===================================================================================================
 
 def estimatePairs():
 
    print ("Estimating the free energy change with %s..." % ', '.join(P.methods)).replace(', MBAR', '')
    df_allk = list(); ddf_allk = list()
-   
+
    for k in range(K-1):
       df = dict(); ddf = dict()
-   
+
       for name in P.methods:
-   
+
          if name == 'TI':
             #===================================================================================================
             # Estimate free energy difference with TI; interpolating with the trapezoidal rule.
-            #===================================================================================================   
-            df['TI'] = 0.5*numpy.dot(dlam[k],(ave_dhdl[k]+ave_dhdl[k+1]))        
-            ddf['TI'] = 0.5*numpy.sqrt(numpy.dot(dlam[k]**2,std_dhdl[k]**2+std_dhdl[k+1]**2))               
-   
+            #===================================================================================================
+            df['TI'] = 0.5*numpy.dot(dlam[k],(ave_dhdl[k]+ave_dhdl[k+1]))
+            ddf['TI'] = 0.5*numpy.sqrt(numpy.dot(dlam[k]**2,std_dhdl[k]**2+std_dhdl[k+1]**2))
+
          if name == 'TI-CUBIC':
             #===================================================================================================
             # Estimate free energy difference with TI; interpolating with the natural cubic splines.
-            #===================================================================================================   
+            #===================================================================================================
             df['TI-CUBIC'], ddf['TI-CUBIC'] = 0, 0
             for j in range(n_components):
                if dlam[k,j] > 0:
@@ -427,56 +493,56 @@ def estimatePairs():
                   df['TI-CUBIC'] += numpy.dot(cubspl[j].wk[mapl[k,j]],ave_dhdl[lj,j])
                   ddf['TI-CUBIC'] += numpy.dot(cubspl[j].wk[mapl[k,j]]**2,std_dhdl[lj,j]**2)
             ddf['TI-CUBIC'] = numpy.sqrt(ddf['TI-CUBIC'])
-   
+
          if any(name == m for m in ['DEXP', 'GDEL', 'BAR', 'UBAR', 'RBAR']):
-            w_F = u_kln[k,k+1,0:N_k[k]] - u_kln[k,k,0:N_k[k]] 
-   
+            w_F = u_kln[k,k+1,0:N_k[k]] - u_kln[k,k,0:N_k[k]]
+
          if name == 'DEXP':
             #===================================================================================================
             # Estimate free energy difference with Forward-direction EXP (in this case, Deletion from solvent).
-            #===================================================================================================   
+            #===================================================================================================
             (df['DEXP'], ddf['DEXP']) = pymbar.exp.EXP(w_F)
-   
+
          if name == 'GDEL':
             #===================================================================================================
             # Estimate free energy difference with a Gaussian estimate of EXP (in this case, deletion from solvent)
-            #===================================================================================================   
+            #===================================================================================================
             (df['GDEL'], ddf['GDEL']) = pymbar.exp.EXPGauss(w_F)
-   
+
          if any(name == m for m in ['IEXP', 'GINS', 'BAR', 'UBAR', 'RBAR']):
-            w_R = u_kln[k+1,k,0:N_k[k+1]] - u_kln[k+1,k+1,0:N_k[k+1]] 
-   
+            w_R = u_kln[k+1,k,0:N_k[k+1]] - u_kln[k+1,k+1,0:N_k[k+1]]
+
          if name == 'IEXP':
             #===================================================================================================
             # Estimate free energy difference with Reverse-direction EXP (in this case, insertion into solvent).
-            #===================================================================================================   
+            #===================================================================================================
             (rdf,rddf) = pymbar.exp.EXP(w_R)
             (df['IEXP'], ddf['IEXP']) = (-rdf,rddf)
-   
+
          if name == 'GINS':
             #===================================================================================================
             # Estimate free energy difference with a Gaussian estimate of EXP (in this case, insertion into solvent)
-            #===================================================================================================   
+            #===================================================================================================
             (rdf,rddf) = pymbar.exp.EXPGauss(w_R)
             (df['GINS'], ddf['GINS']) = (-rdf,rddf)
-   
+
          if name == 'BAR':
             #===================================================================================================
             # Estimate free energy difference with BAR; use w_F and w_R computed above.
-            #===================================================================================================   
-            (df['BAR'], ddf['BAR']) = pymbar.bar.BAR(w_F, w_R, relative_tolerance=P.relative_tolerance, verbose = P.verbose)      
-   
+            #===================================================================================================
+            (df['BAR'], ddf['BAR']) = pymbar.bar.BAR(w_F, w_R, relative_tolerance=P.relative_tolerance, verbose = P.verbose)
+
          if name == 'UBAR':
             #===================================================================================================
             # Estimate free energy difference with unoptimized BAR -- assume dF is zero, and just do one evaluation
-            #===================================================================================================   
+            #===================================================================================================
             (df['UBAR'], ddf['UBAR']) = pymbar.bar.BAR(w_F, w_R, verbose = P.verbose,iterated_solution=False)
-   
+
          if name == 'RBAR':
             #===================================================================================================
-            # Estimate free energy difference with Unoptimized BAR over range of free energy values, and choose the one 
+            # Estimate free energy difference with Unoptimized BAR over range of free energy values, and choose the one
             # that is self consistently best.
-            #===================================================================================================   
+            #===================================================================================================
             min_diff = 1E6
             best_udf = 0
             for trial_udf in range(-10,10,1):
@@ -487,13 +553,13 @@ def estimatePairs():
                   best_uddf = uddf
                   min_diff = diff
             (df['RBAR'], ddf['RBAR']) = (best_udf,best_uddf)
-   
+
          if name == 'MBAR':
             #===================================================================================================
             # Store the MBAR free energy difference (already estimated above) properly, i.e. by state.
-            #===================================================================================================   
+            #===================================================================================================
             (df['MBAR'], ddf['MBAR']) =  Deltaf_ij[k,k+1], dDeltaf_ij[k,k+1]
-   
+
       df_allk = numpy.append(df_allk,df)
       ddf_allk = numpy.append(ddf_allk,ddf)
 
@@ -501,7 +567,7 @@ def estimatePairs():
 
 #===================================================================================================
 # FUNCTIONS: All done with calculations; summarize and print stats.
-#===================================================================================================   
+#===================================================================================================
 
 def totalEnergies():
 
@@ -512,50 +578,58 @@ def totalEnergies():
    endvdw = 0
    for lv_n in ['vdw','coul','fep']:
       if lv_n in P.lv_names:
-         ndx_char = P.lv_names.index(lv_n)
-         lv_char = lv[:, ndx_char]
+         _ndx_char = P.lv_names.index(lv_n)
+         lv_char = lv[:, _ndx_char]
          if not (lv_char == lv_char[0]).all():
             if lv_n == 'vdw':
                 endvdw = (lv_char != 1).sum()
+            if lv_n == 'fep':
+                endcoul = (lv_char != 1).sum() #Why is this lumped with coul?
+                ndx_char = P.lv_names.index(lv_n)
             if lv_n == 'coul':
                 endcoul = (lv_char != 1).sum()
-
-   # Figure out if coulomb section comes before or after vdw section
+                ndx_char = P.lv_names.index(lv_n)
+   # Figure out where Coulomb section is, if it is present.
    if endcoul > endvdw:
+      #If it comes after the vdW section, for now assume it follows vdW (will need correcting for case where they are mixed together)
       startcoul = endvdw
       startvdw = 0
+   elif startcoul==endcoul:
+      #There is no coulomb section
+      if P.verbose: print "No Coulomb transformation present."
+      pass    
    else:
       startcoul = 0
       startvdw = endcoul
 
    segments      = ['Coulomb'  , 'vdWaals'  , 'TOTAL']
    segmentstarts = [startcoul  , startvdw   , 0      ]
-   segmentends   = [endcoul    , endvdw     , K-1    ]
+   segmentends   = [min(endcoul,K-1)    , min(endvdw,K-1)     , K-1    ]
    dFs  = []
    ddFs = []
-   
+
    # Perform the energy segmentation; be pedantic about the TI cumulative ddF's (see Section 3.1 of the paper).
    for i in range(len(segments)):
       segment = segments[i]; segstart = segmentstarts[i]; segend = segmentends[i]
       dF  = dict.fromkeys(P.methods, 0)
       ddF = dict.fromkeys(P.methods, 0)
-   
+
       for name in P.methods:
          if name == 'MBAR':
             dF['MBAR']  =  Deltaf_ij[segstart, segend]
             ddF['MBAR'] = dDeltaf_ij[segstart, segend]
-   
+
          elif name[0:2] == 'TI':
             for k in range(segstart, segend):
                dF[name] += df_allk[k][name]
-   
+
             if segment == 'Coulomb':
                jlist = [ndx_char] if endcoul>0 else []
             elif segment == 'vdWaals':
                jlist = []
             elif segment == 'TOTAL':
                jlist = range(n_components)
-   
+
             for j in jlist:
                lj = lchange[:,j]
                if not (lj == False).all(): # handle the all-zero lv column
@@ -566,19 +640,19 @@ def totalEnergies():
                      wsum = 0.5*(numpy.append(h,0) + numpy.append(0,h))
                      ddF[name] += numpy.dot(wsum**2,std_dhdl[lj,j]**2)
             ddF[name] = numpy.sqrt(ddF[name])
-   
+
          else:
             for k in range(segstart,segend):
                dF[name] += df_allk[k][name]
                ddF[name] += (ddf_allk[k][name])**2
             ddF[name] = numpy.sqrt(ddF[name])
-   
+
       dFs.append(dF)
       ddFs.append(ddF)
-   
+
    for name in P.methods: # 'vdWaals' = 'TOTAL' - 'Coulomb'
       ddFs[1][name] = (ddFs[2][name]**2 - ddFs[0][name]**2)**0.5
-   
+
    # Display results.
    def printLine(str1, str2, d1=None, d2=None):
       """Fills out the results table linewise."""
@@ -597,7 +671,7 @@ def totalEnergies():
       print ''
       outtext.append(text + '\n')
       return
-   
+
    d = P.decimal
    str_dash  = (d+7 + 6 + d+2)*'-'
    str_dat   = ('X%d.%df  +-  X%d.%df' % (d+7, d, d+2, d)).replace('X', '%')
@@ -626,6 +700,7 @@ def totalEnergies():
       printLine('%9s:  ' % segments[-1], str_dat, dFs[-1], ddFs[-1])
    # Store results.
    outfile = open(os.path.join(P.output_directory, 'results.txt'), 'w')
+   outfile.write('# Command line was: %s\n\n' % ' '.join(sys.argv) )
    outfile.writelines(outtext)
    outfile.close()
 
@@ -640,17 +715,17 @@ def totalEnergies():
    pickle.dump(P, outfile)
    outfile.close()
 
-   print '\n'+w*'*' 
+   print '\n'+w*'*'
    for i in [" The above table has been stored in ", " "+P.output_directory+"/results.txt ",
       " while the full-precision data ", " (along with the simulation profile) in ", " "+P.output_directory+"/results.pickle "]:
       print str_align.format('{:^40}'.format(i))
-   print w*'*' 
+   print w*'*'
 
    return
 
 #===================================================================================================
 # FUNCTIONS: Free energy change vs. simulation time. Called by the -f flag.
-#===================================================================================================   
+#===================================================================================================
 
 def dF_t():
 
@@ -665,7 +740,7 @@ def dF_t():
          ax.spines[dire].set_color('none')
       ax.xaxis.set_ticks_position('bottom')
       ax.yaxis.set_ticks_position('left')
-   
+
       max_fts = max(f_ts)
       rr_ts = [aa/max_fts for aa in f_ts[::-1]]
       f_ts = [aa/max_fts for aa in f_ts]
@@ -675,16 +750,16 @@ def dF_t():
       for i in range(len(f_ts)):
          line1 = pl.plot([f_ts[i]]*2, [F_df[i]-F_ddf[i], F_df[i]+F_ddf[i]], color='#736AFF', ls='-', lw=3, solid_capstyle='round', zorder=1)
       line11 = pl.plot(f_ts, F_df, color='#736AFF', ls='-', lw=3, marker='o', mfc='w', mew=2.5, mec='#736AFF', ms=12, zorder=2)
- 
+
       for i in range(len(rr_ts)):
          line2 = pl.plot([rr_ts[i]]*2, [R_df[i]-R_ddf[i], R_df[i]+R_ddf[i]], color='#C11B17', ls='-', lw=3, solid_capstyle='round', zorder=3)
       line22 = pl.plot(rr_ts, R_df, color='#C11B17', ls='-', lw=3, marker='o', mfc='w', mew=2.5, mec='#C11B17', ms=12, zorder=4)
-   
+
       pl.xlim(r_ts[0], f_ts[-1])
-   
+
       pl.xticks(r_ts[::2] + f_ts[-1:], fontsize=10)
       pl.yticks(fontsize=10)
-   
+
       leg = pl.legend((line1[0], line2[0]), (r'$Forward$', r'$Reverse$'), loc=9, prop=FP(size=18), frameon=False)
       pl.xlabel(r'$\mathrm{Fraction\/of\/the\/simulation\/time}$', fontsize=16, color='#151B54')
       pl.ylabel(r'$\mathrm{\Delta G\/%s}$' % P.units, fontsize=16, color='#151B54')
@@ -706,13 +781,20 @@ def dF_t():
    increment = 1./(n_tf-1)
    if P.bExpanded:
       from collections import Counter # for counting elements in an array
-      tf = numpy.arange(0,1+increment,increment)*(numpy.sum(nsnapshots)-1)+1
+      #tf = numpy.arange(0,1+increment,increment)*(numpy.sum(nsnapshots)-1)+1
+      tf = numpy.linspace(0.0, 1.0, n_tf)*(numpy.sum(nsnapshots)-1)+1
       tf[0] = 0
       for i in range(n_tf-1):
-         nss = Counter(extract_states[tf[i]:tf[i+1]])       
+         nss = Counter(extract_states[tf[i]:tf[i+1]])
          nss_tf[i+1] = numpy.array([nss[j] for j in range(K)])
    else:
-      tf = numpy.arange(0,1+increment,increment)*(max(nsnapshots)-1)+1
+      #print "Increment:", increment
+      #print "Max snapshots:", max(nsnapshots)
+      #tf = numpy.arange(0,1+increment,increment)*(max(nsnapshots)-1)+1
+      tf = numpy.linspace(0.0, 1.0, n_tf)*(max(nsnapshots)-1)+1
+      #print tf, tf_new
+      #print len(tf), len(tf_new)
+      #print("Pausing."), raw_input()
       tf[0] = 0
       for i in range(n_tf-1):
          nss_tf[i+1] = numpy.array([min(j, tf[i+1]) for j in nsnapshots]) - numpy.sum(nss_tf[:i+1],axis=0)
@@ -735,7 +817,6 @@ def dF_t():
       fin = numpy.sum(nss_tf[:i+2],axis=0)
       N_k, u_kln = uncorrelate(nss_tf[0], numpy.sum(nss_tf[:i+2],axis=0))
       F_df[i], F_ddf[i] = estimatewithMBAR(u_kln, N_k, P.relative_tolerance)
-      a, b = estimatewithMBAR(u_kln, N_k, P.relative_tolerance)
    # Do the reverse analysis.
    print "Reverse dF(t) analysis...\nUsing the data starting from"
    fin = numpy.sum(nss_tf[:],axis=0)
@@ -764,7 +845,7 @@ def dF_t():
 
 #===================================================================================================
 # FUNCTIONS: Free energy change breakdown (into lambda-pair dFs). Called by the -g flag.
-#===================================================================================================   
+#===================================================================================================
 
 def plotdFvsLambda():
 
@@ -795,14 +876,14 @@ def plotdFvsLambda():
       ax.yaxis.set_ticks_position('left')
       for tick in ax.get_xticklines():
          tick.set_visible(False)
- 
+
       leg = pl.legend(lines, tuple(P.methods), loc=3, ncol=2, prop=FP(size=10), fancybox=True)
       leg.get_frame().set_alpha(0.5)
       pl.title('The free energy change breakdown', fontsize = 12)
       pl.savefig(os.path.join(P.output_directory, 'dF_state_long.pdf'), bbox_inches='tight')
       pl.close(fig)
       return
- 
+
    def plotdFvsLambda2(nb=10):
       """Plots the free energy differences evaluated for each pair of adjacent states for all methods.
       The layout is approximately 'nb' bars per subplot."""
@@ -980,7 +1061,7 @@ def plotdFvsLambda():
 
 #===================================================================================================
 # FUNCTIONS: The Curve-Fitting Method. Called by the -c flag.
-#===================================================================================================   
+#===================================================================================================
 
 def plotCFM(u_kln, N_k, num_bins=100):
    """A graphical representation of what Bennett calls 'Curve-Fitting Method'."""
@@ -1114,6 +1195,7 @@ def main():
    # Timing.
    stime = ttt_time.time()
    print "Started on %s" % ttt_time.asctime()
+   print 'Command line was: %s\n' % ' '.join(sys.argv)
 
    # Simulation profile P (to be stored in 'results.pickle') will amass information about the simulation.
    P = parser.parse_args()[0]
@@ -1121,10 +1203,8 @@ def main():
    P.methods = getMethods(P.methods.upper())
    P.units, P.beta, P.beta_report = checkUnitsAndMore(P.units)
 
-   if ''.join(P.methods).replace('TI-CUBIC', '').replace('TI', ''):
-      import pymbar     ## this is not a built-in module ##
    if (numpy.array([P.bForwrev, P.breakdown, P.bCFM, P.overlap]) != 0).any():
-      import matplotlib # 'matplotlib-1.1.0-1'; errors may pop up when using an earlier version
+      import matplotlib # 'matplotlib-1.1.0-1'; errors may pop up when using an earlier version. Add a version check?
       matplotlib.use('Agg')
       import matplotlib.pyplot as pl
       from matplotlib.font_manager import FontProperties as FP
@@ -1137,14 +1217,21 @@ def main():
       nsnapshots, lv, dhdlt, u_klt = parser_sire.readDataSire(P)
    elif P.software.title() == 'Amber':
       import parser_amber
-      lv, ave_dhdl, std_dhdl = parser_amber.readDataAmber(P)
+      nsnapshots, lv, dhdlt, u_klt = parser_amber.readDataAmber(P)
+   elif P.software.title() == 'Desmond':
+       import parser_desmond
+       #NML: Desmond FEP jobs will always output with these names
+       P.prefix='gibbs'
+       P.suffix='dE'
+       P.methods=['BAR'] #Given only dE of adj Lambdas, limiting to BAR only
+       nsnapshots, lv, u_klt = parser_desmond.readDataDesmond(P)
    else:
       from inspect import currentframe, getframeinfo
       lineno = getframeinfo(currentframe()).lineno
       print "\n\n%s\n Looks like there is no yet proper parser to process your files. \n Please modify lines %d and %d of this script.\n%s\n\n" % (78*"*", lineno+3, lineno+4, 78*"*")
       #### LINES TO BE MODIFIED
-      import YOUR_OWN_FILE_PARSER
-      nsnapshots, lv, dhdlt, u_klt = YOUR_OWN_FILE_PARSER.yourDataParser(*args, **kwargs)
+      #import YOUR_OWN_FILE_PARSER
+      #nsnapshots, lv, dhdlt, u_klt = YOUR_OWN_FILE_PARSER.yourDataParser(*args, **kwargs)
       #### All the four are numpy arrays.
       #### lv           is the array of lambda vectors.
       #### nsnapshots   is the number of equilibrated snapshots per each state.
@@ -1152,16 +1239,18 @@ def main():
       #### u_klt[k,m,t] is the reduced potential energy of snapshot t of state k evaluated at state m
 
    K, n_components = lv.shape
-   if not P.software.title() == 'Amber':
+   lchange = get_lchange(lv)
+   if (numpy.array(['Sire','Gromacs', 'Amber']) == P.software.title()).any():
       dhdl, N_k, u_kln = uncorrelate(sta=numpy.zeros(K, int), fin=nsnapshots, do_dhdl=True)
-
+   elif P.software.title() == 'Desmond':
+      N_k, u_kln = uncorrelate(sta=numpy.zeros(K, int), fin=nsnapshots, do_dhdl=False)
    # Estimate free energy difference with MBAR -- all states at once.
    if 'MBAR' in P.methods:
       Deltaf_ij, dDeltaf_ij = estimatewithMBAR(u_kln, N_k, P.relative_tolerance, regular_estimate=True)
 
    # The TI preliminaries.
    if ('TI' in P.methods or 'TI-CUBIC' in P.methods):
-      lchange, dlam, ave_dhdl, std_dhdl = TIprelim(lv)
+      dlam, ave_dhdl, std_dhdl = TIprelim(lv)
    if 'TI-CUBIC' in P.methods:
       cubspl, mapl = getSplines(lchange)
 
@@ -1184,5 +1273,5 @@ if __name__ == "__main__":
    main()
 
 #===================================================================================================
-#                                   End of the script 
+#                                   End of the script
 #===================================================================================================

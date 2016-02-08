@@ -1,0 +1,3530 @@
+
+          -------------------------------------------------------
+          Amber 14 SANDER                              2014
+          -------------------------------------------------------
+
+| PMEMD implementation of SANDER, Release 14
+
+| Run on 07/02/2015 at 09:38:25
+
+|   Executable path: /home/cseg/scarf231/amber14/bin/pmemd.MPI
+| Working directory: /work/cse/scarf231/Reproducibility/methanol~methane/pmemd_5_2step/run1/step1/1.0
+|          Hostname: cn519.scarf.rl.ac.uk
+
+  [-O]verwriting output
+
+File Assignments:
+|   MDIN: ti002.in                                                              
+|  MDOUT: ti002.out                                                             
+| INPCRD: ti001.rst7                                                            
+|   PARM: ../../../pmemd_sc_2step_1.parm7                                       
+| RESTRT: ti002.rst7                                                            
+|   REFC: refc                                                                  
+|  MDVEL: mdvel                                                                 
+|   MDEN: ti002.en                                                              
+|  MDCRD: ti002.nc                                                              
+| MDINFO: ti002.info                                                            
+|LOGFILE: ti002.log                                                             
+|  MDFRC: mdfrc                                                                 
+
+ 
+ Here is the input file:
+ 
+MD simulation                                                                  
+ &cntrl                                                                        
+   imin = 0, nstlim = 500000, irest = 1, ntx = 5, dt = 0.001,                  
+   ntt = 3, temp0 = 298.0, gamma_ln = 2.0, ig = -1,                            
+   ntp = 1, pres0 = 1.01325, taup = 2.0,                                       
+   ntb = 2,                                                                    
+   ioutfm = 1, iwrap = 1,                                                      
+   ntwe = 10000, ntwx = 10000, ntpr = 10000, ntwr = 50000, ntave = 50000,      
+                                                                               
+   ntc = 2, ntf = 1,                                                           
+   noshakemask = ':1,2',                                                       
+                                                                               
+   icfe = 1, ifsc = 0, clambda = 1.0, scalpha = 0.5, scbeta = 12.0,            
+   logdvdl = 1,                                                                
+   ifmbar = 1, bar_intervall = 1000, bar_l_min = 0.0, bar_l_max = 1.0,         
+   bar_l_incr = 0.1,                                                           
+   timask1 = ':1', timask2 = ':2'                                              
+ /                                                                             
+ &ewald                                                                        
+ /                                                                             
+                                                                               
+
+
+Note: ig = -1. Setting random seed to   854591 based on wallclock time in
+      microseconds and disabling the synchronization of random numbers 
+      between tasks to improve performance.
+ 
+ 
+| Conditional Compilation Defines Used:
+| MPI
+| FFTW_FFT
+| BINTRAJ
+| MKL
+ 
+| Largest sphere to fit in unit cell has radius =    13.670
+
+| New format PARM file being parsed.
+| Version =    1.000 Date = 06/22/15 Time = 10:22:16
+
+| Note: 1-4 EEL scale factors are being read from the topology file.
+
+| Note: 1-4 VDW scale factors are being read from the topology file.
+| Duplicated    0 dihedrals
+
+| Duplicated    0 dihedrals
+
+--------------------------------------------------------------------------------
+   1.  RESOURCE   USE: 
+--------------------------------------------------------------------------------
+
+ getting new box info from bottom of inpcrd
+ NATOM  =    2121 NTYPES =       6 NBONH =    2117 MBONA  =       2
+ NTHETH =      14 MTHETA =       0 NPHIH =       6 MPHIA  =       0
+ NHPARM =       0 NPARM  =       0 NNB   =    2844 NRES   =     705
+ NBONA  =       2 NTHETA =       0 NPHIA =       0 NUMBND =       5
+ NUMANG =       3 NPTRA  =       1 NATYP =       6 NPHB   =       1
+ IFBOX  =       1 NMXRS  =       6 IFCAP =       0 NEXTRA =       0
+ NCOPY  =       0
+
+| Coordinate Index Table dimensions:     5    5    5
+| Direct force subcell size =     5.6198    5.5438    5.4678
+
+     BOX TYPE: RECTILINEAR
+
+--------------------------------------------------------------------------------
+   2.  CONTROL  DATA  FOR  THE  RUN
+--------------------------------------------------------------------------------
+
+L0                                                                              
+
+General flags:
+     imin    =       0, nmropt  =       0
+
+Nature and format of input:
+     ntx     =       5, irest   =       1, ntrx    =       1
+
+Nature and format of output:
+     ntxo    =       1, ntpr    =   10000, ntrx    =       1, ntwr    =   50000
+     iwrap   =       1, ntwx    =   10000, ntwv    =       0, ntwe    =   10000
+     ioutfm  =       1, ntwprt  =       0, idecomp =       0, rbornstat=      0
+
+Potential function:
+     ntf     =       1, ntb     =       2, igb     =       0, nsnb    =      25
+     ipol    =       0, gbsa    =       0, iesp    =       0
+     dielc   =   1.00000, cut     =   8.00000, intdiel =   1.00000
+
+Frozen or restrained atoms:
+     ibelly  =       0, ntr     =       0
+
+Molecular dynamics:
+     nstlim  =    500000, nscm    =      1000, nrespa  =         1
+     t       =   0.00000, dt      =   0.00100, vlimit  =  20.00000
+
+Langevin dynamics temperature regulation:
+     ig      =  854591
+     temp0   = 298.00000, tempi   =   0.00000, gamma_ln=   2.00000
+
+Pressure regulation:
+     ntp     =       1
+     pres0   =   1.01325, comp    =  44.60000, taup    =   2.00000
+
+SHAKE:
+     ntc     =       2, jfastw  =       0
+     tol     =   0.00001
+
+Free energy options:
+     icfe    =       1, ifsc    =       0, klambda =       1
+     clambda =  1.0000, scalpha =  0.5000, scbeta  = 12.0000
+     sceeorder =       2
+     dynlmb =  0.0000 logdvdl =       1
+
+FEP MBAR options:
+     ifmbar  =       1,  bar_intervall =     1000
+     bar_l_min =0.0000,  bar_l_max =1.0000,  bar_l_incr =0.1000
+
+| Intermolecular bonds treatment:
+|     no_intermolecular_bonds =       1
+
+| Energy averages sample interval:
+|     ene_avg_sampling =       1
+
+Ewald parameters:
+     verbose =       0, ew_type =       0, nbflag  =       1, use_pme =       1
+     vdwmeth =       1, eedmeth =       1, netfrc  =       1
+     Box X =   28.099   Box Y =   27.719   Box Z =   27.339
+     Alpha =   90.000   Beta  =   90.000   Gamma =   90.000
+     NFFT1 =   30       NFFT2 =   30       NFFT3 =   30
+     Cutoff=    8.000   Tol   =0.100E-04
+     Ewald Coefficient =  0.34864
+     Interpolation order =    4
+
+| PMEMD ewald parallel performance parameters:
+|     block_fft =    0
+|     fft_blk_y_divisor =    2
+|     excl_recip =    0
+|     excl_master =    0
+|     atm_redist_freq =  320
+     TI Mask 1 :1; matches      6 atoms
+     TI Mask 2 :2; matches      6 atoms
+     TI region 1:    2115 atoms
+     TI region 2:    2115 atoms
+ 
+    MBAR - lambda values considered:
+      11 total:  0.0000 0.1000 0.2000 0.3000 0.4000 0.5000 0.6000 0.7000 0.8000 0.9000 1.0000
+    Extra energies will be computed    500 times.
+     Checking for mismatched coordinates.
+ Noshake mask :1,2; matches      12 atoms.
+
+--------------------------------------------------------------------------------
+   3.  ATOMIC COORDINATES AND VELOCITIES
+--------------------------------------------------------------------------------
+
+L0                                                                              
+ begin time read from input coords =   500.000 ps
+
+ 
+ Number of triangulated 3-point waters found:      703
+   Removing shake constraints from O2    L0    1 -- H6    L0    1
+   Removing shake constraints from C1    L0    1 -- H3    L0    1
+   Removing shake constraints from C1    L0    1 -- H4    L0    1
+   Removing shake constraints from C1    L0    1 -- H5    L0    1
+   Removing shake constraints from O2    INT   2 -- H6    INT   2
+   Removing shake constraints from C1    INT   2 -- H3    INT   2
+   Removing shake constraints from C1    INT   2 -- H4    INT   2
+   Removing shake constraints from C1    INT   2 -- H5    INT   2
+ Number of shake restraints removed:        8
+
+     Sum of charges for TI region  1 =   0.00000000
+     Forcing neutrality...
+
+
+     Sum of charges for TI region  2 =   0.00000000
+     Forcing neutrality...
+
+| Dynamic Memory, Types Used:
+| Reals             1147071
+| Integers           188770
+
+| Nonbonded Pairs Initial Allocation:      120896
+
+| Running AMBER/MPI version on    8 nodes
+
+ 
+--------------------------------------------------------------------------------
+   4.  RESULTS
+--------------------------------------------------------------------------------
+
+ ---------------------------------------------------
+ APPROXIMATING switch and d/dx switch using CUBIC SPLINE INTERPOLATION
+ using   5000.0 points per unit in tabled values
+ TESTING RELATIVE ERROR over r ranging from 0.0 to cutoff
+| CHECK switch(x): max rel err =   0.2738E-14   at   2.422500
+| CHECK d/dx switch(x): max rel err =   0.8332E-11   at   2.782960
+ ---------------------------------------------------
+|---------------------------------------------------
+| APPROXIMATING direct energy using CUBIC SPLINE INTERPOLATION
+|  with   50.0 points per unit in tabled values
+| Relative Error Limit not exceeded for r .gt.   2.47
+| APPROXIMATING direct force using CUBIC SPLINE INTERPOLATION
+|  with   50.0 points per unit in tabled values
+| Relative Error Limit not exceeded for r .gt.   2.89
+|---------------------------------------------------
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6677.5933
+Energy at 0.1000 =   -6677.9293
+Energy at 0.2000 =   -6678.2653
+Energy at 0.3000 =   -6678.6013
+Energy at 0.4000 =   -6678.9373
+Energy at 0.5000 =   -6679.2733
+Energy at 0.6000 =   -6679.6093
+Energy at 0.7000 =   -6679.9454
+Energy at 0.8000 =   -6680.2814
+Energy at 0.9000 =   -6680.6174
+Energy at 1.0000 =   -6680.9534
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =    10000   TIME(PS) =     510.000  TEMP(K) =   296.12  PRESS =   -92.1
+ Etot   =     -5433.4253  EKtot   =      1247.5281  EPtot      =     -6680.9534
+ BOND   =         3.6037  ANGLE   =         3.1046  DIHED      =         0.7749
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       976.5031
+ EELEC  =     -7664.9397  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       631.1488  VIRIAL  =       673.9263  VOLUME     =     21518.7234
+                                                    Density    =         0.9798
+ DV/DL  =        -3.3600
+ Ewald error estimate:   0.6023E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =    10000   TIME(PS) =     510.000  TEMP(K) =   296.12  PRESS =   -92.1
+ Etot   =     -5433.4253  EKtot   =      1247.5281  EPtot      =     -6680.9534
+ BOND   =         3.6037  ANGLE   =         3.1046  DIHED      =         0.7749
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       976.5031
+ EELEC  =     -7664.9397  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       631.1488  VIRIAL  =       673.9263  VOLUME     =     21518.7234
+                                                    Density    =         0.9798
+ DV/DL  =        -3.3600
+ Ewald error estimate:   0.6023E-03
+ ------------------------------------------------------------------------------
+
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6697.5390
+Energy at 0.1000 =   -6697.9621
+Energy at 0.2000 =   -6698.3851
+Energy at 0.3000 =   -6698.8082
+Energy at 0.4000 =   -6699.2312
+Energy at 0.5000 =   -6699.6542
+Energy at 0.6000 =   -6700.0773
+Energy at 0.7000 =   -6700.5003
+Energy at 0.8000 =   -6700.9233
+Energy at 0.9000 =   -6701.3464
+Energy at 1.0000 =   -6701.7694
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =    20000   TIME(PS) =     520.000  TEMP(K) =   295.31  PRESS =  -136.2
+ Etot   =     -5457.6779  EKtot   =      1244.0915  EPtot      =     -6701.7694
+ BOND   =         1.2565  ANGLE   =         2.6576  DIHED      =         0.3699
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1000.0860
+ EELEC  =     -7706.1394  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       589.8374  VIRIAL  =       653.0578  VOLUME     =     21503.5848
+                                                    Density    =         0.9805
+ DV/DL  =        -4.2304
+ Ewald error estimate:   0.1181E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =    20000   TIME(PS) =     520.000  TEMP(K) =   295.31  PRESS =  -136.2
+ Etot   =     -5457.6779  EKtot   =      1244.0915  EPtot      =     -6701.7694
+ BOND   =         1.2565  ANGLE   =         2.6576  DIHED      =         0.3699
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1000.0860
+ EELEC  =     -7706.1394  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       589.8374  VIRIAL  =       653.0578  VOLUME     =     21503.5848
+                                                    Density    =         0.9805
+ DV/DL  =        -4.2304
+ Ewald error estimate:   0.1181E-03
+ ------------------------------------------------------------------------------
+
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6690.9754
+Energy at 0.1000 =   -6691.3348
+Energy at 0.2000 =   -6691.6941
+Energy at 0.3000 =   -6692.0534
+Energy at 0.4000 =   -6692.4128
+Energy at 0.5000 =   -6692.7721
+Energy at 0.6000 =   -6693.1315
+Energy at 0.7000 =   -6693.4908
+Energy at 0.8000 =   -6693.8502
+Energy at 0.9000 =   -6694.2095
+Energy at 1.0000 =   -6694.5688
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =    30000   TIME(PS) =     530.000  TEMP(K) =   307.07  PRESS =  -481.3
+ Etot   =     -5400.9220  EKtot   =      1293.6469  EPtot      =     -6694.5688
+ BOND   =         1.0853  ANGLE   =         2.1307  DIHED      =         0.0616
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       953.0806
+ EELEC  =     -7650.9271  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       634.9357  VIRIAL  =       857.6107  VOLUME     =     21428.3755
+                                                    Density    =         0.9840
+ DV/DL  =        -3.5934
+ Ewald error estimate:   0.2898E-04
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =    30000   TIME(PS) =     530.000  TEMP(K) =   307.07  PRESS =  -481.3
+ Etot   =     -5400.9220  EKtot   =      1293.6469  EPtot      =     -6694.5688
+ BOND   =         1.0853  ANGLE   =         2.1307  DIHED      =         0.0616
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       953.0806
+ EELEC  =     -7650.9271  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       634.9357  VIRIAL  =       857.6107  VOLUME     =     21428.3755
+                                                    Density    =         0.9840
+ DV/DL  =        -3.5934
+ Ewald error estimate:   0.2898E-04
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:        0.00000        0.00000       27.34563
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6784.3701
+Energy at 0.1000 =   -6784.7957
+Energy at 0.2000 =   -6785.2213
+Energy at 0.3000 =   -6785.6469
+Energy at 0.4000 =   -6786.0725
+Energy at 0.5000 =   -6786.4981
+Energy at 0.6000 =   -6786.9237
+Energy at 0.7000 =   -6787.3493
+Energy at 0.8000 =   -6787.7749
+Energy at 0.9000 =   -6788.2005
+Energy at 1.0000 =   -6788.6260
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =    40000   TIME(PS) =     540.000  TEMP(K) =   304.11  PRESS =  -657.2
+ Etot   =     -5507.4392  EKtot   =      1281.1869  EPtot      =     -6788.6260
+ BOND   =         0.6393  ANGLE   =         0.9619  DIHED      =         0.4727
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       960.7455
+ EELEC  =     -7751.4454  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       634.4739  VIRIAL  =       936.8671  VOLUME     =     21309.2770
+                                                    Density    =         0.9895
+ DV/DL  =        -4.2559
+ Ewald error estimate:   0.1470E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =    40000   TIME(PS) =     540.000  TEMP(K) =   304.11  PRESS =  -657.2
+ Etot   =     -5507.4392  EKtot   =      1281.1869  EPtot      =     -6788.6260
+ BOND   =         0.6393  ANGLE   =         0.9619  DIHED      =         0.4727
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       960.7455
+ EELEC  =     -7751.4454  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       634.4739  VIRIAL  =       936.8671  VOLUME     =     21309.2770
+                                                    Density    =         0.9895
+ DV/DL  =        -4.2559
+ Ewald error estimate:   0.1470E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:        0.00000        0.00000       27.39518
+wrapping first mol.:        0.00000        0.00000       27.39518
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6704.3810
+Energy at 0.1000 =   -6704.6948
+Energy at 0.2000 =   -6705.0086
+Energy at 0.3000 =   -6705.3224
+Energy at 0.4000 =   -6705.6362
+Energy at 0.5000 =   -6705.9499
+Energy at 0.6000 =   -6706.2637
+Energy at 0.7000 =   -6706.5775
+Energy at 0.8000 =   -6706.8913
+Energy at 0.9000 =   -6707.2051
+Energy at 1.0000 =   -6707.5189
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =    50000   TIME(PS) =     550.000  TEMP(K) =   293.43  PRESS =   407.7
+ Etot   =     -5471.3445  EKtot   =      1236.1744  EPtot      =     -6707.5189
+ BOND   =         1.1121  ANGLE   =         3.8393  DIHED      =         0.0257
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1047.1806
+ EELEC  =     -7759.6767  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       587.9688  VIRIAL  =       399.3934  VOLUME     =     21424.8193
+                                                    Density    =         0.9841
+ DV/DL  =        -3.1378
+ Ewald error estimate:   0.1220E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =    50000   TIME(PS) =     550.000  TEMP(K) =   293.43  PRESS =   407.7
+ Etot   =     -5471.3445  EKtot   =      1236.1744  EPtot      =     -6707.5189
+ BOND   =         1.1121  ANGLE   =         3.8393  DIHED      =         0.0257
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1047.1806
+ EELEC  =     -7759.6767  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       587.9688  VIRIAL  =       399.3934  VOLUME     =     21424.8193
+                                                    Density    =         0.9841
+ DV/DL  =        -3.1378
+ Ewald error estimate:   0.1220E-03
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+
+| TI region  1
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =    50000   TIME(PS) =     550.000  TEMP(K) =   297.71  PRESS =     6.5
+ Etot   =     -5482.5774  EKtot   =      1254.2247  EPtot      =     -6736.8021
+ BOND   =         1.4776  ANGLE   =         1.8420  DIHED      =         0.2931
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1009.4787
+ EELEC  =     -7749.8934  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       624.9138  VIRIAL  =       621.9023  VOLUME     =     21379.7150
+                                                    Density    =         0.9862
+ DV/DL  =        -3.7556
+ Ewald error estimate:   0.1978E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =    50000   TIME(PS) =     550.000  TEMP(K) =     6.42  PRESS =   372.3
+ Etot   =        49.5994  EKtot   =        27.0602  EPtot      =        40.2087
+ BOND   =         0.9504  ANGLE   =         0.9984  DIHED      =         0.2959
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        37.6594
+ EELEC  =        63.7747  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.1808  VIRIAL  =       172.5313  VOLUME     =        68.9546
+                                                    Density    =         0.0032
+ DV/DL  =         2.1244
+ Ewald error estimate:   0.1491E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =    50000   TIME(PS) =     550.000  TEMP(K) =   297.71  PRESS =     6.5
+ Etot   =     -5482.5774  EKtot   =      1254.2247  EPtot      =     -6736.8021
+ BOND   =         1.4776  ANGLE   =         1.8420  DIHED      =         0.2931
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1009.4787
+ EELEC  =     -7749.8934  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       624.9138  VIRIAL  =       621.9023  VOLUME     =     21379.7150
+                                                    Density    =         0.9862
+ DV/DL  =        -3.7556
+ Ewald error estimate:   0.1978E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =    50000   TIME(PS) =     550.000  TEMP(K) =     6.42  PRESS =   372.3
+ Etot   =        49.5994  EKtot   =        27.0602  EPtot      =        40.2087
+ BOND   =         0.9504  ANGLE   =         0.9984  DIHED      =         0.2959
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        37.6594
+ EELEC  =        63.7747  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.1808  VIRIAL  =       172.5313  VOLUME     =        68.9546
+                                                    Density    =         0.0032
+ DV/DL  =         2.1244
+ Ewald error estimate:   0.1491E-03
+ ------------------------------------------------------------------------------
+
+
+      DV/DL, AVERAGES OVER   50000 STEPS
+
+
+ NSTEP =    50000   TIME(PS) =     550.000  TEMP(K) =     6.42  PRESS =     0.0
+ Etot   =         0.0000  EKtot   =         0.0000  EPtot      =        -3.7556
+ BOND   =         0.0000  ANGLE   =         0.0000  DIHED      =         0.0000
+ 1-4 NB =         0.0000  1-4 EEL =        -3.8299  VDWAALS    =         0.0000
+ EELEC  =         0.0743  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =         0.0000  VIRIAL  =         0.0000  VOLUME     =         0.0000
+                                                    Density    =         0.0000
+ DV/DL  =        -3.7556
+ Ewald error estimate:   0.0000E+00
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+wrapping first mol.:        0.00000        0.00000       27.42244
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6776.0076
+Energy at 0.1000 =   -6776.3851
+Energy at 0.2000 =   -6776.7625
+Energy at 0.3000 =   -6777.1399
+Energy at 0.4000 =   -6777.5174
+Energy at 0.5000 =   -6777.8948
+Energy at 0.6000 =   -6778.2722
+Energy at 0.7000 =   -6778.6496
+Energy at 0.8000 =   -6779.0271
+Energy at 0.9000 =   -6779.4045
+Energy at 1.0000 =   -6779.7819
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =    60000   TIME(PS) =     560.000  TEMP(K) =   307.15  PRESS =   424.8
+ Etot   =     -5485.7973  EKtot   =      1293.9846  EPtot      =     -6779.7819
+ BOND   =         2.9210  ANGLE   =         0.3958  DIHED      =         0.8531
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1078.6858
+ EELEC  =     -7862.6375  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       638.0386  VIRIAL  =       440.9267  VOLUME     =     21488.8455
+                                                    Density    =         0.9812
+ DV/DL  =        -3.7743
+ Ewald error estimate:   0.6267E-05
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =    60000   TIME(PS) =     560.000  TEMP(K) =   307.15  PRESS =   424.8
+ Etot   =     -5485.7973  EKtot   =      1293.9846  EPtot      =     -6779.7819
+ BOND   =         2.9210  ANGLE   =         0.3958  DIHED      =         0.8531
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1078.6858
+ EELEC  =     -7862.6375  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       638.0386  VIRIAL  =       440.9267  VOLUME     =     21488.8455
+                                                    Density    =         0.9812
+ DV/DL  =        -3.7743
+ Ewald error estimate:   0.6267E-05
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:        0.00000        0.00000       27.31555
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6703.2517
+Energy at 0.1000 =   -6703.6537
+Energy at 0.2000 =   -6704.0558
+Energy at 0.3000 =   -6704.4578
+Energy at 0.4000 =   -6704.8599
+Energy at 0.5000 =   -6705.2619
+Energy at 0.6000 =   -6705.6640
+Energy at 0.7000 =   -6706.0660
+Energy at 0.8000 =   -6706.4681
+Energy at 0.9000 =   -6706.8701
+Energy at 1.0000 =   -6707.2721
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =    70000   TIME(PS) =     570.000  TEMP(K) =   291.59  PRESS =   221.3
+ Etot   =     -5478.8572  EKtot   =      1228.4149  EPtot      =     -6707.2721
+ BOND   =         0.9686  ANGLE   =         3.0105  DIHED      =         0.0310
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1005.6863
+ EELEC  =     -7716.9685  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       600.5273  VIRIAL  =       499.0274  VOLUME     =     21238.6310
+                                                    Density    =         0.9928
+ DV/DL  =        -4.0205
+ Ewald error estimate:   0.3217E-05
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =    70000   TIME(PS) =     570.000  TEMP(K) =   291.59  PRESS =   221.3
+ Etot   =     -5478.8572  EKtot   =      1228.4149  EPtot      =     -6707.2721
+ BOND   =         0.9686  ANGLE   =         3.0105  DIHED      =         0.0310
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1005.6863
+ EELEC  =     -7716.9685  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       600.5273  VIRIAL  =       499.0274  VOLUME     =     21238.6310
+                                                    Density    =         0.9928
+ DV/DL  =        -4.0205
+ Ewald error estimate:   0.3217E-05
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:        0.00000       27.76558       27.38503
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6817.1020
+Energy at 0.1000 =   -6817.6714
+Energy at 0.2000 =   -6818.2408
+Energy at 0.3000 =   -6818.8103
+Energy at 0.4000 =   -6819.3797
+Energy at 0.5000 =   -6819.9491
+Energy at 0.6000 =   -6820.5186
+Energy at 0.7000 =   -6821.0880
+Energy at 0.8000 =   -6821.6574
+Energy at 0.9000 =   -6822.2269
+Energy at 1.0000 =   -6822.7963
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =    80000   TIME(PS) =     580.000  TEMP(K) =   297.61  PRESS =  -510.5
+ Etot   =     -5569.0151  EKtot   =      1253.7812  EPtot      =     -6822.7963
+ BOND   =         2.7412  ANGLE   =         0.3433  DIHED      =         0.0117
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       990.7727
+ EELEC  =     -7816.6653  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       619.0878  VIRIAL  =       854.9709  VOLUME     =     21401.4487
+                                                    Density    =         0.9852
+ DV/DL  =        -5.6943
+ Ewald error estimate:   0.7687E-04
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =    80000   TIME(PS) =     580.000  TEMP(K) =   297.61  PRESS =  -510.5
+ Etot   =     -5569.0151  EKtot   =      1253.7812  EPtot      =     -6822.7963
+ BOND   =         2.7412  ANGLE   =         0.3433  DIHED      =         0.0117
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       990.7727
+ EELEC  =     -7816.6653  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       619.0878  VIRIAL  =       854.9709  VOLUME     =     21401.4487
+                                                    Density    =         0.9852
+ DV/DL  =        -5.6943
+ Ewald error estimate:   0.7687E-04
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.16102       27.78029       27.39953
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6720.3699
+Energy at 0.1000 =   -6720.8338
+Energy at 0.2000 =   -6721.2977
+Energy at 0.3000 =   -6721.7616
+Energy at 0.4000 =   -6722.2255
+Energy at 0.5000 =   -6722.6895
+Energy at 0.6000 =   -6723.1534
+Energy at 0.7000 =   -6723.6173
+Energy at 0.8000 =   -6724.0812
+Energy at 0.9000 =   -6724.5451
+Energy at 1.0000 =   -6725.0090
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =    90000   TIME(PS) =     590.000  TEMP(K) =   301.90  PRESS =  -152.5
+ Etot   =     -5453.1454  EKtot   =      1271.8636  EPtot      =     -6725.0090
+ BOND   =         0.3525  ANGLE   =         2.1159  DIHED      =         0.1022
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1004.4773
+ EELEC  =     -7732.0569  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       622.1354  VIRIAL  =       692.7361  VOLUME     =     21435.3092
+                                                    Density    =         0.9836
+ DV/DL  =        -4.6392
+ Ewald error estimate:   0.1037E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =    90000   TIME(PS) =     590.000  TEMP(K) =   301.90  PRESS =  -152.5
+ Etot   =     -5453.1454  EKtot   =      1271.8636  EPtot      =     -6725.0090
+ BOND   =         0.3525  ANGLE   =         2.1159  DIHED      =         0.1022
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1004.4773
+ EELEC  =     -7732.0569  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       622.1354  VIRIAL  =       692.7361  VOLUME     =     21435.3092
+                                                    Density    =         0.9836
+ DV/DL  =        -4.6392
+ Ewald error estimate:   0.1037E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.18523        0.00000       27.42309
+wrapping first mol.:       28.18523        0.00000       27.42309
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6680.6467
+Energy at 0.1000 =   -6680.9060
+Energy at 0.2000 =   -6681.1652
+Energy at 0.3000 =   -6681.4245
+Energy at 0.4000 =   -6681.6838
+Energy at 0.5000 =   -6681.9430
+Energy at 0.6000 =   -6682.2023
+Energy at 0.7000 =   -6682.4616
+Energy at 0.8000 =   -6682.7208
+Energy at 0.9000 =   -6682.9801
+Energy at 1.0000 =   -6683.2394
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   100000   TIME(PS) =     600.000  TEMP(K) =   301.21  PRESS =   -95.5
+ Etot   =     -5414.3054  EKtot   =      1268.9340  EPtot      =     -6683.2394
+ BOND   =         0.5729  ANGLE   =         3.4082  DIHED      =         0.7830
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       982.1651
+ EELEC  =     -7670.1687  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       647.1494  VIRIAL  =       691.4840  VOLUME     =     21490.6090
+                                                    Density    =         0.9811
+ DV/DL  =        -2.5927
+ Ewald error estimate:   0.1521E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   100000   TIME(PS) =     600.000  TEMP(K) =   301.21  PRESS =   -95.5
+ Etot   =     -5414.3054  EKtot   =      1268.9340  EPtot      =     -6683.2394
+ BOND   =         0.5729  ANGLE   =         3.4082  DIHED      =         0.7830
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       982.1651
+ EELEC  =     -7670.1687  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       647.1494  VIRIAL  =       691.4840  VOLUME     =     21490.6090
+                                                    Density    =         0.9811
+ DV/DL  =        -2.5927
+ Ewald error estimate:   0.1521E-03
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+
+| TI region  1
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   100000   TIME(PS) =     600.000  TEMP(K) =   297.36  PRESS =     3.8
+ Etot   =     -5484.5639  EKtot   =      1252.7128  EPtot      =     -6737.2767
+ BOND   =         1.6000  ANGLE   =         1.8851  DIHED      =         0.2962
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1009.3284
+ EELEC  =     -7750.3864  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       624.4306  VIRIAL  =       622.6938  VOLUME     =     21371.2324
+                                                    Density    =         0.9866
+ DV/DL  =        -3.9129
+ Ewald error estimate:   0.2041E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   100000   TIME(PS) =     600.000  TEMP(K) =     6.31  PRESS =   374.5
+ Etot   =        44.1754  EKtot   =        26.5792  EPtot      =        36.5822
+ BOND   =         1.0555  ANGLE   =         1.0314  DIHED      =         0.3015
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        36.3188
+ EELEC  =        57.4283  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.2643  VIRIAL  =       171.9946  VOLUME     =        70.6125
+                                                    Density    =         0.0033
+ DV/DL  =         2.0705
+ Ewald error estimate:   0.1552E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   100000   TIME(PS) =     600.000  TEMP(K) =   297.36  PRESS =     3.8
+ Etot   =     -5484.5639  EKtot   =      1252.7128  EPtot      =     -6737.2767
+ BOND   =         1.6000  ANGLE   =         1.8851  DIHED      =         0.2962
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1009.3284
+ EELEC  =     -7750.3864  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       624.4306  VIRIAL  =       622.6938  VOLUME     =     21371.2324
+                                                    Density    =         0.9866
+ DV/DL  =        -3.9129
+ Ewald error estimate:   0.2041E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   100000   TIME(PS) =     600.000  TEMP(K) =     6.31  PRESS =   374.5
+ Etot   =        44.1754  EKtot   =        26.5792  EPtot      =        36.5822
+ BOND   =         1.0555  ANGLE   =         1.0314  DIHED      =         0.3015
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        36.3188
+ EELEC  =        57.4283  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.2643  VIRIAL  =       171.9946  VOLUME     =        70.6125
+                                                    Density    =         0.0033
+ DV/DL  =         2.0705
+ Ewald error estimate:   0.1552E-03
+ ------------------------------------------------------------------------------
+
+
+      DV/DL, AVERAGES OVER   50000 STEPS
+
+
+ NSTEP =   100000   TIME(PS) =     600.000  TEMP(K) =     6.31  PRESS =     0.0
+ Etot   =         0.0000  EKtot   =         0.0000  EPtot      =        -3.9129
+ BOND   =         0.0000  ANGLE   =         0.0000  DIHED      =         0.0000
+ 1-4 NB =         0.0000  1-4 EEL =        -3.8297  VDWAALS    =         0.0000
+ EELEC  =        -0.0831  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =         0.0000  VIRIAL  =         0.0000  VOLUME     =         0.0000
+                                                    Density    =         0.0000
+ DV/DL  =        -3.9129
+ Ewald error estimate:   0.0000E+00
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+wrapping first mol.:        0.00000       27.76887       27.38827
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6735.5002
+Energy at 0.1000 =   -6735.8611
+Energy at 0.2000 =   -6736.2220
+Energy at 0.3000 =   -6736.5829
+Energy at 0.4000 =   -6736.9438
+Energy at 0.5000 =   -6737.3048
+Energy at 0.6000 =   -6737.6657
+Energy at 0.7000 =   -6738.0266
+Energy at 0.8000 =   -6738.3875
+Energy at 0.9000 =   -6738.7484
+Energy at 1.0000 =   -6739.1093
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   110000   TIME(PS) =     610.000  TEMP(K) =   303.13  PRESS =  -394.2
+ Etot   =     -5462.0788  EKtot   =      1277.0305  EPtot      =     -6739.1093
+ BOND   =         2.7980  ANGLE   =         3.3191  DIHED      =         0.0766
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       972.6239
+ EELEC  =     -7717.9271  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       649.3906  VIRIAL  =       831.6266  VOLUME     =     21408.9997
+                                                    Density    =         0.9849
+ DV/DL  =        -3.6091
+ Ewald error estimate:   0.2316E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   110000   TIME(PS) =     610.000  TEMP(K) =   303.13  PRESS =  -394.2
+ Etot   =     -5462.0788  EKtot   =      1277.0305  EPtot      =     -6739.1093
+ BOND   =         2.7980  ANGLE   =         3.3191  DIHED      =         0.0766
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       972.6239
+ EELEC  =     -7717.9271  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       649.3906  VIRIAL  =       831.6266  VOLUME     =     21408.9997
+                                                    Density    =         0.9849
+ DV/DL  =        -3.6091
+ Ewald error estimate:   0.2316E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:        0.00000       27.76786       27.38728
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6723.9031
+Energy at 0.1000 =   -6724.3046
+Energy at 0.2000 =   -6724.7062
+Energy at 0.3000 =   -6725.1078
+Energy at 0.4000 =   -6725.5094
+Energy at 0.5000 =   -6725.9110
+Energy at 0.6000 =   -6726.3125
+Energy at 0.7000 =   -6726.7141
+Energy at 0.8000 =   -6727.1157
+Energy at 0.9000 =   -6727.5173
+Energy at 1.0000 =   -6727.9188
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   120000   TIME(PS) =     620.000  TEMP(K) =   295.45  PRESS =   229.1
+ Etot   =     -5483.2465  EKtot   =      1244.6723  EPtot      =     -6727.9188
+ BOND   =         0.4351  ANGLE   =         1.2231  DIHED      =         0.1295
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1029.7973
+ EELEC  =     -7759.5038  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       615.2347  VIRIAL  =       509.3408  VOLUME     =     21406.3832
+                                                    Density    =         0.9850
+ DV/DL  =        -4.0158
+ Ewald error estimate:   0.8601E-04
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   120000   TIME(PS) =     620.000  TEMP(K) =   295.45  PRESS =   229.1
+ Etot   =     -5483.2465  EKtot   =      1244.6723  EPtot      =     -6727.9188
+ BOND   =         0.4351  ANGLE   =         1.2231  DIHED      =         0.1295
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1029.7973
+ EELEC  =     -7759.5038  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       615.2347  VIRIAL  =       509.3408  VOLUME     =     21406.3832
+                                                    Density    =         0.9850
+ DV/DL  =        -4.0158
+ Ewald error estimate:   0.8601E-04
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:        0.00000       27.77187       27.39124
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6696.6532
+Energy at 0.1000 =   -6696.5521
+Energy at 0.2000 =   -6696.4511
+Energy at 0.3000 =   -6696.3500
+Energy at 0.4000 =   -6696.2490
+Energy at 0.5000 =   -6696.1479
+Energy at 0.6000 =   -6696.0469
+Energy at 0.7000 =   -6695.9459
+Energy at 0.8000 =   -6695.8448
+Energy at 0.9000 =   -6695.7438
+Energy at 1.0000 =   -6695.6427
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   130000   TIME(PS) =     630.000  TEMP(K) =   298.54  PRESS =  -134.0
+ Etot   =     -5437.9531  EKtot   =      1257.6896  EPtot      =     -6695.6427
+ BOND   =         1.7810  ANGLE   =         1.4124  DIHED      =         0.0086
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       983.1094
+ EELEC  =     -7681.9541  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       630.7132  VIRIAL  =       692.6610  VOLUME     =     21415.8337
+                                                    Density    =         0.9845
+ DV/DL  =         1.0104
+ Ewald error estimate:   0.1827E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   130000   TIME(PS) =     630.000  TEMP(K) =   298.54  PRESS =  -134.0
+ Etot   =     -5437.9531  EKtot   =      1257.6896  EPtot      =     -6695.6427
+ BOND   =         1.7810  ANGLE   =         1.4124  DIHED      =         0.0086
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       983.1094
+ EELEC  =     -7681.9541  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       630.7132  VIRIAL  =       692.6610  VOLUME     =     21415.8337
+                                                    Density    =         0.9845
+ DV/DL  =         1.0104
+ Ewald error estimate:   0.1827E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:        0.00000       27.78359       27.40279
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6758.8533
+Energy at 0.1000 =   -6759.1090
+Energy at 0.2000 =   -6759.3647
+Energy at 0.3000 =   -6759.6204
+Energy at 0.4000 =   -6759.8761
+Energy at 0.5000 =   -6760.1318
+Energy at 0.6000 =   -6760.3875
+Energy at 0.7000 =   -6760.6432
+Energy at 0.8000 =   -6760.8989
+Energy at 0.9000 =   -6761.1546
+Energy at 1.0000 =   -6761.4103
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   140000   TIME(PS) =     640.000  TEMP(K) =   306.74  PRESS =   183.4
+ Etot   =     -5469.1507  EKtot   =      1292.2596  EPtot      =     -6761.4103
+ BOND   =         2.5508  ANGLE   =         2.4068  DIHED      =         0.1441
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1033.2177
+ EELEC  =     -7799.7296  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       651.1431  VIRIAL  =       566.2528  VOLUME     =     21442.7920
+                                                    Density    =         0.9833
+ DV/DL  =        -2.5569
+ Ewald error estimate:   0.1019E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   140000   TIME(PS) =     640.000  TEMP(K) =   306.74  PRESS =   183.4
+ Etot   =     -5469.1507  EKtot   =      1292.2596  EPtot      =     -6761.4103
+ BOND   =         2.5508  ANGLE   =         2.4068  DIHED      =         0.1441
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1033.2177
+ EELEC  =     -7799.7296  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       651.1431  VIRIAL  =       566.2528  VOLUME     =     21442.7920
+                                                    Density    =         0.9833
+ DV/DL  =        -2.5569
+ Ewald error estimate:   0.1019E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.12282       27.74261       27.36237
+wrapping first mol.:       28.12282       27.74261       27.36237
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6693.6847
+Energy at 0.1000 =   -6694.2498
+Energy at 0.2000 =   -6694.8150
+Energy at 0.3000 =   -6695.3801
+Energy at 0.4000 =   -6695.9452
+Energy at 0.5000 =   -6696.5103
+Energy at 0.6000 =   -6697.0754
+Energy at 0.7000 =   -6697.6406
+Energy at 0.8000 =   -6698.2057
+Energy at 0.9000 =   -6698.7708
+Energy at 1.0000 =   -6699.3359
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   150000   TIME(PS) =     650.000  TEMP(K) =   294.21  PRESS =   337.4
+ Etot   =     -5459.8812  EKtot   =      1239.4547  EPtot      =     -6699.3359
+ BOND   =         1.3037  ANGLE   =         0.4893  DIHED      =         0.3137
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1023.7254
+ EELEC  =     -7725.1680  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       624.6280  VIRIAL  =       469.1184  VOLUME     =     21347.9775
+                                                    Density    =         0.9877
+ DV/DL  =        -5.6512
+ Ewald error estimate:   0.3073E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   150000   TIME(PS) =     650.000  TEMP(K) =   294.21  PRESS =   337.4
+ Etot   =     -5459.8812  EKtot   =      1239.4547  EPtot      =     -6699.3359
+ BOND   =         1.3037  ANGLE   =         0.4893  DIHED      =         0.3137
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1023.7254
+ EELEC  =     -7725.1680  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       624.6280  VIRIAL  =       469.1184  VOLUME     =     21347.9775
+                                                    Density    =         0.9877
+ DV/DL  =        -5.6512
+ Ewald error estimate:   0.3073E-03
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+
+| TI region  1
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   150000   TIME(PS) =     650.000  TEMP(K) =   297.79  PRESS =    -4.9
+ Etot   =     -5482.5760  EKtot   =      1254.5412  EPtot      =     -6737.1172
+ BOND   =         1.5689  ANGLE   =         2.0191  DIHED      =         0.3568
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1008.6475
+ EELEC  =     -7749.7094  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       624.7790  VIRIAL  =       627.0693  VOLUME     =     21376.8348
+                                                    Density    =         0.9863
+ DV/DL  =        -3.7986
+ Ewald error estimate:   0.2095E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   150000   TIME(PS) =     650.000  TEMP(K) =     6.03  PRESS =   376.2
+ Etot   =        39.5726  EKtot   =        25.4178  EPtot      =        34.5387
+ BOND   =         1.0072  ANGLE   =         1.1877  DIHED      =         0.3291
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        37.9013
+ EELEC  =        58.1259  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        18.0345  VIRIAL  =       174.4062  VOLUME     =        69.7959
+                                                    Density    =         0.0032
+ DV/DL  =         2.0188
+ Ewald error estimate:   0.1559E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   150000   TIME(PS) =     650.000  TEMP(K) =   297.79  PRESS =    -4.9
+ Etot   =     -5482.5760  EKtot   =      1254.5412  EPtot      =     -6737.1172
+ BOND   =         1.5689  ANGLE   =         2.0191  DIHED      =         0.3568
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1008.6475
+ EELEC  =     -7749.7094  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       624.7790  VIRIAL  =       627.0693  VOLUME     =     21376.8348
+                                                    Density    =         0.9863
+ DV/DL  =        -3.7986
+ Ewald error estimate:   0.2095E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   150000   TIME(PS) =     650.000  TEMP(K) =     6.03  PRESS =   376.2
+ Etot   =        39.5726  EKtot   =        25.4178  EPtot      =        34.5387
+ BOND   =         1.0072  ANGLE   =         1.1877  DIHED      =         0.3291
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        37.9013
+ EELEC  =        58.1259  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        18.0345  VIRIAL  =       174.4062  VOLUME     =        69.7959
+                                                    Density    =         0.0032
+ DV/DL  =         2.0188
+ Ewald error estimate:   0.1559E-03
+ ------------------------------------------------------------------------------
+
+
+      DV/DL, AVERAGES OVER   50000 STEPS
+
+
+ NSTEP =   150000   TIME(PS) =     650.000  TEMP(K) =     6.03  PRESS =     0.0
+ Etot   =         0.0000  EKtot   =         0.0000  EPtot      =        -3.7986
+ BOND   =         0.0000  ANGLE   =         0.0000  DIHED      =         0.0000
+ 1-4 NB =         0.0000  1-4 EEL =        -3.8326  VDWAALS    =         0.0000
+ EELEC  =         0.0340  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =         0.0000  VIRIAL  =         0.0000  VOLUME     =         0.0000
+                                                    Density    =         0.0000
+ DV/DL  =        -3.7986
+ Ewald error estimate:   0.0000E+00
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+wrapping first mol.:       28.15115       27.77055       27.38993
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6778.0950
+Energy at 0.1000 =   -6778.6303
+Energy at 0.2000 =   -6779.1656
+Energy at 0.3000 =   -6779.7009
+Energy at 0.4000 =   -6780.2362
+Energy at 0.5000 =   -6780.7715
+Energy at 0.6000 =   -6781.3068
+Energy at 0.7000 =   -6781.8421
+Energy at 0.8000 =   -6782.3774
+Energy at 0.9000 =   -6782.9127
+Energy at 1.0000 =   -6783.4480
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   160000   TIME(PS) =     660.000  TEMP(K) =   301.07  PRESS =  -357.6
+ Etot   =     -5515.0910  EKtot   =      1268.3570  EPtot      =     -6783.4480
+ BOND   =         0.8288  ANGLE   =         2.5618  DIHED      =         0.8067
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       991.3508
+ EELEC  =     -7778.9961  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       633.6847  VIRIAL  =       799.0022  VOLUME     =     21412.8826
+                                                    Density    =         0.9847
+ DV/DL  =        -5.3530
+ Ewald error estimate:   0.3029E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   160000   TIME(PS) =     660.000  TEMP(K) =   301.07  PRESS =  -357.6
+ Etot   =     -5515.0910  EKtot   =      1268.3570  EPtot      =     -6783.4480
+ BOND   =         0.8288  ANGLE   =         2.5618  DIHED      =         0.8067
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       991.3508
+ EELEC  =     -7778.9961  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       633.6847  VIRIAL  =       799.0022  VOLUME     =     21412.8826
+                                                    Density    =         0.9847
+ DV/DL  =        -5.3530
+ Ewald error estimate:   0.3029E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.07845       27.69883       27.31920
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6714.6387
+Energy at 0.1000 =   -6715.1872
+Energy at 0.2000 =   -6715.7357
+Energy at 0.3000 =   -6716.2842
+Energy at 0.4000 =   -6716.8326
+Energy at 0.5000 =   -6717.3811
+Energy at 0.6000 =   -6717.9296
+Energy at 0.7000 =   -6718.4780
+Energy at 0.8000 =   -6719.0265
+Energy at 0.9000 =   -6719.5750
+Energy at 1.0000 =   -6720.1234
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   170000   TIME(PS) =     670.000  TEMP(K) =   287.06  PRESS =   526.0
+ Etot   =     -5510.7877  EKtot   =      1209.3358  EPtot      =     -6720.1234
+ BOND   =         0.4484  ANGLE   =         1.1515  DIHED      =         0.0151
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1054.3424
+ EELEC  =     -7776.0808  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       601.2083  VIRIAL  =       359.9266  VOLUME     =     21246.9938
+                                                    Density    =         0.9924
+ DV/DL  =        -5.4847
+ Ewald error estimate:   0.2395E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   170000   TIME(PS) =     670.000  TEMP(K) =   287.06  PRESS =   526.0
+ Etot   =     -5510.7877  EKtot   =      1209.3358  EPtot      =     -6720.1234
+ BOND   =         0.4484  ANGLE   =         1.1515  DIHED      =         0.0151
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1054.3424
+ EELEC  =     -7776.0808  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       601.2083  VIRIAL  =       359.9266  VOLUME     =     21246.9938
+                                                    Density    =         0.9924
+ DV/DL  =        -5.4847
+ Ewald error estimate:   0.2395E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.12173        0.00000       27.36130
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6722.2807
+Energy at 0.1000 =   -6722.5198
+Energy at 0.2000 =   -6722.7590
+Energy at 0.3000 =   -6722.9982
+Energy at 0.4000 =   -6723.2373
+Energy at 0.5000 =   -6723.4765
+Energy at 0.6000 =   -6723.7156
+Energy at 0.7000 =   -6723.9548
+Energy at 0.8000 =   -6724.1940
+Energy at 0.9000 =   -6724.4331
+Energy at 1.0000 =   -6724.6723
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   180000   TIME(PS) =     680.000  TEMP(K) =   297.52  PRESS =   382.9
+ Etot   =     -5471.2781  EKtot   =      1253.3942  EPtot      =     -6724.6723
+ BOND   =         0.9743  ANGLE   =         1.6280  DIHED      =         0.3539
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1038.3446
+ EELEC  =     -7765.9730  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       629.0160  VIRIAL  =       452.5667  VOLUME     =     21345.4552
+                                                    Density    =         0.9878
+ DV/DL  =        -2.3916
+ Ewald error estimate:   0.1380E-04
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   180000   TIME(PS) =     680.000  TEMP(K) =   297.52  PRESS =   382.9
+ Etot   =     -5471.2781  EKtot   =      1253.3942  EPtot      =     -6724.6723
+ BOND   =         0.9743  ANGLE   =         1.6280  DIHED      =         0.3539
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1038.3446
+ EELEC  =     -7765.9730  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       629.0160  VIRIAL  =       452.5667  VOLUME     =     21345.4552
+                                                    Density    =         0.9878
+ DV/DL  =        -2.3916
+ Ewald error estimate:   0.1380E-04
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.12360       27.74337       27.36313
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6785.5003
+Energy at 0.1000 =   -6785.9406
+Energy at 0.2000 =   -6786.3810
+Energy at 0.3000 =   -6786.8213
+Energy at 0.4000 =   -6787.2617
+Energy at 0.5000 =   -6787.7020
+Energy at 0.6000 =   -6788.1423
+Energy at 0.7000 =   -6788.5827
+Energy at 0.8000 =   -6789.0230
+Energy at 0.9000 =   -6789.4634
+Energy at 1.0000 =   -6789.9037
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   190000   TIME(PS) =     690.000  TEMP(K) =   305.50  PRESS =  -134.6
+ Etot   =     -5502.8618  EKtot   =      1287.0419  EPtot      =     -6789.9037
+ BOND   =         1.1058  ANGLE   =         2.0056  DIHED      =         0.0568
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1006.7466
+ EELEC  =     -7799.8185  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       619.2770  VIRIAL  =       681.3286  VOLUME     =     21349.9669
+                                                    Density    =         0.9876
+ DV/DL  =        -4.4035
+ Ewald error estimate:   0.1469E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   190000   TIME(PS) =     690.000  TEMP(K) =   305.50  PRESS =  -134.6
+ Etot   =     -5502.8618  EKtot   =      1287.0419  EPtot      =     -6789.9037
+ BOND   =         1.1058  ANGLE   =         2.0056  DIHED      =         0.0568
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1006.7466
+ EELEC  =     -7799.8185  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       619.2770  VIRIAL  =       681.3286  VOLUME     =     21349.9669
+                                                    Density    =         0.9876
+ DV/DL  =        -4.4035
+ Ewald error estimate:   0.1469E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.11169        0.00000       27.35154
+wrapping first mol.:       28.11169        0.00000       27.35154
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6798.3395
+Energy at 0.1000 =   -6798.5589
+Energy at 0.2000 =   -6798.7782
+Energy at 0.3000 =   -6798.9976
+Energy at 0.4000 =   -6799.2170
+Energy at 0.5000 =   -6799.4363
+Energy at 0.6000 =   -6799.6557
+Energy at 0.7000 =   -6799.8751
+Energy at 0.8000 =   -6800.0944
+Energy at 0.9000 =   -6800.3138
+Energy at 1.0000 =   -6800.5332
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   200000   TIME(PS) =     700.000  TEMP(K) =   305.42  PRESS =  -155.1
+ Etot   =     -5513.8313  EKtot   =      1286.7019  EPtot      =     -6800.5332
+ BOND   =         0.6373  ANGLE   =         1.7248  DIHED      =         0.1383
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1009.6406
+ EELEC  =     -7812.6742  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       660.4896  VIRIAL  =       731.8980  VOLUME     =     21322.8572
+                                                    Density    =         0.9888
+ DV/DL  =        -2.1937
+ Ewald error estimate:   0.1216E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   200000   TIME(PS) =     700.000  TEMP(K) =   305.42  PRESS =  -155.1
+ Etot   =     -5513.8313  EKtot   =      1286.7019  EPtot      =     -6800.5332
+ BOND   =         0.6373  ANGLE   =         1.7248  DIHED      =         0.1383
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1009.6406
+ EELEC  =     -7812.6742  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       660.4896  VIRIAL  =       731.8980  VOLUME     =     21322.8572
+                                                    Density    =         0.9888
+ DV/DL  =        -2.1937
+ Ewald error estimate:   0.1216E-03
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+
+| TI region  1
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   200000   TIME(PS) =     700.000  TEMP(K) =   297.70  PRESS =    -0.1
+ Etot   =     -5483.6282  EKtot   =      1254.1542  EPtot      =     -6737.7824
+ BOND   =         1.6253  ANGLE   =         1.8068  DIHED      =         0.3478
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1009.7505
+ EELEC  =     -7751.3128  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       625.0836  VIRIAL  =       625.1066  VOLUME     =     21390.9345
+                                                    Density    =         0.9857
+ DV/DL  =        -3.8436
+ Ewald error estimate:   0.2066E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   200000   TIME(PS) =     700.000  TEMP(K) =     6.59  PRESS =   388.1
+ Etot   =        53.1851  EKtot   =        27.7788  EPtot      =        42.2918
+ BOND   =         0.9804  ANGLE   =         1.0579  DIHED      =         0.3190
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        38.5446
+ EELEC  =        65.8015  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.1863  VIRIAL  =       178.3642  VOLUME     =        82.3833
+                                                    Density    =         0.0038
+ DV/DL  =         2.0819
+ Ewald error estimate:   0.1544E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   200000   TIME(PS) =     700.000  TEMP(K) =   297.70  PRESS =    -0.1
+ Etot   =     -5483.6282  EKtot   =      1254.1542  EPtot      =     -6737.7824
+ BOND   =         1.6253  ANGLE   =         1.8068  DIHED      =         0.3478
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1009.7505
+ EELEC  =     -7751.3128  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       625.0836  VIRIAL  =       625.1066  VOLUME     =     21390.9345
+                                                    Density    =         0.9857
+ DV/DL  =        -3.8436
+ Ewald error estimate:   0.2066E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   200000   TIME(PS) =     700.000  TEMP(K) =     6.59  PRESS =   388.1
+ Etot   =        53.1851  EKtot   =        27.7788  EPtot      =        42.2918
+ BOND   =         0.9804  ANGLE   =         1.0579  DIHED      =         0.3190
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        38.5446
+ EELEC  =        65.8015  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.1863  VIRIAL  =       178.3642  VOLUME     =        82.3833
+                                                    Density    =         0.0038
+ DV/DL  =         2.0819
+ Ewald error estimate:   0.1544E-03
+ ------------------------------------------------------------------------------
+
+
+      DV/DL, AVERAGES OVER   50000 STEPS
+
+
+ NSTEP =   200000   TIME(PS) =     700.000  TEMP(K) =     6.59  PRESS =     0.0
+ Etot   =         0.0000  EKtot   =         0.0000  EPtot      =        -3.8436
+ BOND   =         0.0000  ANGLE   =         0.0000  DIHED      =         0.0000
+ 1-4 NB =         0.0000  1-4 EEL =        -3.8305  VDWAALS    =         0.0000
+ EELEC  =        -0.0131  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =         0.0000  VIRIAL  =         0.0000  VOLUME     =         0.0000
+                                                    Density    =         0.0000
+ DV/DL  =        -3.8436
+ Ewald error estimate:   0.0000E+00
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+wrapping first mol.:       28.20278       27.82148       27.44017
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6767.1564
+Energy at 0.1000 =   -6767.6747
+Energy at 0.2000 =   -6768.1929
+Energy at 0.3000 =   -6768.7111
+Energy at 0.4000 =   -6769.2293
+Energy at 0.5000 =   -6769.7475
+Energy at 0.6000 =   -6770.2657
+Energy at 0.7000 =   -6770.7840
+Energy at 0.8000 =   -6771.3022
+Energy at 0.9000 =   -6771.8204
+Energy at 1.0000 =   -6772.3386
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   210000   TIME(PS) =     710.000  TEMP(K) =   296.90  PRESS =  -132.0
+ Etot   =     -5521.5399  EKtot   =      1250.7987  EPtot      =     -6772.3386
+ BOND   =         0.8646  ANGLE   =         1.2339  DIHED      =         0.8040
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1020.1338
+ EELEC  =     -7795.3749  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       648.6432  VIRIAL  =       709.9985  VOLUME     =     21530.8083
+                                                    Density    =         0.9793
+ DV/DL  =        -5.1822
+ Ewald error estimate:   0.2727E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   210000   TIME(PS) =     710.000  TEMP(K) =   296.90  PRESS =  -132.0
+ Etot   =     -5521.5399  EKtot   =      1250.7987  EPtot      =     -6772.3386
+ BOND   =         0.8646  ANGLE   =         1.2339  DIHED      =         0.8040
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1020.1338
+ EELEC  =     -7795.3749  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       648.6432  VIRIAL  =       709.9985  VOLUME     =     21530.8083
+                                                    Density    =         0.9793
+ DV/DL  =        -5.1822
+ Ewald error estimate:   0.2727E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.06998       27.69047       27.31095
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6775.1308
+Energy at 0.1000 =   -6775.3703
+Energy at 0.2000 =   -6775.6097
+Energy at 0.3000 =   -6775.8492
+Energy at 0.4000 =   -6776.0887
+Energy at 0.5000 =   -6776.3282
+Energy at 0.6000 =   -6776.5676
+Energy at 0.7000 =   -6776.8071
+Energy at 0.8000 =   -6777.0466
+Energy at 0.9000 =   -6777.2860
+Energy at 1.0000 =   -6777.5255
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   220000   TIME(PS) =     720.000  TEMP(K) =   288.89  PRESS =    57.2
+ Etot   =     -5560.4666  EKtot   =      1217.0589  EPtot      =     -6777.5255
+ BOND   =         0.6085  ANGLE   =         0.9155  DIHED      =         0.3625
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1019.8469
+ EELEC  =     -7799.2590  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       609.6681  VIRIAL  =       583.4473  VOLUME     =     21227.9861
+                                                    Density    =         0.9933
+ DV/DL  =        -2.3947
+ Ewald error estimate:   0.4531E-04
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   220000   TIME(PS) =     720.000  TEMP(K) =   288.89  PRESS =    57.2
+ Etot   =     -5560.4666  EKtot   =      1217.0589  EPtot      =     -6777.5255
+ BOND   =         0.6085  ANGLE   =         0.9155  DIHED      =         0.3625
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1019.8469
+ EELEC  =     -7799.2590  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       609.6681  VIRIAL  =       583.4473  VOLUME     =     21227.9861
+                                                    Density    =         0.9933
+ DV/DL  =        -2.3947
+ Ewald error estimate:   0.4531E-04
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.08661       27.70688       27.32713
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6728.8573
+Energy at 0.1000 =   -6728.9522
+Energy at 0.2000 =   -6729.0471
+Energy at 0.3000 =   -6729.1420
+Energy at 0.4000 =   -6729.2369
+Energy at 0.5000 =   -6729.3319
+Energy at 0.6000 =   -6729.4268
+Energy at 0.7000 =   -6729.5217
+Energy at 0.8000 =   -6729.6166
+Energy at 0.9000 =   -6729.7115
+Energy at 1.0000 =   -6729.8064
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   230000   TIME(PS) =     730.000  TEMP(K) =   302.30  PRESS =   620.7
+ Etot   =     -5456.2689  EKtot   =      1273.5375  EPtot      =     -6729.8064
+ BOND   =         1.1683  ANGLE   =         0.6320  DIHED      =         0.3385
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1050.6799
+ EELEC  =     -7782.6251  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       636.2289  VIRIAL  =       351.2528  VOLUME     =     21265.4664
+                                                    Density    =         0.9915
+ DV/DL  =        -0.9490
+ Ewald error estimate:   0.1588E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   230000   TIME(PS) =     730.000  TEMP(K) =   302.30  PRESS =   620.7
+ Etot   =     -5456.2689  EKtot   =      1273.5375  EPtot      =     -6729.8064
+ BOND   =         1.1683  ANGLE   =         0.6320  DIHED      =         0.3385
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1050.6799
+ EELEC  =     -7782.6251  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       636.2289  VIRIAL  =       351.2528  VOLUME     =     21265.4664
+                                                    Density    =         0.9915
+ DV/DL  =        -0.9490
+ Ewald error estimate:   0.1588E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.16479       27.78400       27.40320
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6759.2546
+Energy at 0.1000 =   -6759.7042
+Energy at 0.2000 =   -6760.1538
+Energy at 0.3000 =   -6760.6034
+Energy at 0.4000 =   -6761.0530
+Energy at 0.5000 =   -6761.5026
+Energy at 0.6000 =   -6761.9521
+Energy at 0.7000 =   -6762.4017
+Energy at 0.8000 =   -6762.8513
+Energy at 0.9000 =   -6763.3009
+Energy at 1.0000 =   -6763.7505
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   240000   TIME(PS) =     740.000  TEMP(K) =   289.70  PRESS =  -811.3
+ Etot   =     -5543.2820  EKtot   =      1220.4685  EPtot      =     -6763.7505
+ BOND   =         0.8445  ANGLE   =         0.8763  DIHED      =         0.8217
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       944.3452
+ EELEC  =     -7710.6382  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       603.8795  VIRIAL  =       979.5185  VOLUME     =     21444.2321
+                                                    Density    =         0.9832
+ DV/DL  =        -4.4959
+ Ewald error estimate:   0.5600E-04
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   240000   TIME(PS) =     740.000  TEMP(K) =   289.70  PRESS =  -811.3
+ Etot   =     -5543.2820  EKtot   =      1220.4685  EPtot      =     -6763.7505
+ BOND   =         0.8445  ANGLE   =         0.8763  DIHED      =         0.8217
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       944.3452
+ EELEC  =     -7710.6382  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       603.8795  VIRIAL  =       979.5185  VOLUME     =     21444.2321
+                                                    Density    =         0.9832
+ DV/DL  =        -4.4959
+ Ewald error estimate:   0.5600E-04
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.13595       27.75556       27.37515
+wrapping first mol.:       28.13595       27.75556       27.37515
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6677.7670
+Energy at 0.1000 =   -6678.0054
+Energy at 0.2000 =   -6678.2438
+Energy at 0.3000 =   -6678.4822
+Energy at 0.4000 =   -6678.7205
+Energy at 0.5000 =   -6678.9589
+Energy at 0.6000 =   -6679.1973
+Energy at 0.7000 =   -6679.4356
+Energy at 0.8000 =   -6679.6740
+Energy at 0.9000 =   -6679.9124
+Energy at 1.0000 =   -6680.1507
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   250000   TIME(PS) =     750.000  TEMP(K) =   301.79  PRESS =   497.4
+ Etot   =     -5408.7356  EKtot   =      1271.4151  EPtot      =     -6680.1507
+ BOND   =         0.7394  ANGLE   =         2.1991  DIHED      =         0.2552
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1036.9603
+ EELEC  =     -7720.3047  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       635.6095  VIRIAL  =       406.0386  VOLUME     =     21377.8142
+                                                    Density    =         0.9863
+ DV/DL  =        -2.3837
+ Ewald error estimate:   0.1959E-04
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   250000   TIME(PS) =     750.000  TEMP(K) =   301.79  PRESS =   497.4
+ Etot   =     -5408.7356  EKtot   =      1271.4151  EPtot      =     -6680.1507
+ BOND   =         0.7394  ANGLE   =         2.1991  DIHED      =         0.2552
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1036.9603
+ EELEC  =     -7720.3047  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       635.6095  VIRIAL  =       406.0386  VOLUME     =     21377.8142
+                                                    Density    =         0.9863
+ DV/DL  =        -2.3837
+ Ewald error estimate:   0.1959E-04
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+
+| TI region  1
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   250000   TIME(PS) =     750.000  TEMP(K) =   297.15  PRESS =     3.3
+ Etot   =     -5490.2555  EKtot   =      1251.8330  EPtot      =     -6742.0885
+ BOND   =         1.5802  ANGLE   =         1.9675  DIHED      =         0.3315
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1010.4159
+ EELEC  =     -7756.3836  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       624.8315  VIRIAL  =       623.2937  VOLUME     =     21374.4893
+                                                    Density    =         0.9865
+ DV/DL  =        -3.8424
+ Ewald error estimate:   0.1974E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   250000   TIME(PS) =     750.000  TEMP(K) =     6.39  PRESS =   415.7
+ Etot   =        44.4517  EKtot   =        26.9236  EPtot      =        36.0730
+ BOND   =         0.9788  ANGLE   =         1.0610  DIHED      =         0.3166
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        41.5146
+ EELEC  =        61.7200  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.0124  VIRIAL  =       191.5254  VOLUME     =       114.2039
+                                                    Density    =         0.0053
+ DV/DL  =         2.0488
+ Ewald error estimate:   0.1507E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   250000   TIME(PS) =     750.000  TEMP(K) =   297.15  PRESS =     3.3
+ Etot   =     -5490.2555  EKtot   =      1251.8330  EPtot      =     -6742.0885
+ BOND   =         1.5802  ANGLE   =         1.9675  DIHED      =         0.3315
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1010.4159
+ EELEC  =     -7756.3836  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       624.8315  VIRIAL  =       623.2937  VOLUME     =     21374.4893
+                                                    Density    =         0.9865
+ DV/DL  =        -3.8424
+ Ewald error estimate:   0.1974E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   250000   TIME(PS) =     750.000  TEMP(K) =     6.39  PRESS =   415.7
+ Etot   =        44.4517  EKtot   =        26.9236  EPtot      =        36.0730
+ BOND   =         0.9788  ANGLE   =         1.0610  DIHED      =         0.3166
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        41.5146
+ EELEC  =        61.7200  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.0124  VIRIAL  =       191.5254  VOLUME     =       114.2039
+                                                    Density    =         0.0053
+ DV/DL  =         2.0488
+ Ewald error estimate:   0.1507E-03
+ ------------------------------------------------------------------------------
+
+
+      DV/DL, AVERAGES OVER   50000 STEPS
+
+
+ NSTEP =   250000   TIME(PS) =     750.000  TEMP(K) =     6.39  PRESS =     0.0
+ Etot   =         0.0000  EKtot   =         0.0000  EPtot      =        -3.8424
+ BOND   =         0.0000  ANGLE   =         0.0000  DIHED      =         0.0000
+ 1-4 NB =         0.0000  1-4 EEL =        -3.8314  VDWAALS    =         0.0000
+ EELEC  =        -0.0110  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =         0.0000  VIRIAL  =         0.0000  VOLUME     =         0.0000
+                                                    Density    =         0.0000
+ DV/DL  =        -3.8424
+ Ewald error estimate:   0.0000E+00
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+wrapping first mol.:       28.15600        0.00000       27.39465
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6708.9358
+Energy at 0.1000 =   -6709.3564
+Energy at 0.2000 =   -6709.7770
+Energy at 0.3000 =   -6710.1976
+Energy at 0.4000 =   -6710.6182
+Energy at 0.5000 =   -6711.0388
+Energy at 0.6000 =   -6711.4595
+Energy at 0.7000 =   -6711.8801
+Energy at 0.8000 =   -6712.3007
+Energy at 0.9000 =   -6712.7213
+Energy at 1.0000 =   -6713.1419
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   260000   TIME(PS) =     760.000  TEMP(K) =   298.31  PRESS =   300.3
+ Etot   =     -5456.4209  EKtot   =      1256.7210  EPtot      =     -6713.1419
+ BOND   =         3.1191  ANGLE   =         0.8966  DIHED      =         0.2792
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1031.5356
+ EELEC  =     -7748.9723  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       626.0821  VIRIAL  =       487.1826  VOLUME     =     21423.6275
+                                                    Density    =         0.9842
+ DV/DL  =        -4.2061
+ Ewald error estimate:   0.2500E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   260000   TIME(PS) =     760.000  TEMP(K) =   298.31  PRESS =   300.3
+ Etot   =     -5456.4209  EKtot   =      1256.7210  EPtot      =     -6713.1419
+ BOND   =         3.1191  ANGLE   =         0.8966  DIHED      =         0.2792
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1031.5356
+ EELEC  =     -7748.9723  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       626.0821  VIRIAL  =       487.1826  VOLUME     =     21423.6275
+                                                    Density    =         0.9842
+ DV/DL  =        -4.2061
+ Ewald error estimate:   0.2500E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.16092        0.00000       27.39944
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6765.5276
+Energy at 0.1000 =   -6765.7642
+Energy at 0.2000 =   -6766.0008
+Energy at 0.3000 =   -6766.2374
+Energy at 0.4000 =   -6766.4740
+Energy at 0.5000 =   -6766.7105
+Energy at 0.6000 =   -6766.9471
+Energy at 0.7000 =   -6767.1837
+Energy at 0.8000 =   -6767.4203
+Energy at 0.9000 =   -6767.6569
+Energy at 1.0000 =   -6767.8934
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   270000   TIME(PS) =     770.000  TEMP(K) =   292.08  PRESS =  -424.7
+ Etot   =     -5537.4122  EKtot   =      1230.4812  EPtot      =     -6767.8934
+ BOND   =         1.3627  ANGLE   =         1.4710  DIHED      =         0.0990
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       982.9269
+ EELEC  =     -7753.7531  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       606.2544  VIRIAL  =       802.8126  VOLUME     =     21435.2184
+                                                    Density    =         0.9836
+ DV/DL  =        -2.3658
+ Ewald error estimate:   0.3204E-04
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   270000   TIME(PS) =     770.000  TEMP(K) =   292.08  PRESS =  -424.7
+ Etot   =     -5537.4122  EKtot   =      1230.4812  EPtot      =     -6767.8934
+ BOND   =         1.3627  ANGLE   =         1.4710  DIHED      =         0.0990
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       982.9269
+ EELEC  =     -7753.7531  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       606.2544  VIRIAL  =       802.8126  VOLUME     =     21435.2184
+                                                    Density    =         0.9836
+ DV/DL  =        -2.3658
+ Ewald error estimate:   0.3204E-04
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.22401        0.00000       27.46082
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6701.9120
+Energy at 0.1000 =   -6702.5097
+Energy at 0.2000 =   -6703.1073
+Energy at 0.3000 =   -6703.7050
+Energy at 0.4000 =   -6704.3027
+Energy at 0.5000 =   -6704.9004
+Energy at 0.6000 =   -6705.4981
+Energy at 0.7000 =   -6706.0958
+Energy at 0.8000 =   -6706.6935
+Energy at 0.9000 =   -6707.2911
+Energy at 1.0000 =   -6707.8888
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   280000   TIME(PS) =     780.000  TEMP(K) =   293.52  PRESS =  1440.8
+ Etot   =     -5471.3386  EKtot   =      1236.5502  EPtot      =     -6707.8888
+ BOND   =         2.6551  ANGLE   =         2.1642  DIHED      =         0.2755
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1152.6245
+ EELEC  =     -7865.6081  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       624.2088  VIRIAL  =       -47.0895  VOLUME     =     21578.6954
+                                                    Density    =         0.9771
+ DV/DL  =        -5.9768
+ Ewald error estimate:   0.2443E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   280000   TIME(PS) =     780.000  TEMP(K) =   293.52  PRESS =  1440.8
+ Etot   =     -5471.3386  EKtot   =      1236.5502  EPtot      =     -6707.8888
+ BOND   =         2.6551  ANGLE   =         2.1642  DIHED      =         0.2755
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1152.6245
+ EELEC  =     -7865.6081  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       624.2088  VIRIAL  =       -47.0895  VOLUME     =     21578.6954
+                                                    Density    =         0.9771
+ DV/DL  =        -5.9768
+ Ewald error estimate:   0.2443E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.14625       27.76572       27.38516
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6762.5471
+Energy at 0.1000 =   -6763.2677
+Energy at 0.2000 =   -6763.9883
+Energy at 0.3000 =   -6764.7089
+Energy at 0.4000 =   -6765.4295
+Energy at 0.5000 =   -6766.1501
+Energy at 0.6000 =   -6766.8708
+Energy at 0.7000 =   -6767.5914
+Energy at 0.8000 =   -6768.3120
+Energy at 0.9000 =   -6769.0326
+Energy at 1.0000 =   -6769.7532
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   290000   TIME(PS) =     790.000  TEMP(K) =   302.66  PRESS =  -246.0
+ Etot   =     -5494.6754  EKtot   =      1275.0779  EPtot      =     -6769.7532
+ BOND   =         1.1034  ANGLE   =         2.0771  DIHED      =         0.2097
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       998.4623
+ EELEC  =     -7771.6056  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       638.7203  VIRIAL  =       752.3916  VOLUME     =     21401.6447
+                                                    Density    =         0.9852
+ DV/DL  =        -7.2061
+ Ewald error estimate:   0.2193E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   290000   TIME(PS) =     790.000  TEMP(K) =   302.66  PRESS =  -246.0
+ Etot   =     -5494.6754  EKtot   =      1275.0779  EPtot      =     -6769.7532
+ BOND   =         1.1034  ANGLE   =         2.0771  DIHED      =         0.2097
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       998.4623
+ EELEC  =     -7771.6056  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       638.7203  VIRIAL  =       752.3916  VOLUME     =     21401.6447
+                                                    Density    =         0.9852
+ DV/DL  =        -7.2061
+ Ewald error estimate:   0.2193E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.06689        0.00000       27.30795
+wrapping first mol.:       28.06689        0.00000       27.30795
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6751.2223
+Energy at 0.1000 =   -6751.5634
+Energy at 0.2000 =   -6751.9046
+Energy at 0.3000 =   -6752.2458
+Energy at 0.4000 =   -6752.5870
+Energy at 0.5000 =   -6752.9282
+Energy at 0.6000 =   -6753.2694
+Energy at 0.7000 =   -6753.6105
+Energy at 0.8000 =   -6753.9517
+Energy at 0.9000 =   -6754.2929
+Energy at 1.0000 =   -6754.6341
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   300000   TIME(PS) =     800.000  TEMP(K) =   300.34  PRESS =  -544.0
+ Etot   =     -5489.3353  EKtot   =      1265.2988  EPtot      =     -6754.6341
+ BOND   =         1.2043  ANGLE   =         2.6033  DIHED      =         0.0562
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       942.1465
+ EELEC  =     -7700.6445  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       643.4839  VIRIAL  =       892.7260  VOLUME     =     21221.2616
+                                                    Density    =         0.9936
+ DV/DL  =        -3.4118
+ Ewald error estimate:   0.2682E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   300000   TIME(PS) =     800.000  TEMP(K) =   300.34  PRESS =  -544.0
+ Etot   =     -5489.3353  EKtot   =      1265.2988  EPtot      =     -6754.6341
+ BOND   =         1.2043  ANGLE   =         2.6033  DIHED      =         0.0562
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       942.1465
+ EELEC  =     -7700.6445  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       643.4839  VIRIAL  =       892.7260  VOLUME     =     21221.2616
+                                                    Density    =         0.9936
+ DV/DL  =        -3.4118
+ Ewald error estimate:   0.2682E-03
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+
+| TI region  1
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   300000   TIME(PS) =     800.000  TEMP(K) =   298.22  PRESS =    -5.6
+ Etot   =     -5476.3965  EKtot   =      1256.3691  EPtot      =     -6732.7657
+ BOND   =         1.6516  ANGLE   =         1.7307  DIHED      =         0.2689
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1009.5481
+ EELEC  =     -7745.9649  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       628.2852  VIRIAL  =       630.8574  VOLUME     =     21436.0505
+                                                    Density    =         0.9836
+ DV/DL  =        -4.0026
+ Ewald error estimate:   0.2058E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   300000   TIME(PS) =     800.000  TEMP(K) =     6.67  PRESS =   388.4
+ Etot   =        51.7903  EKtot   =        28.1049  EPtot      =        41.5377
+ BOND   =         1.0976  ANGLE   =         1.0293  DIHED      =         0.2840
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        39.0620
+ EELEC  =        65.3388  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.3837  VIRIAL  =       179.1838  VOLUME     =        93.5490
+                                                    Density    =         0.0043
+ DV/DL  =         2.1857
+ Ewald error estimate:   0.1538E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   300000   TIME(PS) =     800.000  TEMP(K) =   298.22  PRESS =    -5.6
+ Etot   =     -5476.3965  EKtot   =      1256.3691  EPtot      =     -6732.7657
+ BOND   =         1.6516  ANGLE   =         1.7307  DIHED      =         0.2689
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1009.5481
+ EELEC  =     -7745.9649  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       628.2852  VIRIAL  =       630.8574  VOLUME     =     21436.0505
+                                                    Density    =         0.9836
+ DV/DL  =        -4.0026
+ Ewald error estimate:   0.2058E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   300000   TIME(PS) =     800.000  TEMP(K) =     6.67  PRESS =   388.4
+ Etot   =        51.7903  EKtot   =        28.1049  EPtot      =        41.5377
+ BOND   =         1.0976  ANGLE   =         1.0293  DIHED      =         0.2840
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        39.0620
+ EELEC  =        65.3388  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.3837  VIRIAL  =       179.1838  VOLUME     =        93.5490
+                                                    Density    =         0.0043
+ DV/DL  =         2.1857
+ Ewald error estimate:   0.1538E-03
+ ------------------------------------------------------------------------------
+
+
+      DV/DL, AVERAGES OVER   50000 STEPS
+
+
+ NSTEP =   300000   TIME(PS) =     800.000  TEMP(K) =     6.67  PRESS =     0.0
+ Etot   =         0.0000  EKtot   =         0.0000  EPtot      =        -4.0026
+ BOND   =         0.0000  ANGLE   =         0.0000  DIHED      =         0.0000
+ 1-4 NB =         0.0000  1-4 EEL =        -3.8286  VDWAALS    =         0.0000
+ EELEC  =        -0.1741  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =         0.0000  VIRIAL  =         0.0000  VOLUME     =         0.0000
+                                                    Density    =         0.0000
+ DV/DL  =        -4.0026
+ Ewald error estimate:   0.0000E+00
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+wrapping first mol.:       28.10029        0.00000       27.34045
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6768.7695
+Energy at 0.1000 =   -6769.0002
+Energy at 0.2000 =   -6769.2310
+Energy at 0.3000 =   -6769.4617
+Energy at 0.4000 =   -6769.6924
+Energy at 0.5000 =   -6769.9231
+Energy at 0.6000 =   -6770.1538
+Energy at 0.7000 =   -6770.3845
+Energy at 0.8000 =   -6770.6152
+Energy at 0.9000 =   -6770.8459
+Energy at 1.0000 =   -6771.0766
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   310000   TIME(PS) =     810.000  TEMP(K) =   291.61  PRESS =  -402.1
+ Etot   =     -5542.5706  EKtot   =      1228.5061  EPtot      =     -6771.0766
+ BOND   =         0.4739  ANGLE   =         2.7079  DIHED      =         0.0363
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       979.5529
+ EELEC  =     -7753.8476  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       628.4794  VIRIAL  =       813.3840  VOLUME     =     21297.0529
+                                                    Density    =         0.9900
+ DV/DL  =        -2.3071
+ Ewald error estimate:   0.2752E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   310000   TIME(PS) =     810.000  TEMP(K) =   291.61  PRESS =  -402.1
+ Etot   =     -5542.5706  EKtot   =      1228.5061  EPtot      =     -6771.0766
+ BOND   =         0.4739  ANGLE   =         2.7079  DIHED      =         0.0363
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       979.5529
+ EELEC  =     -7753.8476  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       628.4794  VIRIAL  =       813.3840  VOLUME     =     21297.0529
+                                                    Density    =         0.9900
+ DV/DL  =        -2.3071
+ Ewald error estimate:   0.2752E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.15876        0.00000       27.39734
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6697.2635
+Energy at 0.1000 =   -6697.6468
+Energy at 0.2000 =   -6698.0301
+Energy at 0.3000 =   -6698.4133
+Energy at 0.4000 =   -6698.7966
+Energy at 0.5000 =   -6699.1798
+Energy at 0.6000 =   -6699.5631
+Energy at 0.7000 =   -6699.9463
+Energy at 0.8000 =   -6700.3296
+Energy at 0.9000 =   -6700.7128
+Energy at 1.0000 =   -6701.0961
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   320000   TIME(PS) =     820.000  TEMP(K) =   302.28  PRESS =   475.9
+ Etot   =     -5427.6446  EKtot   =      1273.4515  EPtot      =     -6701.0961
+ BOND   =         1.8258  ANGLE   =         2.5187  DIHED      =         0.1495
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1037.3468
+ EELEC  =     -7742.9369  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       638.4434  VIRIAL  =       418.2263  VOLUME     =     21429.8500
+                                                    Density    =         0.9839
+ DV/DL  =        -3.8326
+ Ewald error estimate:   0.6658E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   320000   TIME(PS) =     820.000  TEMP(K) =   302.28  PRESS =   475.9
+ Etot   =     -5427.6446  EKtot   =      1273.4515  EPtot      =     -6701.0961
+ BOND   =         1.8258  ANGLE   =         2.5187  DIHED      =         0.1495
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1037.3468
+ EELEC  =     -7742.9369  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       638.4434  VIRIAL  =       418.2263  VOLUME     =     21429.8500
+                                                    Density    =         0.9839
+ DV/DL  =        -3.8326
+ Ewald error estimate:   0.6658E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.17741        0.00000       27.41549
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6741.8434
+Energy at 0.1000 =   -6742.6145
+Energy at 0.2000 =   -6743.3857
+Energy at 0.3000 =   -6744.1569
+Energy at 0.4000 =   -6744.9280
+Energy at 0.5000 =   -6745.6992
+Energy at 0.6000 =   -6746.4704
+Energy at 0.7000 =   -6747.2416
+Energy at 0.8000 =   -6748.0127
+Energy at 0.9000 =   -6748.7839
+Energy at 1.0000 =   -6749.5551
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   330000   TIME(PS) =     830.000  TEMP(K) =   301.78  PRESS =  -165.9
+ Etot   =     -5478.2071  EKtot   =      1271.3480  EPtot      =     -6749.5551
+ BOND   =         3.1978  ANGLE   =         1.5258  DIHED      =         0.9992
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1001.4111
+ EELEC  =     -7756.6889  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       620.9042  VIRIAL  =       697.8153  VOLUME     =     21472.7721
+                                                    Density    =         0.9819
+ DV/DL  =        -7.7117
+ Ewald error estimate:   0.4423E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   330000   TIME(PS) =     830.000  TEMP(K) =   301.78  PRESS =  -165.9
+ Etot   =     -5478.2071  EKtot   =      1271.3480  EPtot      =     -6749.5551
+ BOND   =         3.1978  ANGLE   =         1.5258  DIHED      =         0.9992
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1001.4111
+ EELEC  =     -7756.6889  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       620.9042  VIRIAL  =       697.8153  VOLUME     =     21472.7721
+                                                    Density    =         0.9819
+ DV/DL  =        -7.7117
+ Ewald error estimate:   0.4423E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.16079        0.00000       27.39931
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6774.3765
+Energy at 0.1000 =   -6774.4044
+Energy at 0.2000 =   -6774.4322
+Energy at 0.3000 =   -6774.4601
+Energy at 0.4000 =   -6774.4879
+Energy at 0.5000 =   -6774.5158
+Energy at 0.6000 =   -6774.5436
+Energy at 0.7000 =   -6774.5715
+Energy at 0.8000 =   -6774.5994
+Energy at 0.9000 =   -6774.6272
+Energy at 1.0000 =   -6774.6551
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   340000   TIME(PS) =     840.000  TEMP(K) =   304.51  PRESS =  -968.4
+ Etot   =     -5491.7862  EKtot   =      1282.8688  EPtot      =     -6774.6551
+ BOND   =         2.2458  ANGLE   =         1.9402  DIHED      =         0.0810
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       933.4725
+ EELEC  =     -7712.3945  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       656.6672  VIRIAL  =      1104.8529  VOLUME     =     21435.1786
+                                                    Density    =         0.9836
+ DV/DL  =        -0.2786
+ Ewald error estimate:   0.2196E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   340000   TIME(PS) =     840.000  TEMP(K) =   304.51  PRESS =  -968.4
+ Etot   =     -5491.7862  EKtot   =      1282.8688  EPtot      =     -6774.6551
+ BOND   =         2.2458  ANGLE   =         1.9402  DIHED      =         0.0810
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       933.4725
+ EELEC  =     -7712.3945  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       656.6672  VIRIAL  =      1104.8529  VOLUME     =     21435.1786
+                                                    Density    =         0.9836
+ DV/DL  =        -0.2786
+ Ewald error estimate:   0.2196E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.18367        0.00000       27.42157
+wrapping first mol.:       28.18367        0.00000       27.42157
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6790.7005
+Energy at 0.1000 =   -6791.1542
+Energy at 0.2000 =   -6791.6080
+Energy at 0.3000 =   -6792.0617
+Energy at 0.4000 =   -6792.5154
+Energy at 0.5000 =   -6792.9692
+Energy at 0.6000 =   -6793.4229
+Energy at 0.7000 =   -6793.8767
+Energy at 0.8000 =   -6794.3304
+Energy at 0.9000 =   -6794.7842
+Energy at 1.0000 =   -6795.2379
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   350000   TIME(PS) =     850.000  TEMP(K) =   304.24  PRESS =   387.8
+ Etot   =     -5513.5024  EKtot   =      1281.7355  EPtot      =     -6795.2379
+ BOND   =         1.0028  ANGLE   =         1.6814  DIHED      =         0.3528
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1072.1886
+ EELEC  =     -7870.4636  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       644.7861  VIRIAL  =       464.8678  VOLUME     =     21486.8075
+                                                    Density    =         0.9813
+ DV/DL  =        -4.5374
+ Ewald error estimate:   0.4462E-05
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   350000   TIME(PS) =     850.000  TEMP(K) =   304.24  PRESS =   387.8
+ Etot   =     -5513.5024  EKtot   =      1281.7355  EPtot      =     -6795.2379
+ BOND   =         1.0028  ANGLE   =         1.6814  DIHED      =         0.3528
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1072.1886
+ EELEC  =     -7870.4636  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       644.7861  VIRIAL  =       464.8678  VOLUME     =     21486.8075
+                                                    Density    =         0.9813
+ DV/DL  =        -4.5374
+ Ewald error estimate:   0.4462E-05
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+
+| TI region  1
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   350000   TIME(PS) =     850.000  TEMP(K) =   297.53  PRESS =    12.2
+ Etot   =     -5484.6403  EKtot   =      1253.4687  EPtot      =     -6738.1090
+ BOND   =         1.6377  ANGLE   =         1.8645  DIHED      =         0.2891
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1010.0144
+ EELEC  =     -7751.9147  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       626.1960  VIRIAL  =       620.5772  VOLUME     =     21395.3785
+                                                    Density    =         0.9855
+ DV/DL  =        -3.7858
+ Ewald error estimate:   0.2075E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   350000   TIME(PS) =     850.000  TEMP(K) =     6.48  PRESS =   391.4
+ Etot   =        48.3451  EKtot   =        27.2989  EPtot      =        38.8435
+ BOND   =         0.9917  ANGLE   =         1.0936  DIHED      =         0.3086
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        37.7474
+ EELEC  =        60.1616  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.4542  VIRIAL  =       180.3410  VOLUME     =        77.9324
+                                                    Density    =         0.0036
+ DV/DL  =         2.1236
+ Ewald error estimate:   0.1576E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   350000   TIME(PS) =     850.000  TEMP(K) =   297.53  PRESS =    12.2
+ Etot   =     -5484.6403  EKtot   =      1253.4687  EPtot      =     -6738.1090
+ BOND   =         1.6377  ANGLE   =         1.8645  DIHED      =         0.2891
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1010.0144
+ EELEC  =     -7751.9147  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       626.1960  VIRIAL  =       620.5772  VOLUME     =     21395.3785
+                                                    Density    =         0.9855
+ DV/DL  =        -3.7858
+ Ewald error estimate:   0.2075E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   350000   TIME(PS) =     850.000  TEMP(K) =     6.48  PRESS =   391.4
+ Etot   =        48.3451  EKtot   =        27.2989  EPtot      =        38.8435
+ BOND   =         0.9917  ANGLE   =         1.0936  DIHED      =         0.3086
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        37.7474
+ EELEC  =        60.1616  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.4542  VIRIAL  =       180.3410  VOLUME     =        77.9324
+                                                    Density    =         0.0036
+ DV/DL  =         2.1236
+ Ewald error estimate:   0.1576E-03
+ ------------------------------------------------------------------------------
+
+
+      DV/DL, AVERAGES OVER   50000 STEPS
+
+
+ NSTEP =   350000   TIME(PS) =     850.000  TEMP(K) =     6.48  PRESS =     0.0
+ Etot   =         0.0000  EKtot   =         0.0000  EPtot      =        -3.7858
+ BOND   =         0.0000  ANGLE   =         0.0000  DIHED      =         0.0000
+ 1-4 NB =         0.0000  1-4 EEL =        -3.8298  VDWAALS    =         0.0000
+ EELEC  =         0.0440  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =         0.0000  VIRIAL  =         0.0000  VOLUME     =         0.0000
+                                                    Density    =         0.0000
+ DV/DL  =        -3.7858
+ Ewald error estimate:   0.0000E+00
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+wrapping first mol.:       28.12989        0.00000       27.36924
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6751.3513
+Energy at 0.1000 =   -6751.3529
+Energy at 0.2000 =   -6751.3544
+Energy at 0.3000 =   -6751.3560
+Energy at 0.4000 =   -6751.3575
+Energy at 0.5000 =   -6751.3591
+Energy at 0.6000 =   -6751.3606
+Energy at 0.7000 =   -6751.3621
+Energy at 0.8000 =   -6751.3637
+Energy at 0.9000 =   -6751.3652
+Energy at 1.0000 =   -6751.3668
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   360000   TIME(PS) =     860.000  TEMP(K) =   299.14  PRESS =   -60.6
+ Etot   =     -5491.1167  EKtot   =      1260.2501  EPtot      =     -6751.3668
+ BOND   =         1.9003  ANGLE   =         2.2567  DIHED      =         0.2746
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1010.8684
+ EELEC  =     -7766.6667  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       617.3630  VIRIAL  =       645.3002  VOLUME     =     21364.2518
+                                                    Density    =         0.9869
+ DV/DL  =        -0.0154
+ Ewald error estimate:   0.1726E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   360000   TIME(PS) =     860.000  TEMP(K) =   299.14  PRESS =   -60.6
+ Etot   =     -5491.1167  EKtot   =      1260.2501  EPtot      =     -6751.3668
+ BOND   =         1.9003  ANGLE   =         2.2567  DIHED      =         0.2746
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1010.8684
+ EELEC  =     -7766.6667  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       617.3630  VIRIAL  =       645.3002  VOLUME     =     21364.2518
+                                                    Density    =         0.9869
+ DV/DL  =        -0.0154
+ Ewald error estimate:   0.1726E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.09713       27.71726       27.33737
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6757.5115
+Energy at 0.1000 =   -6758.1575
+Energy at 0.2000 =   -6758.8035
+Energy at 0.3000 =   -6759.4496
+Energy at 0.4000 =   -6760.0956
+Energy at 0.5000 =   -6760.7416
+Energy at 0.6000 =   -6761.3876
+Energy at 0.7000 =   -6762.0337
+Energy at 0.8000 =   -6762.6797
+Energy at 0.9000 =   -6763.3257
+Energy at 1.0000 =   -6763.9717
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   370000   TIME(PS) =     870.000  TEMP(K) =   294.56  PRESS =   -30.1
+ Etot   =     -5523.0444  EKtot   =      1240.9273  EPtot      =     -6763.9717
+ BOND   =         2.9523  ANGLE   =         1.0982  DIHED      =         0.0063
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1013.4782
+ EELEC  =     -7781.5066  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       623.3592  VIRIAL  =       637.1754  VOLUME     =     21289.6867
+                                                    Density    =         0.9904
+ DV/DL  =        -6.4602
+ Ewald error estimate:   0.2662E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   370000   TIME(PS) =     870.000  TEMP(K) =   294.56  PRESS =   -30.1
+ Etot   =     -5523.0444  EKtot   =      1240.9273  EPtot      =     -6763.9717
+ BOND   =         2.9523  ANGLE   =         1.0982  DIHED      =         0.0063
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1013.4782
+ EELEC  =     -7781.5066  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       623.3592  VIRIAL  =       637.1754  VOLUME     =     21289.6867
+                                                    Density    =         0.9904
+ DV/DL  =        -6.4602
+ Ewald error estimate:   0.2662E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.15903       27.77832       27.39760
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6726.1173
+Energy at 0.1000 =   -6726.5106
+Energy at 0.2000 =   -6726.9038
+Energy at 0.3000 =   -6727.2971
+Energy at 0.4000 =   -6727.6904
+Energy at 0.5000 =   -6728.0836
+Energy at 0.6000 =   -6728.4769
+Energy at 0.7000 =   -6728.8702
+Energy at 0.8000 =   -6729.2635
+Energy at 0.9000 =   -6729.6567
+Energy at 1.0000 =   -6730.0500
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   380000   TIME(PS) =     880.000  TEMP(K) =   299.23  PRESS =  -133.0
+ Etot   =     -5469.4195  EKtot   =      1260.6305  EPtot      =     -6730.0500
+ BOND   =         1.5481  ANGLE   =         1.9031  DIHED      =         0.1026
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1007.4525
+ EELEC  =     -7741.0563  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       633.6618  VIRIAL  =       695.2240  VOLUME     =     21430.7485
+                                                    Density    =         0.9839
+ DV/DL  =        -3.9327
+ Ewald error estimate:   0.1428E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   380000   TIME(PS) =     880.000  TEMP(K) =   299.23  PRESS =  -133.0
+ Etot   =     -5469.4195  EKtot   =      1260.6305  EPtot      =     -6730.0500
+ BOND   =         1.5481  ANGLE   =         1.9031  DIHED      =         0.1026
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1007.4525
+ EELEC  =     -7741.0563  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       633.6618  VIRIAL  =       695.2240  VOLUME     =     21430.7485
+                                                    Density    =         0.9839
+ DV/DL  =        -3.9327
+ Ewald error estimate:   0.1428E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.10118        0.00000       27.34132
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6792.9102
+Energy at 0.1000 =   -6793.7096
+Energy at 0.2000 =   -6794.5090
+Energy at 0.3000 =   -6795.3083
+Energy at 0.4000 =   -6796.1077
+Energy at 0.5000 =   -6796.9071
+Energy at 0.6000 =   -6797.7065
+Energy at 0.7000 =   -6798.5059
+Energy at 0.8000 =   -6799.3053
+Energy at 0.9000 =   -6800.1047
+Energy at 1.0000 =   -6800.9041
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   390000   TIME(PS) =     890.000  TEMP(K) =   298.32  PRESS =  -187.3
+ Etot   =     -5544.1450  EKtot   =      1256.7591  EPtot      =     -6800.9041
+ BOND   =         1.4713  ANGLE   =         2.7457  DIHED      =         0.1009
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1004.1590
+ EELEC  =     -7809.3810  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       646.3169  VIRIAL  =       732.4733  VOLUME     =     21298.9826
+                                                    Density    =         0.9899
+ DV/DL  =        -7.9939
+ Ewald error estimate:   0.3172E-04
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   390000   TIME(PS) =     890.000  TEMP(K) =   298.32  PRESS =  -187.3
+ Etot   =     -5544.1450  EKtot   =      1256.7591  EPtot      =     -6800.9041
+ BOND   =         1.4713  ANGLE   =         2.7457  DIHED      =         0.1009
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1004.1590
+ EELEC  =     -7809.3810  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       646.3169  VIRIAL  =       732.4733  VOLUME     =     21298.9826
+                                                    Density    =         0.9899
+ DV/DL  =        -7.9939
+ Ewald error estimate:   0.3172E-04
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.16621       27.78541       27.40459
+wrapping first mol.:       28.16621       27.78541       27.40459
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6748.7343
+Energy at 0.1000 =   -6749.1450
+Energy at 0.2000 =   -6749.5557
+Energy at 0.3000 =   -6749.9664
+Energy at 0.4000 =   -6750.3771
+Energy at 0.5000 =   -6750.7878
+Energy at 0.6000 =   -6751.1986
+Energy at 0.7000 =   -6751.6093
+Energy at 0.8000 =   -6752.0200
+Energy at 0.9000 =   -6752.4307
+Energy at 1.0000 =   -6752.8414
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   400000   TIME(PS) =     900.000  TEMP(K) =   291.45  PRESS =   -40.4
+ Etot   =     -5524.9949  EKtot   =      1227.8465  EPtot      =     -6752.8414
+ BOND   =         0.4123  ANGLE   =         2.0635  DIHED      =         0.7716
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1021.3122
+ EELEC  =     -7777.4011  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       606.1676  VIRIAL  =       624.8560  VOLUME     =     21447.1222
+                                                    Density    =         0.9831
+ DV/DL  =        -4.1071
+ Ewald error estimate:   0.4576E-04
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   400000   TIME(PS) =     900.000  TEMP(K) =   291.45  PRESS =   -40.4
+ Etot   =     -5524.9949  EKtot   =      1227.8465  EPtot      =     -6752.8414
+ BOND   =         0.4123  ANGLE   =         2.0635  DIHED      =         0.7716
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1021.3122
+ EELEC  =     -7777.4011  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       606.1676  VIRIAL  =       624.8560  VOLUME     =     21447.1222
+                                                    Density    =         0.9831
+ DV/DL  =        -4.1071
+ Ewald error estimate:   0.4576E-04
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+
+| TI region  1
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   400000   TIME(PS) =     900.000  TEMP(K) =   296.75  PRESS =    -0.7
+ Etot   =     -5492.7819  EKtot   =      1250.1482  EPtot      =     -6742.9301
+ BOND   =         1.5571  ANGLE   =         1.8929  DIHED      =         0.2647
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1011.7241
+ EELEC  =     -7758.3690  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       623.7465  VIRIAL  =       624.0512  VOLUME     =     21383.9597
+                                                    Density    =         0.9860
+ DV/DL  =        -3.8041
+ Ewald error estimate:   0.1979E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   400000   TIME(PS) =     900.000  TEMP(K) =     6.27  PRESS =   388.1
+ Etot   =        42.0123  EKtot   =        26.4026  EPtot      =        36.2186
+ BOND   =         0.9594  ANGLE   =         1.1167  DIHED      =         0.2867
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        38.1918
+ EELEC  =        58.9554  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.1622  VIRIAL  =       179.8302  VOLUME     =        84.5652
+                                                    Density    =         0.0039
+ DV/DL  =         1.9849
+ Ewald error estimate:   0.1506E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   400000   TIME(PS) =     900.000  TEMP(K) =   296.75  PRESS =    -0.7
+ Etot   =     -5492.7819  EKtot   =      1250.1482  EPtot      =     -6742.9301
+ BOND   =         1.5571  ANGLE   =         1.8929  DIHED      =         0.2647
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1011.7241
+ EELEC  =     -7758.3690  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       623.7465  VIRIAL  =       624.0512  VOLUME     =     21383.9597
+                                                    Density    =         0.9860
+ DV/DL  =        -3.8041
+ Ewald error estimate:   0.1979E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   400000   TIME(PS) =     900.000  TEMP(K) =     6.27  PRESS =   388.1
+ Etot   =        42.0123  EKtot   =        26.4026  EPtot      =        36.2186
+ BOND   =         0.9594  ANGLE   =         1.1167  DIHED      =         0.2867
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        38.1918
+ EELEC  =        58.9554  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.1622  VIRIAL  =       179.8302  VOLUME     =        84.5652
+                                                    Density    =         0.0039
+ DV/DL  =         1.9849
+ Ewald error estimate:   0.1506E-03
+ ------------------------------------------------------------------------------
+
+
+      DV/DL, AVERAGES OVER   50000 STEPS
+
+
+ NSTEP =   400000   TIME(PS) =     900.000  TEMP(K) =     6.27  PRESS =     0.0
+ Etot   =         0.0000  EKtot   =         0.0000  EPtot      =        -3.8041
+ BOND   =         0.0000  ANGLE   =         0.0000  DIHED      =         0.0000
+ 1-4 NB =         0.0000  1-4 EEL =        -3.8287  VDWAALS    =         0.0000
+ EELEC  =         0.0247  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =         0.0000  VIRIAL  =         0.0000  VOLUME     =         0.0000
+                                                    Density    =         0.0000
+ DV/DL  =        -3.8041
+ Ewald error estimate:   0.0000E+00
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+wrapping first mol.:       28.18003       27.79904       27.41804
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6664.8253
+Energy at 0.1000 =   -6665.2100
+Energy at 0.2000 =   -6665.5948
+Energy at 0.3000 =   -6665.9795
+Energy at 0.4000 =   -6666.3643
+Energy at 0.5000 =   -6666.7490
+Energy at 0.6000 =   -6667.1338
+Energy at 0.7000 =   -6667.5185
+Energy at 0.8000 =   -6667.9033
+Energy at 0.9000 =   -6668.2881
+Energy at 1.0000 =   -6668.6728
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   410000   TIME(PS) =     910.000  TEMP(K) =   304.16  PRESS =   231.5
+ Etot   =     -5387.2880  EKtot   =      1281.3848  EPtot      =     -6668.6728
+ BOND   =         1.3629  ANGLE   =         2.7013  DIHED      =         0.6693
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1002.3127
+ EELEC  =     -7675.7190  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       642.9961  VIRIAL  =       535.6191  VOLUME     =     21478.5756
+                                                    Density    =         0.9817
+ DV/DL  =        -3.8475
+ Ewald error estimate:   0.1055E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   410000   TIME(PS) =     910.000  TEMP(K) =   304.16  PRESS =   231.5
+ Etot   =     -5387.2880  EKtot   =      1281.3848  EPtot      =     -6668.6728
+ BOND   =         1.3629  ANGLE   =         2.7013  DIHED      =         0.6693
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1002.3127
+ EELEC  =     -7675.7190  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       642.9961  VIRIAL  =       535.6191  VOLUME     =     21478.5756
+                                                    Density    =         0.9817
+ DV/DL  =        -3.8475
+ Ewald error estimate:   0.1055E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.14014       27.75969       27.37922
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6750.0071
+Energy at 0.1000 =   -6750.2116
+Energy at 0.2000 =   -6750.4162
+Energy at 0.3000 =   -6750.6207
+Energy at 0.4000 =   -6750.8252
+Energy at 0.5000 =   -6751.0298
+Energy at 0.6000 =   -6751.2343
+Energy at 0.7000 =   -6751.4389
+Energy at 0.8000 =   -6751.6434
+Energy at 0.9000 =   -6751.8479
+Energy at 1.0000 =   -6752.0525
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   420000   TIME(PS) =     920.000  TEMP(K) =   286.72  PRESS =  -120.6
+ Etot   =     -5544.1538  EKtot   =      1207.8987  EPtot      =     -6752.0525
+ BOND   =         1.9697  ANGLE   =         2.8599  DIHED      =         0.0078
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1003.4763
+ EELEC  =     -7760.3662  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       613.7932  VIRIAL  =       669.4779  VOLUME     =     21387.6566
+                                                    Density    =         0.9858
+ DV/DL  =        -2.0454
+ Ewald error estimate:   0.9692E-04
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   420000   TIME(PS) =     920.000  TEMP(K) =   286.72  PRESS =  -120.6
+ Etot   =     -5544.1538  EKtot   =      1207.8987  EPtot      =     -6752.0525
+ BOND   =         1.9697  ANGLE   =         2.8599  DIHED      =         0.0078
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1003.4763
+ EELEC  =     -7760.3662  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       613.7932  VIRIAL  =       669.4779  VOLUME     =     21387.6566
+                                                    Density    =         0.9858
+ DV/DL  =        -2.0454
+ Ewald error estimate:   0.9692E-04
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.17361       27.79270       27.41178
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6726.4643
+Energy at 0.1000 =   -6726.7290
+Energy at 0.2000 =   -6726.9937
+Energy at 0.3000 =   -6727.2584
+Energy at 0.4000 =   -6727.5231
+Energy at 0.5000 =   -6727.7878
+Energy at 0.6000 =   -6728.0525
+Energy at 0.7000 =   -6728.3172
+Energy at 0.8000 =   -6728.5819
+Energy at 0.9000 =   -6728.8466
+Energy at 1.0000 =   -6729.1113
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   430000   TIME(PS) =     930.000  TEMP(K) =   299.11  PRESS =  -209.6
+ Etot   =     -5469.0155  EKtot   =      1260.0958  EPtot      =     -6729.1113
+ BOND   =         0.8512  ANGLE   =         3.0283  DIHED      =         0.0046
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       988.9504
+ EELEC  =     -7721.9459  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       614.1504  VIRIAL  =       711.3023  VOLUME     =     21464.0929
+                                                    Density    =         0.9823
+ DV/DL  =        -2.6470
+ Ewald error estimate:   0.4013E-04
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   430000   TIME(PS) =     930.000  TEMP(K) =   299.11  PRESS =  -209.6
+ Etot   =     -5469.0155  EKtot   =      1260.0958  EPtot      =     -6729.1113
+ BOND   =         0.8512  ANGLE   =         3.0283  DIHED      =         0.0046
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       988.9504
+ EELEC  =     -7721.9459  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       614.1504  VIRIAL  =       711.3023  VOLUME     =     21464.0929
+                                                    Density    =         0.9823
+ DV/DL  =        -2.6470
+ Ewald error estimate:   0.4013E-04
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.20601       27.82467       27.44331
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6723.7331
+Energy at 0.1000 =   -6724.0803
+Energy at 0.2000 =   -6724.4276
+Energy at 0.3000 =   -6724.7748
+Energy at 0.4000 =   -6725.1221
+Energy at 0.5000 =   -6725.4693
+Energy at 0.6000 =   -6725.8166
+Energy at 0.7000 =   -6726.1638
+Energy at 0.8000 =   -6726.5111
+Energy at 0.9000 =   -6726.8583
+Energy at 1.0000 =   -6727.2056
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   440000   TIME(PS) =     940.000  TEMP(K) =   292.00  PRESS =   811.6
+ Etot   =     -5497.0726  EKtot   =      1230.1329  EPtot      =     -6727.2056
+ BOND   =         2.0425  ANGLE   =         1.6323  DIHED      =         0.7615
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1105.8100
+ EELEC  =     -7837.4519  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       613.5739  VIRIAL  =       236.1616  VOLUME     =     21537.7430
+                                                    Density    =         0.9790
+ DV/DL  =        -3.4725
+ Ewald error estimate:   0.3265E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   440000   TIME(PS) =     940.000  TEMP(K) =   292.00  PRESS =   811.6
+ Etot   =     -5497.0726  EKtot   =      1230.1329  EPtot      =     -6727.2056
+ BOND   =         2.0425  ANGLE   =         1.6323  DIHED      =         0.7615
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1105.8100
+ EELEC  =     -7837.4519  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       613.5739  VIRIAL  =       236.1616  VOLUME     =     21537.7430
+                                                    Density    =         0.9790
+ DV/DL  =        -3.4725
+ Ewald error estimate:   0.3265E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.13405       27.75368       27.37329
+wrapping first mol.:       28.13405       27.75368       27.37329
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6820.3814
+Energy at 0.1000 =   -6820.7530
+Energy at 0.2000 =   -6821.1247
+Energy at 0.3000 =   -6821.4964
+Energy at 0.4000 =   -6821.8681
+Energy at 0.5000 =   -6822.2398
+Energy at 0.6000 =   -6822.6114
+Energy at 0.7000 =   -6822.9831
+Energy at 0.8000 =   -6823.3548
+Energy at 0.9000 =   -6823.7265
+Energy at 1.0000 =   -6824.0982
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   450000   TIME(PS) =     950.000  TEMP(K) =   293.66  PRESS =   310.7
+ Etot   =     -5586.9502  EKtot   =      1237.1479  EPtot      =     -6824.0982
+ BOND   =         1.6724  ANGLE   =         2.7499  DIHED      =         0.2280
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1074.8208
+ EELEC  =     -7903.5693  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       619.7450  VIRIAL  =       476.3464  VOLUME     =     21373.5595
+                                                    Density    =         0.9865
+ DV/DL  =        -3.7168
+ Ewald error estimate:   0.3063E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   450000   TIME(PS) =     950.000  TEMP(K) =   293.66  PRESS =   310.7
+ Etot   =     -5586.9502  EKtot   =      1237.1479  EPtot      =     -6824.0982
+ BOND   =         1.6724  ANGLE   =         2.7499  DIHED      =         0.2280
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1074.8208
+ EELEC  =     -7903.5693  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       619.7450  VIRIAL  =       476.3464  VOLUME     =     21373.5595
+                                                    Density    =         0.9865
+ DV/DL  =        -3.7168
+ Ewald error estimate:   0.3063E-03
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+
+| TI region  1
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   450000   TIME(PS) =     950.000  TEMP(K) =   297.81  PRESS =    -2.1
+ Etot   =     -5478.9735  EKtot   =      1254.6399  EPtot      =     -6733.6134
+ BOND   =         1.5007  ANGLE   =         1.8242  DIHED      =         0.3348
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1011.4051
+ EELEC  =     -7748.6781  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       626.4169  VIRIAL  =       627.3689  VOLUME     =     21450.4348
+                                                    Density    =         0.9830
+ DV/DL  =        -3.7947
+ Ewald error estimate:   0.1998E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   450000   TIME(PS) =     950.000  TEMP(K) =     6.54  PRESS =   390.3
+ Etot   =        48.9303  EKtot   =        27.5486  EPtot      =        38.8547
+ BOND   =         0.9065  ANGLE   =         1.0856  DIHED      =         0.3137
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        37.6609
+ EELEC  =        60.1763  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.0343  VIRIAL  =       180.2210  VOLUME     =        70.3805
+                                                    Density    =         0.0032
+ DV/DL  =         2.0756
+ Ewald error estimate:   0.1510E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   450000   TIME(PS) =     950.000  TEMP(K) =   297.81  PRESS =    -2.1
+ Etot   =     -5478.9735  EKtot   =      1254.6399  EPtot      =     -6733.6134
+ BOND   =         1.5007  ANGLE   =         1.8242  DIHED      =         0.3348
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1011.4051
+ EELEC  =     -7748.6781  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       626.4169  VIRIAL  =       627.3689  VOLUME     =     21450.4348
+                                                    Density    =         0.9830
+ DV/DL  =        -3.7947
+ Ewald error estimate:   0.1998E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   450000   TIME(PS) =     950.000  TEMP(K) =     6.54  PRESS =   390.3
+ Etot   =        48.9303  EKtot   =        27.5486  EPtot      =        38.8547
+ BOND   =         0.9065  ANGLE   =         1.0856  DIHED      =         0.3137
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        37.6609
+ EELEC  =        60.1763  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.0343  VIRIAL  =       180.2210  VOLUME     =        70.3805
+                                                    Density    =         0.0032
+ DV/DL  =         2.0756
+ Ewald error estimate:   0.1510E-03
+ ------------------------------------------------------------------------------
+
+
+      DV/DL, AVERAGES OVER   50000 STEPS
+
+
+ NSTEP =   450000   TIME(PS) =     950.000  TEMP(K) =     6.54  PRESS =     0.0
+ Etot   =         0.0000  EKtot   =         0.0000  EPtot      =        -3.7947
+ BOND   =         0.0000  ANGLE   =         0.0000  DIHED      =         0.0000
+ 1-4 NB =         0.0000  1-4 EEL =        -3.8305  VDWAALS    =         0.0000
+ EELEC  =         0.0358  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =         0.0000  VIRIAL  =         0.0000  VOLUME     =         0.0000
+                                                    Density    =         0.0000
+ DV/DL  =        -3.7947
+ Ewald error estimate:   0.0000E+00
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+wrapping first mol.:       28.16534       27.78455       27.40374
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6758.1934
+Energy at 0.1000 =   -6758.6490
+Energy at 0.2000 =   -6759.1046
+Energy at 0.3000 =   -6759.5602
+Energy at 0.4000 =   -6760.0158
+Energy at 0.5000 =   -6760.4714
+Energy at 0.6000 =   -6760.9270
+Energy at 0.7000 =   -6761.3826
+Energy at 0.8000 =   -6761.8382
+Energy at 0.9000 =   -6762.2938
+Energy at 1.0000 =   -6762.7494
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   460000   TIME(PS) =     960.000  TEMP(K) =   301.48  PRESS =     2.5
+ Etot   =     -5492.6645  EKtot   =      1270.0848  EPtot      =     -6762.7494
+ BOND   =         0.5197  ANGLE   =         3.0252  DIHED      =         0.8046
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1036.0291
+ EELEC  =     -7803.1279  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       643.0081  VIRIAL  =       641.8396  VOLUME     =     21445.1087
+                                                    Density    =         0.9832
+ DV/DL  =        -4.5560
+ Ewald error estimate:   0.6479E-04
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   460000   TIME(PS) =     960.000  TEMP(K) =   301.48  PRESS =     2.5
+ Etot   =     -5492.6645  EKtot   =      1270.0848  EPtot      =     -6762.7494
+ BOND   =         0.5197  ANGLE   =         3.0252  DIHED      =         0.8046
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1036.0291
+ EELEC  =     -7803.1279  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       643.0081  VIRIAL  =       641.8396  VOLUME     =     21445.1087
+                                                    Density    =         0.9832
+ DV/DL  =        -4.5560
+ Ewald error estimate:   0.6479E-04
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.18452       27.80347       27.42240
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6738.3589
+Energy at 0.1000 =   -6738.7054
+Energy at 0.2000 =   -6739.0519
+Energy at 0.3000 =   -6739.3984
+Energy at 0.4000 =   -6739.7449
+Energy at 0.5000 =   -6740.0914
+Energy at 0.6000 =   -6740.4379
+Energy at 0.7000 =   -6740.7844
+Energy at 0.8000 =   -6741.1309
+Energy at 0.9000 =   -6741.4774
+Energy at 1.0000 =   -6741.8239
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   470000   TIME(PS) =     970.000  TEMP(K) =   300.28  PRESS =  -794.4
+ Etot   =     -5476.7947  EKtot   =      1265.0292  EPtot      =     -6741.8239
+ BOND   =         1.0764  ANGLE   =         1.4506  DIHED      =         0.2834
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       942.1211
+ EELEC  =     -7686.7554  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       617.9671  VIRIAL  =       986.5571  VOLUME     =     21489.3343
+                                                    Density    =         0.9812
+ DV/DL  =        -3.4650
+ Ewald error estimate:   0.2457E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   470000   TIME(PS) =     970.000  TEMP(K) =   300.28  PRESS =  -794.4
+ Etot   =     -5476.7947  EKtot   =      1265.0292  EPtot      =     -6741.8239
+ BOND   =         1.0764  ANGLE   =         1.4506  DIHED      =         0.2834
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       942.1211
+ EELEC  =     -7686.7554  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       617.9671  VIRIAL  =       986.5571  VOLUME     =     21489.3343
+                                                    Density    =         0.9812
+ DV/DL  =        -3.4650
+ Ewald error estimate:   0.2457E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.19078       27.80964       27.42849
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6755.4072
+Energy at 0.1000 =   -6755.6825
+Energy at 0.2000 =   -6755.9579
+Energy at 0.3000 =   -6756.2332
+Energy at 0.4000 =   -6756.5085
+Energy at 0.5000 =   -6756.7839
+Energy at 0.6000 =   -6757.0592
+Energy at 0.7000 =   -6757.3345
+Energy at 0.8000 =   -6757.6099
+Energy at 0.9000 =   -6757.8852
+Energy at 1.0000 =   -6758.1605
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   480000   TIME(PS) =     980.000  TEMP(K) =   293.06  PRESS =  -423.9
+ Etot   =     -5523.5383  EKtot   =      1234.6222  EPtot      =     -6758.1605
+ BOND   =         0.5383  ANGLE   =         2.1152  DIHED      =         0.3986
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       979.4649
+ EELEC  =     -7740.6776  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       613.8396  VIRIAL  =       810.6419  VOLUME     =     21503.4658
+                                                    Density    =         0.9805
+ DV/DL  =        -2.7533
+ Ewald error estimate:   0.1249E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   480000   TIME(PS) =     980.000  TEMP(K) =   293.06  PRESS =  -423.9
+ Etot   =     -5523.5383  EKtot   =      1234.6222  EPtot      =     -6758.1605
+ BOND   =         0.5383  ANGLE   =         2.1152  DIHED      =         0.3986
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       979.4649
+ EELEC  =     -7740.6776  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       613.8396  VIRIAL  =       810.6419  VOLUME     =     21503.4658
+                                                    Density    =         0.9805
+ DV/DL  =        -2.7533
+ Ewald error estimate:   0.1249E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.15376       27.77312       27.39247
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6716.0353
+Energy at 0.1000 =   -6716.2442
+Energy at 0.2000 =   -6716.4530
+Energy at 0.3000 =   -6716.6619
+Energy at 0.4000 =   -6716.8708
+Energy at 0.5000 =   -6717.0796
+Energy at 0.6000 =   -6717.2885
+Energy at 0.7000 =   -6717.4974
+Energy at 0.8000 =   -6717.7062
+Energy at 0.9000 =   -6717.9151
+Energy at 1.0000 =   -6718.1240
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   490000   TIME(PS) =     990.000  TEMP(K) =   303.72  PRESS =   214.9
+ Etot   =     -5438.5961  EKtot   =      1279.5279  EPtot      =     -6718.1240
+ BOND   =         2.3555  ANGLE   =         3.5568  DIHED      =         0.6135
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1028.7766
+ EELEC  =     -7753.4264  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       638.6566  VIRIAL  =       539.2830  VOLUME     =     21418.5597
+                                                    Density    =         0.9844
+ DV/DL  =        -2.0887
+ Ewald error estimate:   0.1448E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   490000   TIME(PS) =     990.000  TEMP(K) =   303.72  PRESS =   214.9
+ Etot   =     -5438.5961  EKtot   =      1279.5279  EPtot      =     -6718.1240
+ BOND   =         2.3555  ANGLE   =         3.5568  DIHED      =         0.6135
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1028.7766
+ EELEC  =     -7753.4264  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       638.6566  VIRIAL  =       539.2830  VOLUME     =     21418.5597
+                                                    Density    =         0.9844
+ DV/DL  =        -2.0887
+ Ewald error estimate:   0.1448E-03
+ ------------------------------------------------------------------------------
+
+wrapping first mol.:       28.14113       27.76066       27.38018
+wrapping first mol.:       28.14113       27.76066       27.38018
+
+MBAR Energy analysis:
+Energy at 0.0000 =   -6744.9689
+Energy at 0.1000 =   -6745.1279
+Energy at 0.2000 =   -6745.2868
+Energy at 0.3000 =   -6745.4457
+Energy at 0.4000 =   -6745.6046
+Energy at 0.5000 =   -6745.7635
+Energy at 0.6000 =   -6745.9225
+Energy at 0.7000 =   -6746.0814
+Energy at 0.8000 =   -6746.2403
+Energy at 0.9000 =   -6746.3992
+Energy at 1.0000 =   -6746.5582
+ ------------------------------------------------------------------------------
+
+
+| TI region  1
+
+
+ NSTEP =   500000   TIME(PS) =    1000.000  TEMP(K) =   294.84  PRESS =  -450.7
+ Etot   =     -5504.4282  EKtot   =      1242.1300  EPtot      =     -6746.5582
+ BOND   =         1.9141  ANGLE   =         1.6949  DIHED      =         0.0145
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       973.0945
+ EELEC  =     -7723.2761  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       640.1361  VIRIAL  =       848.2758  VOLUME     =     21390.0576
+                                                    Density    =         0.9857
+ DV/DL  =        -1.5892
+ Ewald error estimate:   0.3673E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+ NSTEP =   500000   TIME(PS) =    1000.000  TEMP(K) =   294.84  PRESS =  -450.7
+ Etot   =     -5504.4282  EKtot   =      1242.1300  EPtot      =     -6746.5582
+ BOND   =         1.9141  ANGLE   =         1.6949  DIHED      =         0.0145
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =       973.0945
+ EELEC  =     -7723.2761  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       640.1361  VIRIAL  =       848.2758  VOLUME     =     21390.0576
+                                                    Density    =         0.9857
+ DV/DL  =        -1.5892
+ Ewald error estimate:   0.3673E-03
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+
+| TI region  1
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   500000   TIME(PS) =    1000.000  TEMP(K) =   298.32  PRESS =     1.7
+ Etot   =     -5471.4364  EKtot   =      1256.7555  EPtot      =     -6728.1919
+ BOND   =         1.7120  ANGLE   =         2.0584  DIHED      =         0.3096
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1005.3583
+ EELEC  =     -7737.6302  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       625.9987  VIRIAL  =       625.2182  VOLUME     =     21391.8042
+                                                    Density    =         0.9857
+ DV/DL  =        -3.8188
+ Ewald error estimate:   0.2086E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   500000   TIME(PS) =    1000.000  TEMP(K) =     6.26  PRESS =   375.3
+ Etot   =        45.5369  EKtot   =        26.3605  EPtot      =        38.2497
+ BOND   =         1.1290  ANGLE   =         1.1710  DIHED      =         0.3072
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        37.6451
+ EELEC  =        60.4906  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        18.7017  VIRIAL  =       173.9937  VOLUME     =        77.8627
+                                                    Density    =         0.0036
+ DV/DL  =         2.1480
+ Ewald error estimate:   0.1560E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+      A V E R A G E S   O V E R   50000 S T E P S
+
+
+ NSTEP =   500000   TIME(PS) =    1000.000  TEMP(K) =   298.32  PRESS =     1.7
+ Etot   =     -5471.4364  EKtot   =      1256.7555  EPtot      =     -6728.1919
+ BOND   =         1.7120  ANGLE   =         2.0584  DIHED      =         0.3096
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1005.3583
+ EELEC  =     -7737.6302  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       625.9987  VIRIAL  =       625.2182  VOLUME     =     21391.8042
+                                                    Density    =         0.9857
+ DV/DL  =        -3.8188
+ Ewald error estimate:   0.2086E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   500000   TIME(PS) =    1000.000  TEMP(K) =     6.26  PRESS =   375.3
+ Etot   =        45.5369  EKtot   =        26.3605  EPtot      =        38.2497
+ BOND   =         1.1290  ANGLE   =         1.1710  DIHED      =         0.3072
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        37.6451
+ EELEC  =        60.4906  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        18.7017  VIRIAL  =       173.9937  VOLUME     =        77.8627
+                                                    Density    =         0.0036
+ DV/DL  =         2.1480
+ Ewald error estimate:   0.1560E-03
+ ------------------------------------------------------------------------------
+
+
+      DV/DL, AVERAGES OVER   50000 STEPS
+
+
+ NSTEP =   500000   TIME(PS) =    1000.000  TEMP(K) =     6.26  PRESS =     0.0
+ Etot   =         0.0000  EKtot   =         0.0000  EPtot      =        -3.8188
+ BOND   =         0.0000  ANGLE   =         0.0000  DIHED      =         0.0000
+ 1-4 NB =         0.0000  1-4 EEL =        -3.8311  VDWAALS    =         0.0000
+ EELEC  =         0.0123  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =         0.0000  VIRIAL  =         0.0000  VOLUME     =         0.0000
+                                                    Density    =         0.0000
+ DV/DL  =        -3.8188
+ Ewald error estimate:   0.0000E+00
+ ------------------------------------------------------------------------------
+
+|===============================================================================
+
+| TI region  1
+
+
+      A V E R A G E S   O V E R  500000 S T E P S
+
+
+ NSTEP =   500000   TIME(PS) =    1000.000  TEMP(K) =   297.63  PRESS =     1.4
+ Etot   =     -5482.7830  EKtot   =      1253.8847  EPtot      =     -6736.6677
+ BOND   =         1.5911  ANGLE   =         1.8891  DIHED      =         0.3092
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1009.5671
+ EELEC  =     -7750.0243  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       625.4682  VIRIAL  =       624.8139  VOLUME     =     21395.0834
+                                                    Density    =         0.9855
+ DV/DL  =        -3.8359
+ Ewald error estimate:   0.2035E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   500000   TIME(PS) =    1000.000  TEMP(K) =     6.41  PRESS =   386.3
+ Etot   =        47.3094  EKtot   =        27.0234  EPtot      =        38.6334
+ BOND   =         1.0100  ANGLE   =         1.0890  DIHED      =         0.3080
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        38.2823
+ EELEC  =        61.4940  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.0848  VIRIAL  =       178.3443  VOLUME     =        85.9593
+                                                    Density    =         0.0040
+ DV/DL  =         2.0881
+ Ewald error estimate:   0.1535E-03
+ ------------------------------------------------------------------------------
+
+
+| TI region  2
+
+
+      A V E R A G E S   O V E R  500000 S T E P S
+
+
+ NSTEP =   500000   TIME(PS) =    1000.000  TEMP(K) =   297.63  PRESS =     1.4
+ Etot   =     -5482.7830  EKtot   =      1253.8847  EPtot      =     -6736.6677
+ BOND   =         1.5911  ANGLE   =         1.8891  DIHED      =         0.3092
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =      1009.5671
+ EELEC  =     -7750.0243  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =       625.4682  VIRIAL  =       624.8139  VOLUME     =     21395.0834
+                                                    Density    =         0.9855
+ DV/DL  =        -3.8359
+ Ewald error estimate:   0.2035E-03
+ ------------------------------------------------------------------------------
+
+
+      R M S  F L U C T U A T I O N S
+
+
+ NSTEP =   500000   TIME(PS) =    1000.000  TEMP(K) =     6.41  PRESS =   386.3
+ Etot   =        47.3094  EKtot   =        27.0234  EPtot      =        38.6334
+ BOND   =         1.0100  ANGLE   =         1.0890  DIHED      =         0.3080
+ 1-4 NB =         0.0000  1-4 EEL =         0.0000  VDWAALS    =        38.2823
+ EELEC  =        61.4940  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =        19.0848  VIRIAL  =       178.3443  VOLUME     =        85.9593
+                                                    Density    =         0.0040
+ DV/DL  =         2.0881
+ Ewald error estimate:   0.1535E-03
+ ------------------------------------------------------------------------------
+
+
+      DV/DL, AVERAGES OVER  500000 STEPS
+
+
+ NSTEP =   500000   TIME(PS) =    1000.000  TEMP(K) =     6.41  PRESS =     0.0
+ Etot   =         0.0000  EKtot   =         0.0000  EPtot      =        -3.8359
+ BOND   =         0.0000  ANGLE   =         0.0000  DIHED      =         0.0000
+ 1-4 NB =         0.0000  1-4 EEL =        -3.8303  VDWAALS    =         0.0000
+ EELEC  =        -0.0056  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =         0.0000  VIRIAL  =         0.0000  VOLUME     =         0.0000
+                                                    Density    =         0.0000
+ DV/DL  =        -3.8359
+ Ewald error estimate:   0.0000E+00
+ ------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+   5.  TIMINGS
+--------------------------------------------------------------------------------
+
+|  NonSetup CPU Time in Major Routines, Average for All Tasks:
+|
+|     Routine           Sec        %
+|     ------------------------------
+|     DataDistrib     527.64   29.25
+|     Nonbond        1163.06   64.48
+|     Bond              3.36    0.19
+|     Angle             0.27    0.02
+|     Dihedral          0.27    0.01
+|     Shake             7.50    0.42
+|     RunMD           101.63    5.63
+|     Other             0.14    0.01
+|     ------------------------------
+|     Total          1803.88
+
+|  PME Nonbond Pairlist CPU Time, Average for All Tasks:
+|
+|     Routine              Sec        %
+|     ---------------------------------
+|     Set Up Cit           2.54    0.14
+|     Build List          45.29    2.51
+|     ---------------------------------
+|     Total               47.83    2.65
+
+|  PME Direct Force CPU Time, Average for All Tasks:
+|
+|     Routine              Sec        %
+|     ---------------------------------
+|     NonBonded Calc     719.68   39.90
+|     Exclude Masked      15.53    0.86
+|     Other               43.44    2.41
+|     ---------------------------------
+|     Total              778.65   43.17
+
+|  PME Reciprocal Force CPU Time, Average for All Tasks:
+|
+|     Routine              Sec        %
+|     ---------------------------------
+|     1D bspline          23.08    1.28
+|     Grid Charges        25.81    1.43
+|     Scalar Sum          25.70    1.42
+|     Gradient Sum        38.41    2.13
+|     FFT                222.48   12.33
+|     ---------------------------------
+|     Total              335.47   18.60
+
+|  PME Load Balancing CPU Time, Average for All Tasks:
+|
+|     Routine                 Sec        %
+|     ------------------------------------
+|     Atom Reassign           0.03    0.00
+|     Image Reassign          0.70    0.04
+|     FFT Reassign            0.00    0.00
+|     ------------------------------------
+|     Total                   0.73    0.04
+
+|  Final Performance Info:
+|     -----------------------------------------------------
+|     Average timings for last   10000 steps:
+|         Elapsed(s) =      45.07 Per Step(ms) =       4.51
+|             ns/day =      19.17   seconds/ns =    4507.38
+|
+|     Average timings for all steps:
+|         Elapsed(s) =    1819.61 Per Step(ms) =       3.64
+|             ns/day =      23.74   seconds/ns =    3639.22
+|     -----------------------------------------------------
+
+|  Master Setup CPU time:            1.76 seconds
+|  Master NonSetup CPU time:      1803.28 seconds
+|  Master Total CPU time:         1805.04 seconds     0.50 hours
+
+|  Master Setup wall time:           3    seconds
+|  Master NonSetup wall time:     1819    seconds
+|  Master Total wall time:        1822    seconds     0.51 hours
