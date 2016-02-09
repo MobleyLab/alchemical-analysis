@@ -62,7 +62,17 @@ parser.add_option('-x', '--ignoreWL', dest = 'bIgnoreWL', help = 'Do not check w
 parser.add_option('-y', '--tolerance', dest = 'relative_tolerance', help = "Convergence criterion for the energy estimates with BAR and MBAR. Default: 1e-10.", default = 1e-10, type=float)
 parser.add_option('-z', '--initialize', dest = 'init_with', help = 'The initial MBAR free energy guess; either \'BAR\' or \'zeros\'. Default: \'BAR\'.', default = 'BAR')
 
+#===================================================================================================
+#STARTUP CHECKS:
+#===================================================================================================
+
+#Check pymbar version for compatibility; we require >= 3.0.0.dev0
 import pymbar
+ver = pymbar.version.version
+ver_start = int(ver.split('.')[0])
+if ver_start < 3:
+    #If the version is too old, throw exception/ask for upgrade
+    raise(ImportError("Error: alchemical-analysis requires at least pymbar 3.0.0.dev0. Please upgrade your pymbar installation."))
 
 #===================================================================================================
 # FUNCTIONS: Miscellanea.
