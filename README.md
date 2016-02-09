@@ -25,18 +25,29 @@ doi = {10.1007/s10822-015-9840-9}
 
 #### Prerequisites
 
-Alchemical Analysis requires the `pymbar` module (we recommend installation via conda, but other options are also available).
+Alchemical Analysis requires the `pymbar` module (we recommend
+installation via conda, but other options are also available). Version
+3.0.0.dev0 or above is required. The latest version of pymbar can be found
+[here](https://github.com/choderalab/pymbar).
+
+Python 2 is required.
+
+#### Installation
+
+    git clone https://github.com/MobleyLab/alchemical-analysis.git
+    cd alchemical-analysis
+    sudo python setup.py install
 
 #### Usage
 
-Script: `alchemical_analysis.py`
+Script: `alchemical_analysis`
 
 This implements recommended practices for analyzing alchemical free energy calculations, as described in Klimovich et al., JCAMD 29:397-411 (2015). This was motivated in part by earlier work illustrating how to apply MBAR to alchemical free energy calculations (and a comparison with other methods) in Paliwal and Shirts, J. Chem. Theory Comp, v. 7, 4115-4134 (2011).
 
 See description in `samples/gromacs/README.md`, `samples/sire/README.md`, and `samples/amber/README.md`.
 
 
-Help for `alchemical_analysis.py` (obtained with `python alchemical_analysis.py -h`) is:
+Help for `alchemical_analysis.py` (obtained with `alchemical_analysis -h`) is:
 
 ```Options:
   -h, --help            show this help message and exit
