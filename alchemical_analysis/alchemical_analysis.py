@@ -952,9 +952,9 @@ def plotdFvsLambda():
             lv_names2.append(r'$%s$' % P.lv_names[j].capitalize())
 
       for j in range(n_components):
+
          y = ave_dhdl[:,j]
          if not (y == 0).all():
-            #if not cubspl[j] == 0:
 
             # Get the coordinates.
             lj = lchange[:,j]
@@ -975,7 +975,7 @@ def plotdFvsLambda():
                xlegend = [-100*wnum for wnum in range(len(lv_names2))]
                pl.plot(xlegend, [0*wnum for wnum in xlegend], ls='-', color=colors[ndx], label=lv_names2[ndx]) ## for the paper
 
-               if 'TI-CUBIC' in P.methods:
+               if 'TI-CUBIC' in P.methods and not cubspl[j]==0:
                   # Plot the TI-CUBIC interpolation curve.
                   ss += ' and TI-CUBIC'
                   xnew = numpy.arange(0, 1+dx, dx)
