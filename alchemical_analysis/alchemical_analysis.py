@@ -44,7 +44,7 @@ parser.add_option('-a', '--software', dest = 'software', help = 'Package\'s name
 parser.add_option('-c', '--cfm', dest = 'bCFM', help = 'The Curve-Fitting-Method-based consistency inspector. Default: False.', default = False, action = 'store_true')
 parser.add_option('-d', '--dir', dest = 'datafile_directory', help = 'Directory in which data files are stored. Default: Current directory.', default = '.')
 parser.add_option('-f', '--forwrev', dest = 'bForwrev', help = 'Plot the free energy change as a function of time in both directions, with the specified number of points in the time plot. The number of time points (an integer) must be provided. Default: 0', default = 0, type=int)
-parser.add_option('-g', '--breakdown', dest = 'breakdown', help = 'Plotting the free energy differences evaluated for each pair of adjacent states for all methods. Default: False.', default = False, action = 'store_true')
+parser.add_option('-g', '--breakdown', dest = 'breakdown', help = 'Plot the free energy differences evaluated for each pair of adjacent states for all methods, including the dH/dlambda curve for TI. Default: False.', default = False, action = 'store_true')
 parser.add_option('-i', '--threshold', dest = 'uncorr_threshold', help = 'Proceed with correlated samples if the number of uncorrelated samples is found to be less than this number. If 0 is given, the time series analysis will not be performed at all. Default: 50.', default = 50, type=int)
 parser.add_option('-k', '--koff', dest = 'bSkipLambdaIndex', help = 'Give a string of lambda indices separated by \'-\' and they will be removed from the analysis. (Another approach is to have only the files of interest present in the directory). Default: None.', default = '')
 parser.add_option('-m', '--methods', dest = 'methods', help = 'A list of the methods to esitimate the free energy with. Default: [TI, TI-CUBIC, DEXP, IEXP, BAR, MBAR]. To add/remove methods to the above list provide a string formed of the method strings preceded with +/-. For example, \'-ti_cubic+gdel\' will turn methods into [TI, DEXP, IEXP, BAR, MBAR, GDEL]. \'ti_cubic+gdel\', on the other hand, will call [TI-CUBIC, GDEL]. \'all\' calls the full list of supported methods [TI, TI-CUBIC, DEXP, IEXP, GINS, GDEL, BAR, UBAR, RBAR, MBAR].', default = '')
@@ -942,9 +942,9 @@ def plotdFvsLambda():
             lv_names2.append(r'$%s$' % P.lv_names[j].capitalize())
 
       for j in range(n_components):
+
          y = ave_dhdl[:,j]
          if not (y == 0).all():
-            #if not cubspl[j] == 0:
 
             # Get the coordinates.
             lj = lchange[:,j]
@@ -965,7 +965,7 @@ def plotdFvsLambda():
                xlegend = [-100*wnum for wnum in range(len(lv_names2))]
                pl.plot(xlegend, [0*wnum for wnum in xlegend], ls='-', color=colors[ndx], label=lv_names2[ndx]) ## for the paper
 
-               if 'TI-CUBIC' in P.methods:
+               if 'TI-CUBIC' in P.methods and not cubspl[j]==0:
                   # Plot the TI-CUBIC interpolation curve.
                   ss += ' and TI-CUBIC'
                   xnew = numpy.arange(0, 1+dx, dx)
