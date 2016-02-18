@@ -25,7 +25,8 @@ from glob import glob           # for pathname matching
 from collections import Counter # for counting elements in an array
 
 import unixlike                 # some implemented unixlike commands
-
+from utils.corruptxvg import *
+from shutil import copy2
 #===================================================================================================       
 # FUNCTIONS: This is the Gromacs dhdl.xvg file parser.     
 #===================================================================================================       
@@ -124,7 +125,7 @@ def readDataGromacs(P):
   
             data = data.T
             dhdlt[state, :, nsnapshots_l[state]:nsnapshots_r[state]] = data[read_dhdl_sta : read_dhdl_end, :]
-  
+
             if not bSelective_MBAR:
                r1, r2 = ( read_dhdl_end, read_dhdl_end + (ndE[state] if not self.bExpanded else K) )
                if bPV:
@@ -144,7 +145,7 @@ def readDataGromacs(P):
          if not self.len_first == self.len_last:
             data = data[: -self.len_last]
          data = data.reshape((-1, self.len_first))
- 
+         
          if self.bExpanded:
             for k in range(K):
                mask_k = (data[:, 1] == k)
@@ -181,6 +182,15 @@ def readDataGromacs(P):
    fs = [ F(filename) for filename in glob( '%s/%s*%s' % datafile_tuple ) ]
    n_files = len(fs)
    
+   #NML: Clean up corrupted lines
+   print 'Checking for corrupted xvg files....'
+   xvgs = [filename for filename in sorted(glob( '%s/%s*%s' % datafile_tuple )) ]
+   for f in xvgs:
+      if not os.path.exists('xvg-bak'):
+         os.makedirs('xvg-bak')
+      copy2(f,'./xvg-bak/'+f)
+      removeCorruptLines(f,f)
+      
    if not n_files:
       raise SystemExit("\nERROR!\nNo files found within directory '%s' with prefix '%s' and suffix '%s': check your inputs." % datafile_tuple)
    if n_files > 1:
@@ -198,7 +208,6 @@ def readDataGromacs(P):
    lv = []  # *** 
    P.snap_size = []
    for nf, f in enumerate(fs):
-   
       lv.append(f.readHeader())
    
       if nf>0:
@@ -317,5 +326,4 @@ def readDataGromacs(P):
       nsnapshots_l = nsnapshots[nf]
       nsnapshots_r = nsnapshots[:nf+2, :].sum(axis=0)
       f.iter_loadtxt(nf)
-
    return nsnapshots.sum(axis=0), lv, dhdlt, u_klt
