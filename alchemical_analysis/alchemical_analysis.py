@@ -1232,7 +1232,7 @@ def main():
    lchange = get_lchange(lv)
 
    #NML: Check for all zeros in data files
-   all_zeros = not numpy.any(dhdlt) and not numpy.any(u_klt)
+   all_zeros = not numpy.any(dhdlt) or not numpy.any(u_klt)
    if all_zeros == True:
       zero_output(K,P)
       sys.exit('WARNING: Found all 0 in input data, Generating results.txt with all 0')
