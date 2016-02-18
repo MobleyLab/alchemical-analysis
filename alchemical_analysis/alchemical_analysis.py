@@ -38,26 +38,9 @@ from common import GeneralException, ParserException, log_and_raise
 import consts
 
 
-
 __version__ = '1.1.0'
 
 
-if False:
-    import sys
-    f = open(os.devnull, 'w')
-    sys.stdout = f
-
-#===================================================================================================
-#STARTUP CHECKS:
-#===================================================================================================
-
-#Check pymbar version for compatibility; we require >= 3.0.0.dev0
-import pymbar
-ver = pymbar.version.version
-ver_start = int(ver.split('.')[0])
-if ver_start < 3:
-    #If the version is too old, throw exception/ask for upgrade
-    raise(ImportError("Error: alchemical-analysis requires at least pymbar 3.0.0.dev0. Please upgrade your pymbar installation."))
 
 #===================================================================================================
 # FUNCTIONS: Miscellanea.
@@ -867,6 +850,7 @@ def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
             ye = [ddf_allk[i][name]/P.beta_report for i in x]
             line = pl.bar(x+len(lines)*width, y, width, color=colors[name], yerr=ye, lw=0.1*elw, error_kw=dict(elinewidth=elw, ecolor='black', capsize=0.5*elw))
             lines += (line[0],)
+
         pl.xlabel('States', fontsize=12, color='#151B54')
         pl.ylabel('$\Delta G$ '+P.units, fontsize=12, color='#151B54')
         pl.xticks(x+0.5*width*len(P.methods), tuple(['%d--%d' % (i, i+1) for i in x]), fontsize=8)
@@ -918,6 +902,7 @@ def plotdFvsLambda(lv, lchange, dlam, ave_dhdl, cubspl, df_allk, ddf_allk):
             for i in x+0.5*width*len(P.methods):
                 ax.annotate('$\mathrm{%d-%d}$' % (i, i+1), xy=(i, 0), xycoords=('data', 'axes fraction'), xytext=(0, -2), size=10, textcoords='offset points', va='top', ha='center')
             pl.xlim(x[0], x[-1]+len(lines)*width + (mnb - len(x)))
+
             ndx += 1
         leg = ax.legend(lines, tuple(P.methods), loc=0, ncol=2, prop=FP(size=8), title='$\mathrm{\Delta G\/%s\/}\mathit{vs.}\/\mathrm{lambda\/pair}$' % P.units, fancybox=True)
         leg.get_frame().set_alpha(0.5)
