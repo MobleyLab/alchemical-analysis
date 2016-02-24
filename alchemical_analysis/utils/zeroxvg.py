@@ -2,6 +2,7 @@ import numpy,os,sys
 
 def zero_output(K,P):
    """Adapted from totalEnergies() function to write out all zeros in results.txt file"""
+   print "Generating results.txt with all 0"
    df_allk = list(); ddf_allk = list()
    for k in range(K-1):
       df=dict(); ddf=dict()
@@ -46,3 +47,36 @@ def zero_output(K,P):
    outfile.write('# Command line was: %s\n\n' % ' '.join(sys.argv) )
    outfile.writelines(outtext)
    outfile.close()
+
+def zero_t(K,P,nsnapshots):
+
+   print "Generating dF_t.txt with all 0"
+
+   # Define a list of bForwrev equidistant time frames at which the free energy is to be estimated; count up the snapshots embounded between the time frames.
+   n_tf = P.bForwrev + 1
+   nss_tf = numpy.zeros([n_tf, K], int)
+   increment = 1./(n_tf-1)
+   if P.bExpanded:
+      from collections import Counter # for counting elements in an array
+      tf = numpy.linspace(0.0, 1.0, n_tf)*(numpy.sum(nsnapshots)-1)+1
+      tf[0] = 0
+      for i in range(n_tf-1):
+         nss = Counter(extract_states[tf[i]:tf[i+1]])
+         nss_tf[i+1] = numpy.array([nss[j] for j in range(K)])
+   else:
+      tf = numpy.linspace(0.0, 1.0, n_tf)*(max(nsnapshots)-1)+1
+      tf[0] = 0
+      for i in range(n_tf-1):
+         nss_tf[i+1] = numpy.array([min(j, tf[i+1]) for j in nsnapshots]) - numpy.sum(nss_tf[:i+1],axis=0)
+   # Define the real time scale (in ps) rather than a snapshot sequence.
+   ts = ["%.1f" % ((i-(i!=tf[0]))*P.snap_size[0] + P.equiltime) for i in tf]
+   # Initialize arrays to store data points to be plotted.
+   F_df  = numpy.zeros(n_tf-1, float)
+   F_ddf = numpy.zeros(n_tf-1, float)
+   R_df  = numpy.zeros(n_tf-1, float)
+   R_ddf = numpy.zeros(n_tf-1, float)
+
+   outtext = ["%12s %10s %-10s %17s %10s %s\n" % ('Time (ps)', 'Forward', P.units, 'Time (ps)', 'Reverse', P.units)]
+   outtext+= ["%10s %11.3f +- %5.3f %18s %11.3f +- %5.3f\n" % (ts[1:][i], F_df[i], F_ddf[i], ts[:-1][i], R_df[i], R_ddf[i]) for i in range(len(F_df))]
+   outfile = open(os.path.join(P.output_directory, 'dF_t.txt'), 'w'); outfile.writelines(outtext); outfile.close()
+
