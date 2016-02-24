@@ -180,7 +180,7 @@ def uncorrelate(sta, fin, do_dhdl=False):
 
          #NML: Set statistical inefficiency (g) = 1 if vector is all 0
          if not numpy.any(dhdl_sum):
-            print "WARNING: Found all zeros for Lambda={}\n Setting statistical inefficiency g=1.".format(k)
+            #print "WARNING: Found all zeros for Lambda={}\n Setting statistical inefficiency g=1.".format(k)
             g[k] = 1
          else:
             # (alternatively, could use the energy differences -- here, we will use total dhdl).
