@@ -554,8 +554,8 @@ def estimatePairs():
          if name == 'MBAR':
             #===================================================================================================
             # Store the MBAR free energy difference (already estimated above) properly, i.e. by state.
-            #===================================================================================================
-            (df['MBAR'], ddf['MBAR']) =  Deltaf_ij[k,k+1], dDeltaf_ij[k,k+1]
+            #===================================================================================================        
+            (df['MBAR'], ddf['MBAR']) =  Deltaf_ij[k,k+1], numpy.nan_to_num(dDeltaf_ij[k,k+1])
 
       df_allk = numpy.append(df_allk,df)
       ddf_allk = numpy.append(ddf_allk,ddf)
