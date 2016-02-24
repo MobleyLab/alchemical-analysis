@@ -34,7 +34,7 @@ from   optparse import OptionParser # for parsing command-line options
 import os                           # for os interface
 import time as ttt_time             # for timing
 import pdb                          # for debugging
-from utils.zeroxvg import zero_output
+from utils.zeroxvg import *
 #===================================================================================================
 # INPUT OPTIONS
 #===================================================================================================
@@ -1234,8 +1234,11 @@ def main():
    #NML: Check for all zeros in data files
    all_zeros = not numpy.any(dhdlt) or not numpy.any(u_klt)
    if all_zeros == True:
+      print "WARNING: Found all 0 in input data."
       zero_output(K,P)
-      sys.exit('WARNING: Found all 0 in input data, Generating results.txt with all 0')
+      if P.bForwrev:
+         zero_dFt(K,P,nsnapshots)
+      sys.exit("Exiting...")
 
    if (numpy.array(['Sire','Gromacs', 'Amber']) == P.software.title()).any():
       dhdl, N_k, u_kln = uncorrelate(sta=numpy.zeros(K, int), fin=nsnapshots, do_dhdl=True)
