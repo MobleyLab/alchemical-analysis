@@ -177,8 +177,15 @@ def uncorrelate(sta, fin, do_dhdl=False):
          # Sum up over those energy components that are changing.
          dhdl_sum = numpy.sum(dhdlt[k, lchange[k], sta[k]:fin[k]], axis=0)
          # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
-         # (alternatively, could use the energy differences -- here, we will use total dhdl).
-         g[k] = pymbar.timeseries.statisticalInefficiency(dhdl_sum)
+
+         #NML: Set statistical inefficiency (g) = 1 if vector is all 0
+         if not numpy.any(dhdl_sum):
+            print "WARNING: Found all zeros for Lambda={}\n Setting statistical inefficiency g=1.".format(k)
+            g[k] = 1
+         else:
+            # (alternatively, could use the energy differences -- here, we will use total dhdl).
+            g[k] = pymbar.timeseries.statisticalInefficiency(dhdl_sum)
+
          indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dhdl_sum, g=g[k])) # indices of uncorrelated samples
          N = len(indices) # number of uncorrelated samples
          # Handle case where we end up with too few.
