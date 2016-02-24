@@ -612,11 +612,7 @@ def totalEnergies():
       ddF = dict.fromkeys(P.methods, 0)
 
       for name in P.methods:
-         if name == 'MBAR':
-            dF['MBAR']  =  Deltaf_ij[segstart, segend]
-            ddF['MBAR'] = dDeltaf_ij[segstart, segend]
-
-         elif name[0:2] == 'TI':
+         if name[0:2] == 'TI':
             for k in range(segstart, segend):
                dF[name] += df_allk[k][name]
 
