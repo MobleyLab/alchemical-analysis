@@ -48,7 +48,7 @@ def zero_output(K,P):
    outfile.writelines(outtext)
    outfile.close()
 
-def zero_t(K,P,nsnapshots):
+def zero_dFt(K,P,nsnapshots):
 
    print "Generating dF_t.txt with all 0"
 
