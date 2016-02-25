@@ -1,8 +1,7 @@
 import os
-import os
 import numpy as np
 import commands as c
-
+from shutil import copy2
 ###===============================###
 # Module written by Caitlin Bannan
 # From ManipulateXVG
@@ -86,6 +85,7 @@ def removeCorruptLines(inputFN, outputFN = 'output.xvg', headerLine = None, fail
     # invalid_raise means that if a line is found with the wrong number of entries then it will be ignored and a warning will be printed
     data = np.genfromtxt(inputFN, skip_header = headerLine, invalid_raise = False)
     
+    
     # Figure out how much data was removed:
     try:
         a = len(data[0])
@@ -104,6 +104,9 @@ def removeCorruptLines(inputFN, outputFN = 'output.xvg', headerLine = None, fail
         DataRemovalError = Exception("%i corrupted lines of %i found, that is more than %.1f percent. Removal failed, examine input file  %s" % (difLength, dataLength, fail, inputFN))
         raise DataRemovalError
     else: # Lines removed, but less than warning limit
+        if not os.path.exists('xvg-bak'):
+            os.makedirs('xvg-bak')
+        copy2(inputFN,'./xvg-bak/'+inputFN)
         print "%i corrupt lines of %i found and removed from %s" % (difLength, dataLength, inputFN) 
 
 

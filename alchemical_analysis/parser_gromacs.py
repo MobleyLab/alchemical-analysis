@@ -26,7 +26,6 @@ from collections import Counter # for counting elements in an array
 
 import unixlike                 # some implemented unixlike commands
 from utils.corruptxvg import *
-from shutil import copy2
 #===================================================================================================       
 # FUNCTIONS: This is the Gromacs dhdl.xvg file parser.     
 #===================================================================================================       
@@ -186,9 +185,6 @@ def readDataGromacs(P):
    print 'Checking for corrupted xvg files....'
    xvgs = [filename for filename in sorted(glob( '%s/%s*%s' % datafile_tuple )) ]
    for f in xvgs:
-      if not os.path.exists('xvg-bak'):
-         os.makedirs('xvg-bak')
-      copy2(f,'./xvg-bak/'+f)
       removeCorruptLines(f,f)
       
    if not n_files:
