@@ -1156,35 +1156,36 @@ def plotCFM(K,u_kln, N_k, df_allk, ddf_allk, num_bins=100):
 
 DTYPE=numpy.float32
 
-def wham(V, lmbdas, n, kBT, max_cyc, Econv, Fm_init):
-  """
-  Simple implementation of WHAM equation (21) from
-  S Kumar et al. JCC 13 (1992), 1011.
-  """
+def wham(V, lmbdas, n, kBT, max_cyc, Econv, Fm):
+    """
+    Simple implementation of WHAM equation (21) from
+    S Kumar et al. JCC 13 (1992), 1011.
+    """
 
-  nlmbdas = len(lmbdas)
-  F = numpy.zeros(nlmbdas, DTYPE)
-  Fm = Fm_init
-  conv = numpy.zeros(nlmbdas, numpy.bool)
-  cyc = 0
+    nlmbdas = len(lmbdas)
+    F = numpy.zeros(nlmbdas, DTYPE)
+    conv = False
+    cyc = 0
 
-  while not all(conv) and cyc < max_cyc:
-    for i in range(nlmbdas):
-      F[i] = 0.0
-      li = -lmbdas[i] / kBT
+    while not conv and cyc < max_cyc:
+        for i in range(nlmbdas):
+            F[i] = 0.0
+            li = -lmbdas[i] / kBT
 
-      for k in range(nlmbdas):
-        for t in range(n[k]):
-          V_kt = V[k][t]
-          F[i] += (numpy.exp(li * V_kt) /
-                   numpy.sum(n * numpy.exp((Fm - lmbdas * V_kt) / kBT)))
+            for k in range(nlmbdas):
+                for t in range(n[k]):
+                    V_kt = V[k][t]
+                    F[i] += (numpy.exp(li * V_kt) /
+                             numpy.sum(n * numpy.exp((Fm - lmbdas * V_kt) /
+                                                     kBT)))
 
-    F = -kBT * numpy.log(F)
-    conv = numpy.abs(Fm - F) < Econv
-    Fm = F - F[0]
-    cyc += 1
+        F = -kBT * numpy.log(F)
+        conv = all(numpy.abs(Fm - F) < Econv)
+        #conv = any(numpy.abs(F - Fm) < Econv)
+        Fm = F - F[0]
+        cyc += 1
 
-  return F, cyc
+    return Fm, cyc
 
 
 #===================================================================================================
@@ -1307,26 +1308,6 @@ def main(P):
                                                  P.relative_tolerance,
                                                  regular_estimate=True)
 
-    if P.ti_wham:
-        max_cyc = 500
-        Econv = 1E-3
-        s = 0.0
-
-        logger.info('<<<TI-WHAM (pairwise)') 
-
-        for i in range(len(lv)-1):
-            grad = numpy.array([dhdl[i][0], dhdl[i+1][0]])
-            lmbda = numpy.array([lv[i], lv[i+1]])
-            n = numpy.array([N_k[i], N_k[i+1]])
-            f, _ = wham(grad, lmbda, n, 1.0 / P.beta_report, max_cyc,
-                        Econv, numpy.zeros(2, DTYPE))
-
-            ff = f[-1] - f[0]
-            s += ff
-            logger.info('%5.3f -- %5.3f  %10.5f' % (lmbda[0], lmbda[1], ff))
-
-        logger.info('dG = %f\nTI-WHAM (pairwise)>>>\n' % s)
-
     if 'TI' in P.methods or 'TI-CUBIC' in P.methods:
         lchange, dlam, ave_dhdl, std_dhdl = TIprelim(N_k, lv, dhdl)
 
@@ -1342,6 +1323,29 @@ def main(P):
 
     totalEnergies(lv, lchange, dlam, std_dhdl, cubspl, Deltaf_ij,
                   dDeltaf_ij, df_allk, ddf_allk)
+
+    if P.ti_wham:
+        kBT = consts.kB * P.temperature / consts.CAL2JOULE
+        max_cyc = 500
+        Econv = 1E-3
+        stot = 0.0
+
+        logger.info('\n<<<TI-WHAM (pairwise)')
+
+        for i in range(len(lv)-1):
+            grad = numpy.array([dhdl[i,0], dhdl[i+1,0]])
+            lmbda = numpy.array([lv[i,0], lv[i+1,0]])
+            n = numpy.array([N_k[i], N_k[i+1]])
+
+            f, c = wham(grad, lmbda, n, kBT, max_cyc, Econv,
+                        numpy.zeros(2, DTYPE))
+
+            ff = f[-1] - f[0]
+            stot += ff
+            logger.info('%5.3f -- %5.3f  %10.5f (%i)' %
+                        (lmbda[0], lmbda[1], ff, c))
+
+        logger.info('dG = %f\nTI-WHAM (pairwise)>>>\n' % stot)
 
     if P.bForwrev:
         dF_t(K, lv.shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij)
