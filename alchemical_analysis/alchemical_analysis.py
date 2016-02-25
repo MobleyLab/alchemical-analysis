@@ -34,7 +34,7 @@ from   optparse import OptionParser # for parsing command-line options
 import os                           # for os interface
 import time as ttt_time             # for timing
 import pdb                          # for debugging
-from utils.zeroxvg import zero_output
+from utils.zeroxvg import *
 #===================================================================================================
 # INPUT OPTIONS
 #===================================================================================================
@@ -177,8 +177,15 @@ def uncorrelate(sta, fin, do_dhdl=False):
          # Sum up over those energy components that are changing.
          dhdl_sum = numpy.sum(dhdlt[k, lchange[k], sta[k]:fin[k]], axis=0)
          # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
-         # (alternatively, could use the energy differences -- here, we will use total dhdl).
-         g[k] = pymbar.timeseries.statisticalInefficiency(dhdl_sum)
+
+         #NML: Set statistical inefficiency (g) = 1 if vector is all 0
+         if not numpy.any(dhdl_sum):
+            #print "WARNING: Found all zeros for Lambda={}\n Setting statistical inefficiency g=1.".format(k)
+            g[k] = 1
+         else:
+            # (alternatively, could use the energy differences -- here, we will use total dhdl).
+            g[k] = pymbar.timeseries.statisticalInefficiency(dhdl_sum)
+
          indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dhdl_sum, g=g[k])) # indices of uncorrelated samples
          N = len(indices) # number of uncorrelated samples
          # Handle case where we end up with too few.
@@ -547,8 +554,8 @@ def estimatePairs():
          if name == 'MBAR':
             #===================================================================================================
             # Store the MBAR free energy difference (already estimated above) properly, i.e. by state.
-            #===================================================================================================
-            (df['MBAR'], ddf['MBAR']) =  Deltaf_ij[k,k+1], dDeltaf_ij[k,k+1]
+            #===================================================================================================        
+            (df['MBAR'], ddf['MBAR']) =  Deltaf_ij[k,k+1], numpy.nan_to_num(dDeltaf_ij[k,k+1])
 
       df_allk = numpy.append(df_allk,df)
       ddf_allk = numpy.append(ddf_allk,ddf)
@@ -605,11 +612,7 @@ def totalEnergies():
       ddF = dict.fromkeys(P.methods, 0)
 
       for name in P.methods:
-         if name == 'MBAR':
-            dF['MBAR']  =  Deltaf_ij[segstart, segend]
-            ddF['MBAR'] = dDeltaf_ij[segstart, segend]
-
-         elif name[0:2] == 'TI':
+         if name[0:2] == 'TI':
             for k in range(segstart, segend):
                dF[name] += df_allk[k][name]
 
@@ -1234,8 +1237,11 @@ def main():
    #NML: Check for all zeros in data files
    all_zeros = not numpy.any(dhdlt) or not numpy.any(u_klt)
    if all_zeros == True:
+      print "WARNING: Found all 0 in input data."
       zero_output(K,P)
-      sys.exit('WARNING: Found all 0 in input data, Generating results.txt with all 0')
+      if P.bForwrev:
+         zero_dFt(K,P,nsnapshots)
+      sys.exit("Exiting...")
 
    if (numpy.array(['Sire','Gromacs', 'Amber']) == P.software.title()).any():
       dhdl, N_k, u_kln = uncorrelate(sta=numpy.zeros(K, int), fin=nsnapshots, do_dhdl=True)
