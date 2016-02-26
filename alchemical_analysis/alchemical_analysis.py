@@ -799,7 +799,7 @@ def dF_t(K, shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij):
       fin = numpy.sum(nss_tf[:i+2],axis=0)
       N_k, u_kln = uncorrelate(shape, dhdlt, u_klt, nss_tf[0],
                                numpy.sum(nss_tf[:i+2],axis=0))
-      F_df[i], F_ddf[i] = estimatewithMBAR(u_kln, N_k, P.relative_tolerance)
+      F_df[i], F_ddf[i] = estimatewithMBAR(K, u_kln, N_k, P.relative_tolerance)
    # Do the reverse analysis.
    print "Reverse dF(t) analysis...\nUsing the data starting from"
    fin = numpy.sum(nss_tf[:],axis=0)
@@ -807,7 +807,7 @@ def dF_t(K, shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij):
       print "%34s ps..." % ts[i+1]
       sta = numpy.sum(nss_tf[:i+2],axis=0)
       N_k, u_kln = uncorrelate(shape, dhdlt, u_klt, sta, fin)
-      R_df[i+1], R_ddf[i+1] = estimatewithMBAR(u_kln, N_k, P.relative_tolerance)
+      R_df[i+1], R_ddf[i+1] = estimatewithMBAR(K, u_kln, N_k, P.relative_tolerance)
 
    print """\n   The free energies %s evaluated by using the trajectory
    snaphots corresponding to various time intervals for both the
