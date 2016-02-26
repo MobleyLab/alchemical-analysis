@@ -1181,7 +1181,6 @@ def wham(V, lmbdas, n, kBT, max_cyc, Econv, Fm):
 
         F = -kBT * numpy.log(F)
         conv = all(numpy.abs(Fm - F) < Econv)
-        #conv = any(numpy.abs(F - Fm) < Econv)
         Fm = F - F[0]
         cyc += 1
 
@@ -1326,13 +1325,14 @@ def main(P):
 
     if P.ti_wham:
         kBT = consts.kB * P.temperature / consts.CAL2JOULE
-        max_cyc = 500
-        Econv = 1E-3
+        max_cyc = 30
+        Econv = 1E-5
+        nlmbdas = len(lv)
         stot = 0.0
 
         logger.info('\n<<<TI-WHAM (pairwise)')
 
-        for i in range(len(lv)-1):
+        for i in range(nlmbdas-1):
             grad = numpy.array([dhdl[i,0], dhdl[i+1,0]])
             lmbda = numpy.array([lv[i,0], lv[i+1,0]])
             n = numpy.array([N_k[i], N_k[i+1]])
@@ -1340,12 +1340,29 @@ def main(P):
             f, c = wham(grad, lmbda, n, kBT, max_cyc, Econv,
                         numpy.zeros(2, DTYPE))
 
-            ff = f[-1] - f[0]
-            stot += ff
-            logger.info('%5.3f -- %5.3f  %10.5f (%i)' %
-                        (lmbda[0], lmbda[1], ff, c))
+            stot += f[-1]
+            logger.info('%5.3f -- %5.3f  %10.5f (%i cyc)' %
+                        (lmbda[0], lmbda[1], f[-1], c))
 
         logger.info('dG = %f\nTI-WHAM (pairwise)>>>\n' % stot)
+
+    if P.ti_full_wham:
+        kBT = consts.kB * P.temperature / consts.CAL2JOULE
+        max_cyc = 300
+        Econv = 1E-4
+        nlmbdas = len(lv)
+
+        logger.info('\n<<<TI-WHAM (full)')
+
+        f, c = wham(dhdl[:,0], lv[:,0], N_k, kBT, max_cyc, Econv,
+                    numpy.zeros(nlmbdas, DTYPE))
+
+        for i in range(nlmbdas-1):
+            logger.info('%5.3f -- %5.3f  %10.5f' %
+                        (lv[i,0], lv[i+1,0], f[i+1] - f[i]))
+
+        logger.info('dG = %f (%i cyc)\nTI-WHAM (full)>>>\n' % (f[-1], c))
+
 
     if P.bForwrev:
         dF_t(K, lv.shape, dhdlt, u_klt, nsnapshots, Deltaf_ij, dDeltaf_ij)
@@ -1461,8 +1478,10 @@ if __name__ == "__main__":
     parser.add_argument('--parser-options', metavar='OPTIONS',
                         help="Software (see -a) dependant options separated by"
                         "'%s' and '%s'." % (PAIRS_SEP, KEYVAL_SEP), default='')
-    parser.add_argument('--ti-wham', help='experimental pairwise TI-WHAM. '
-                        'WARNING: super slow!', action='store_true')
+    parser.add_argument('--ti-wham', help='experimental pairwise TI-WHAM. ',
+                        action='store_true')
+    parser.add_argument('--ti-full-wham', help='experimental full TI-WHAM. '
+                        'WARNING: may be very slow!', action='store_true')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {}'.format(__version__))
 
