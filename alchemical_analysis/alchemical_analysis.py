@@ -1323,12 +1323,15 @@ def main(P):
     totalEnergies(lv, lchange, dlam, std_dhdl, cubspl, Deltaf_ij,
                   dDeltaf_ij, df_allk, ddf_allk)
 
+    est = []
+
     if P.ti_wham:
         kBT = consts.kB * P.temperature / consts.CAL2JOULE
         max_cyc = 30
         Econv = 1E-5
         nlmbdas = len(lv)
         stot = 0.0
+        est = [0.0]
 
         logger.info('\n<<<TI-WHAM (pairwise)')
 
@@ -1343,19 +1346,24 @@ def main(P):
             stot += f[-1]
             logger.info('%5.3f -- %5.3f  %10.5f (%i cyc)' %
                         (lmbda[0], lmbda[1], f[-1], c))
+            est.append(f[-1])
 
         logger.info('dG = %f\nTI-WHAM (pairwise)>>>\n' % stot)
 
     if P.ti_full_wham:
         kBT = consts.kB * P.temperature / consts.CAL2JOULE
         max_cyc = 300
-        Econv = 1E-4
+        Econv = 1E-3
         nlmbdas = len(lv)
 
         logger.info('\n<<<TI-WHAM (full)')
 
-        f, c = wham(dhdl[:,0], lv[:,0], N_k, kBT, max_cyc, Econv,
-                    numpy.zeros(nlmbdas, DTYPE))
+        if est:
+            f, c = wham(dhdl[:,0], lv[:,0], N_k, kBT, max_cyc, Econv,
+                        numpy.array(est, DTYPE))
+        else:
+            f, c = wham(dhdl[:,0], lv[:,0], N_k, kBT, max_cyc, Econv,
+                        numpy.array(nlmbdas, DTYPE))
 
         for i in range(nlmbdas-1):
             logger.info('%5.3f -- %5.3f  %10.5f' %
