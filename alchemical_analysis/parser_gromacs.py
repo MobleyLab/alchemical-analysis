@@ -299,7 +299,8 @@ def readDataGromacs(P):
          equilsnapshots  = int(round(equiltime/f.snap_size))
          f.skip_lines   += equilsnapshots
    
-         extract_states  = numpy.genfromtxt(f.filename, dtype=int, skiprows=f.skip_lines, skip_footer=1*bLenConsistency, usecols=1)
+         extract_states  = numpy.genfromtxt(f.filename, dtype=float, skip_header=f.skip_lines, skip_footer=1*bLenConsistency, usecols=1)
+         extract_states  = extract_states.astype(int)
          nsnapshots[nf] += numpy.array(Counter(extract_states).values())
    
       else:
