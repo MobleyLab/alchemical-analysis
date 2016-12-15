@@ -1158,7 +1158,7 @@ DTYPE=numpy.float32
 
 def wham(V, lmbdas, n, kBT, max_cyc, Econv, Fm):
     """
-    Simple implementation of WHAM equation (21) from
+    Simple implementation of WHAM equation from
     S Kumar et al. JCC 13 (1992), 1011.
     """
 

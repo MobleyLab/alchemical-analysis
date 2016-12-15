@@ -181,7 +181,7 @@ class SectionParser(object):
         result = []
 
         for field in fields:
-            match = re.search(r' %s\s+=\s+(\*+|%s|\d+)'
+            match = re.search(r' %s\s+=\s*(\*+|%s|\d+)'
                               % (field, _FP_RE), line)
 
             if match:
@@ -647,7 +647,6 @@ def parse(P, options={}):
 
     # -- all file parsing done --
 
-
     # NOTE: lambda sorting is not required because data is collected in dict
     #       which is later sorted on the keys
     logger.info('\nSorting input data by starting time')
@@ -733,7 +732,13 @@ def parse(P, options={}):
 
     # FIXME: compute maximum number of MBAR energy sections
     K = len(lvals)
+    # FIXME: check that we actually have data after skipping initial data
     nsnapshots = [len(dvdl_all[clambda]) - start_from for clambda in lvals]
+
+    if filter(lambda x: x < 0, nsnapshots):
+        log_and_raise('Not enough data in some lambdas (skipped too many initial data '
+                      'points?).')
+    
     maxn = max(nsnapshots)
 
     # AMBER has currently only one global lambda value, hence 2nd dim = 1
@@ -749,23 +754,13 @@ def parse(P, options={}):
     if P.units == '(kcal/mol)':
         Econv = 1.0
     elif P.units == '(kJ/mol)':
-        Econv = 4.184
+        Econv = consts.CAL2JOULE
     elif P.units == '(k_BT)':
         Econv = P.beta
     else:
         raise SystemExit('ERROR: unknown units %s' % P.units)
 
     ave = []
-
-    # FIXME: needs centralised solution
-    if P.units == '(kcal/mol)':
-        Econv = 1.0
-    elif P.units == '(kJ/mol)':
-        Econv = consts.CAL2JOULE
-    elif P.units == '(k_BT)':
-        Econv = P.beta
-    else:
-        log_and_raise('unknown units %s' % P.units)
 
     for i, clambda in enumerate(lvals):
         vals = dvdl_all[clambda][start_from:]
