@@ -21,7 +21,7 @@
 import numpy
 from glob import glob # for pathname matching
 
-from . import unixlike       # some implemented unixlike commands
+import unixlike       # some implemented unixlike commands
 
 #===================================================================================================
 # FUNCTIONS: This is the Sire lambda gradient file parser.
@@ -38,7 +38,7 @@ def readDataSire(P):
          self.skip_lines = 0  # Number of lines from the top that are to be skipped.
          snap_size       = [] # Time from first two snapshots to determine snapshot's size.
 
-         print("Reading metadata from %-*s" % (len_fstring+1, self.filename+';'), end=' ')
+         print "Reading metadata from %-*s" % (len_fstring+1, self.filename+';'),
          with open(self.filename,'r') as infile:
             for line in infile:
 
@@ -56,10 +56,10 @@ def readDataSire(P):
             equilsnapshots  = int(P.equiltime/self.snap_size)
             self.skip_lines += equilsnapshots
             nsnapshots.append(unixlike.wcPy(infile) + 2 - equilsnapshots)
-            print("first %s ps (%s snapshots) will be discarded due to equilibration..." % (P.equiltime, equilsnapshots))
+            print "first %s ps (%s snapshots) will be discarded due to equilibration..." % (P.equiltime, equilsnapshots)
 
       def loadtxtSire(self, state):
-         print("Loading in data from %-*s (state %d) ..." % (len_fstring, self.filename, state))
+         print "Loading in data from %-*s (state %d) ..." % (len_fstring, self.filename, state)
          try: #Numpy 1.1 removes skiprows
             dhdlt[state, :, :nsnapshots[state]] = numpy.genfromtxt(self.filename, dtype=float, skiprows=self.skip_lines, usecols=1)
          except TypeError:
@@ -79,9 +79,9 @@ def readDataSire(P):
    nsnapshots   = []
    P.lv_names   = ['']
    fs = [ F(filename) for filename in fs ]
-   print('')
+   print ''
    fs = sorted(fs, key=lambda f: f.lv)
-   lv, nsnapshots = list(zip(*sorted(zip(lv, nsnapshots))))
+   lv, nsnapshots = zip(*sorted(zip(lv, nsnapshots)))
    lv = numpy.array(lv, float)
 
    # Preliminaries IV: Load in equilibrated data.
@@ -91,6 +91,6 @@ def readDataSire(P):
 
    for nf, f in enumerate(fs):
       f.loadtxtSire(nf)
-   print('')
+   print ''
 
    return nsnapshots, lv, dhdlt, u_klt

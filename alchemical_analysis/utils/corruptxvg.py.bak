@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import subprocess as c
+import commands as c
 from shutil import copy2
 ###===============================###
 # Module written by Caitlin Bannan
@@ -99,7 +99,7 @@ def removeCorruptLines(inputFN, outputFN = 'output.xvg', headerLine = None, fail
     # Print how many lines were removed or
     # Throw an error if more than 'fail'% of data removed
     if difLength == 0:
-        print("No corrupt lines found, no data was removed from %s" %(inputFN))
+        print "No corrupt lines found, no data was removed from %s" %(inputFN)
     elif difLength >= failing:
         DataRemovalError = Exception("%i corrupted lines of %i found, that is more than %.1f percent. Removal failed, examine input file  %s" % (difLength, dataLength, fail, inputFN))
         raise DataRemovalError
@@ -107,7 +107,7 @@ def removeCorruptLines(inputFN, outputFN = 'output.xvg', headerLine = None, fail
         if not os.path.exists('xvg-bak'):
             os.makedirs('xvg-bak')
         copy2(inputFN,'./xvg-bak/'+inputFN)
-        print("%i corrupt lines of %i found and removed from %s" % (difLength, dataLength, inputFN)) 
+        print "%i corrupt lines of %i found and removed from %s" % (difLength, dataLength, inputFN) 
 
 
     # Use numpy savetxt to write data (with header) to the output file

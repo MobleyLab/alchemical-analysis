@@ -9,7 +9,7 @@ import re                       # for regular expressions
 from glob import glob           # for pathname matching
 from collections import Counter # for counting elements in an array
 
-from . import unixlike                 # some implemented unixlike commands
+import unixlike                 # some implemented unixlike commands
 
 #===================================================================================================
 # FUNCTIONS: This is the Desmond gibbs.N.dE file parser.
@@ -75,7 +75,7 @@ def readDataDesmond(P):
                u_klt[state, state+1, :nsnapshots[state]] = data[ 2 , :]*4.184*P.beta
             return
 
-         print(("Loading in data from %s (%s) ...") % (self.filename, 'state %d' % state))
+         print("Loading in data from %s (%s) ...") % (self.filename, 'state %d' % state)
          data = numpy.fromiter(iter_func(), dtype=float)
          if not self.len_first == self.len_last:
             data = data[: -self.len_last]
@@ -119,7 +119,7 @@ def readDataDesmond(P):
       equilsnapshots  = int(equiltime/f.snap_size)
       f.skip_lines   += equilsnapshots
       nsnapshots[nf] += unixlike.wcPy(f.filename) - f.skip_lines - 1*bLenConsistency
-      print(("First %s ps (%s snapshots) will be discarded due to equilibration from file %s...") % (equiltime, equilsnapshots, f.filename))
+      print("First %s ps (%s snapshots) will be discarded due to equilibration from file %s...") % (equiltime, equilsnapshots, f.filename)
 
    #===================================================================================================
    # Preliminaries: Load in equilibrated data.
