@@ -299,7 +299,7 @@ def readDataGromacs(P):
          equilsnapshots  = int(round(equiltime/f.snap_size))
          f.skip_lines   += equilsnapshots
    
-         extract_states  = numpy.genfromtxt(f.filename, dtype=int, skiprows=f.skip_lines, skip_footer=1*bLenConsistency, usecols=1)
+         extract_states  = numpy.genfromtxt(f.filename, dtype=int, skip_header=f.skip_lines, skip_footer=1*bLenConsistency, usecols=1)
          c = Counter(extract_states)  # need to make sure states with zero counts are properly counted. 
                                       # It's OK for some of the expanded files to have no samples as long
                                       # at least one has samples for all states
