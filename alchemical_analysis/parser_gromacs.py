@@ -146,6 +146,7 @@ def readDataGromacs(P):
          data = data.reshape((-1, self.len_first))
          
          if self.bExpanded:
+            dhdlt[state, :, nsnapshots_l[state]:nsnapshots_r[state]] 
             for k in range(K):
                mask_k = (data[:, 1] == k)
                data_k = data[mask_k]
@@ -250,7 +251,7 @@ def readDataGromacs(P):
       else:
          lv = lv[0]
          # Handle the case when only some particular files/lambdas are given.
-         if 1 < n_files < len(lv):
+         if 1 < n_files < len(lv) and not P.bExpanded:
             bSelective_MBAR = True
             sel_states = [f.state for f in fs]
             lv = [lv[i] for i in sel_states]
@@ -287,25 +288,36 @@ def readDataGromacs(P):
    
    equiltime = P.equiltime
    nsnapshots = numpy.zeros((n_files, K), int)
-   
+
+
    for nf, f in enumerate(fs):
-   
+
       f.len_first, f.len_last = (len(line.split()) for line in unixlike.tailPy(f.filename, 2))
       bLenConsistency = (f.len_first != f.len_last)
          
       if f.bExpanded:
+
    
          equiltime       = f.parseLog()
          equilsnapshots  = int(round(equiltime/f.snap_size))
          f.skip_lines   += equilsnapshots
    
-         extract_states  = numpy.genfromtxt(f.filename, dtype=int, skiprows=f.skip_lines, skip_footer=1*bLenConsistency, usecols=1)
+         extract_states  = (numpy.genfromtxt(f.filename, dtype=float, skip_header=f.skip_lines, skip_footer=1*bLenConsistency, usecols=1)).astype(int)
+         if np.max(extract_states) > K:
+            # The number of states is actually bigger. we need to make the array larger.
+            # for some reason, resize isn't working. So do it more brute force.
+            old_K = K
+            K = np.max(extract_states)
+            temp_array = numpy.zeros([n_files,K],int)
+            temp_array[:,:old_K] = nsnapshots.copy()
+            nsnapshots = temp_array.copy()
+
          c = Counter(extract_states)  # need to make sure states with zero counts are properly counted. 
                                       # It's OK for some of the expanded files to have no samples as long
                                       # at least one has samples for all states
-         for k in range(K):  
+         for k in range(K):
             nsnapshots[nf,k] += c[k]
-         nsnapshots[nf] += numpy.array(Counter(extract_states).values())
+         #nsnapshots[nf] += numpy.array(Counter(extract_states).values())
    
       else:
          equilsnapshots  = int(equiltime/f.snap_size)
@@ -324,7 +336,7 @@ def readDataGromacs(P):
 
    nsnapshots = numpy.concatenate((numpy.zeros([1, K], int), nsnapshots))   
    for nf, f in enumerate(fs):
-      nsnapshots_l = nsnapshots[nf]
-      nsnapshots_r = nsnapshots[:nf+2, :].sum(axis=0)
+      nsnapshots_l = nsnapshots[:nf+1].sum(axis=0)
+      nsnapshots_r = nsnapshots[:nf+2].sum(axis=0)
       f.iter_loadtxt(nf)
    return nsnapshots.sum(axis=0), lv, dhdlt, u_klt
