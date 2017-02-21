@@ -174,8 +174,13 @@ def uncorrelate(sta, fin, do_dhdl=False):
       # Uncorrelate based on dhdl values at a given lambda.
 
       for k in range(K):
-         # Sum up over those energy components that are changing.
-         dhdl_sum = numpy.sum(dhdlt[k, lchange[k], sta[k]:fin[k]], axis=0)
+         # Sum up over those energy components that are changing.  
+         # if there are repeats, we need to use the lchange[k] from the last repeated state.
+         lastl = k
+         for l in range(K):
+            if numpy.array_equal(lv[k],lv[l]):
+               lastl = l
+         dhdl_sum = numpy.sum(dhdlt[k, lchange[lastl], sta[k]:fin[k]], axis=0)
          # Determine indices of uncorrelated samples from potential autocorrelation analysis at state k
 
          #NML: Set statistical inefficiency (g) = 1 if vector is all 0
@@ -187,19 +192,21 @@ def uncorrelate(sta, fin, do_dhdl=False):
             g[k] = pymbar.timeseries.statisticalInefficiency(dhdl_sum)
 
          indices = sta[k] + numpy.array(pymbar.timeseries.subsampleCorrelatedData(dhdl_sum, g=g[k])) # indices of uncorrelated samples
-         N = len(indices) # number of uncorrelated samples
+         N_uncorr = len(indices) # number of uncorrelated samples
          # Handle case where we end up with too few.
-         if N < P.uncorr_threshold:
+         if N_uncorr < P.uncorr_threshold:
             if do_dhdl:
-               print "WARNING: Only %s uncorrelated samples found at lambda number %s; proceeding with analysis using correlated samples..." % (N, k)
+               print "WARNING: Only %s uncorrelated samples found at lambda number %s; proceeding with analysis using correlated samples..." % (N_uncorr, k)
             indices = sta[k] + numpy.arange(len(dhdl_sum))
             N = len(indices)
+         else:
+            N = N_uncorr
          N_k[k] = N # Store the number of uncorrelated samples from state k.
          if not (u_klt is None):
             for l in range(K):
                u_kln[k,l,0:N] = u_klt[k,l,indices]
          if do_dhdl:
-            print "%6s %12s %12s %12.2f" % (k, fin[k], N_k[k], g[k])
+            print "%6s %12s %12s %12.2f" % (k, N_uncorr, N_k[k], g[k])
             for n in range(n_components):
                dhdl[k,n,0:N] = dhdlt[k,n,indices]
 
