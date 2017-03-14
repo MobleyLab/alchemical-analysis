@@ -146,7 +146,6 @@ def readDataGromacs(P):
          data = data.reshape((-1, self.len_first))
          
          if self.bExpanded:
-            dhdlt[state, :, nsnapshots_l[state]:nsnapshots_r[state]] 
             for k in range(K):
                mask_k = (data[:, 1] == k)
                data_k = data[mask_k]
