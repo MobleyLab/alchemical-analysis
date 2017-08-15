@@ -1242,7 +1242,8 @@ def main():
    lchange = get_lchange(lv)
 
    #NML: Check for all zeros in data files
-   all_zeros = not numpy.any(dhdlt) or not numpy.any(u_klt)
+   #sliu: change the all zero check to let the calculation continue if there is only dhdlt. 
+   all_zeros = not numpy.any(dhdlt) and not numpy.any(u_klt)
    if all_zeros == True:
       print "WARNING: Found all 0 in input data."
       zero_output(K,P)
