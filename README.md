@@ -53,24 +53,33 @@ Help for `alchemical_analysis.py` (obtained with `alchemical_analysis -h`) is:
   -h, --help            show this help message and exit
   -a SOFTWARE, --software=SOFTWARE
                         Package's name the data files come from: Gromacs,
-                        Sire, or AMBER. Default: Gromacs.
+                        Sire, Desmond, or AMBER. Default: Gromacs.
+  -b BREAKS, --break=BREAKS
+                        Extract the portion of the output files and calculate
+                        the data based on that portion. Default: 1.0
   -c, --cfm             The Curve-Fitting-Method-based consistency inspector.
                         Default: False.
   -d DATAFILE_DIRECTORY, --dir=DATAFILE_DIRECTORY
                         Directory in which data files are stored. Default:
                         Current directory.
+  -e, --backward        Using the backward direction for breaking the output
+                        files, extract the data from backwardi. Default: False
   -f BFORWREV, --forwrev=BFORWREV
-                        Plotting the free energy change as a function of time
-                        in both directions. The number of time points (an
-                        integer) is to be followed the flag. Default: 0
-  -g, --breakdown       Plotting the free energy differences evaluated for
-                        each pair of adjacent states for all methods. Default:
-                        False.
+                        Plot the free energy change as a function of time in
+                        both directions, with the specified number of points
+                        in the time plot. The number of time points (an
+                        integer) must be provided. Default: 0
+  -g, --breakdown       Plot the free energy differences evaluated for each
+                        pair of adjacent states for all methods, including the
+                        dH/dlambda curve for TI. Default: False.
   -i UNCORR_THRESHOLD, --threshold=UNCORR_THRESHOLD
-                        Perform the analysis with rather all the data if the
-                        number of uncorrelated samples is found to be less
-                        than this number. If 0 is given, the time series
-                        analysis will not be performed at all. Default: 50.
+                        Proceed with correlated samples if the number of
+                        uncorrelated samples is found to be less than this
+                        number. If 0 is given, the time series analysis will
+                        not be performed at all. Default: 50.
+  -j RESULTFILENAME, --resultfilename=RESULTFILENAME
+                        custom defined result filename prefix. Default:
+                        results
   -k BSKIPLAMBDAINDEX, --koff=BSKIPLAMBDAINDEX
                         Give a string of lambda indices separated by '-' and
                         they will be removed from the analysis. (Another
@@ -86,6 +95,14 @@ Help for `alchemical_analysis.py` (obtained with `alchemical_analysis -h`) is:
                         the other hand, will call [TI-CUBIC, GDEL]. 'all'
                         calls the full list of supported methods [TI, TI-
                         CUBIC, DEXP, IEXP, GINS, GDEL, BAR, UBAR, RBAR, MBAR].
+  -n UNCORR, --uncorr=UNCORR
+                        The observable to be used for the autocorrelation
+                        analysis; either 'dhdl_all' (obtained as a sum over
+                        all energy components) or 'dhdl' (obtained as a sum
+                        over those energy components that are changing;
+                        default) or 'dE'. In the latter case the energy
+                        differences dE_{i,i+1} (dE_{i,i-1} for the last
+                        lambda) are used.
   -o OUTPUT_DIRECTORY, --out=OUTPUT_DIRECTORY
                         Directory in which the output files produced by this
                         script will be stored. Default: Same as
@@ -117,7 +134,7 @@ Help for `alchemical_analysis.py` (obtained with `alchemical_analysis -h`) is:
                         BAR and MBAR. Default: 1e-10.
   -z INIT_WITH, --initialize=INIT_WITH
                         The initial MBAR free energy guess; either 'BAR' or
-                        'zeroes'. Default: 'BAR'.
+                        'zeros'. Default: 'BAR'.
 ```
 
 
