@@ -624,6 +624,7 @@ def readDataAmber(P):
     # FIXME: compute maximum number of MBAR energy sections
     K = len(lvals)
     nsnapshots = [len(dvdl_all[clambda]) - start_from for clambda in lvals]
+    nsnapshots = [int(i*P.breaks) for i in nsnapshots]
     maxn = max(nsnapshots)
 
     # AMBER has currently only one global lambda value, hence 2nd dim = 1
@@ -646,10 +647,18 @@ def readDataAmber(P):
         raise SystemExit('ERROR: unknown units %s' % P.units)
 
     ave = []
+    std = []
 
     for i, clambda in enumerate(lvals):
         vals = dvdl_all[clambda][start_from:]
+        if P.backward:
+            end_position = len(vals)-int(P.breaks*len(vals))
+            vals = vals[end_position:]
+        else:
+            end_position = int(len(vals)*P.breaks)
+            vals = vals[:end_position]
         ave.append(np.average(vals) * Econv)
+        std.append(np.std(vals) * Econv)
 
         dhdlt[i][0][:len(vals)] = np.array(vals)
 
