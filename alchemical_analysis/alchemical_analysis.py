@@ -41,10 +41,10 @@ from utils.zeroxvg import *
 
 parser = OptionParser()
 parser.add_option('-a', '--software', dest = 'software', help = 'Package\'s name the data files come from: Gromacs, Sire, Desmond, or AMBER. Default: Gromacs.', default = 'Gromacs')
-parser.add_option('-b', '--break', dest = 'breaks', help = 'Extract the portion of the output files and calculate the data based on that portion. Default: 1.0',  default = 1.0, type = float)
+parser.add_option('-b', '--fraction', dest = 'fraction', help = 'The fraction of the energy file will be used to calculate the statistics. Default: 1.0',  default = 1.0, type = float)
 parser.add_option('-c', '--cfm', dest = 'bCFM', help = 'The Curve-Fitting-Method-based consistency inspector. Default: False.', default = False, action = 'store_true')
 parser.add_option('-d', '--dir', dest = 'datafile_directory', help = 'Directory in which data files are stored. Default: Current directory.', default = '.')
-parser.add_option('-e', '--backward', dest = 'backward', help = 'Using the backward direction for breaking the output files, extract the data from backwardi. Default: False', default = False, action = 'store_true')
+parser.add_option('-e', '--backward', dest = 'backward', help = 'Extract the energy data from the backward direction. Default: False', default = False, action = 'store_true')
 parser.add_option('-f', '--forwrev', dest = 'bForwrev', help = 'Plot the free energy change as a function of time in both directions, with the specified number of points in the time plot. The number of time points (an integer) must be provided. Default: 0', default = 0, type=int)
 parser.add_option('-g', '--breakdown', dest = 'breakdown', help = 'Plot the free energy differences evaluated for each pair of adjacent states for all methods, including the dH/dlambda curve for TI. Default: False.', default = False, action = 'store_true')
 parser.add_option('-i', '--threshold', dest = 'uncorr_threshold', help = 'Proceed with correlated samples if the number of uncorrelated samples is found to be less than this number. If 0 is given, the time series analysis will not be performed at all. Default: 50.', default = 50, type=int)

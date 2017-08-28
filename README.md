@@ -54,16 +54,16 @@ Help for `alchemical_analysis.py` (obtained with `alchemical_analysis -h`) is:
   -a SOFTWARE, --software=SOFTWARE
                         Package's name the data files come from: Gromacs,
                         Sire, Desmond, or AMBER. Default: Gromacs.
-  -b BREAKS, --break=BREAKS
-                        Extract the portion of the output files and calculate
-                        the data based on that portion. Default: 1.0
+  -b FRACTION, --fraction=FRACTION
+                        The fraction of the energy file will be used to
+                        calculate the statistics. Default: 1.0
   -c, --cfm             The Curve-Fitting-Method-based consistency inspector.
                         Default: False.
   -d DATAFILE_DIRECTORY, --dir=DATAFILE_DIRECTORY
                         Directory in which data files are stored. Default:
                         Current directory.
-  -e, --backward        Using the backward direction for breaking the output
-                        files, extract the data from backwardi. Default: False
+  -e, --backward        Extract the energy data from the backward direction.
+                        Default: False
   -f BFORWREV, --forwrev=BFORWREV
                         Plot the free energy change as a function of time in
                         both directions, with the specified number of points
