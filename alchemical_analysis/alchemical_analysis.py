@@ -41,11 +41,14 @@ from utils.zeroxvg import *
 
 parser = OptionParser()
 parser.add_option('-a', '--software', dest = 'software', help = 'Package\'s name the data files come from: Gromacs, Sire, Desmond, or AMBER. Default: Gromacs.', default = 'Gromacs')
+parser.add_option('-b', '--fraction', dest = 'fraction', help = 'The fraction of the energy file will be used to calculate the statistics. Default: 1.0',  default = 1.0, type = float)
 parser.add_option('-c', '--cfm', dest = 'bCFM', help = 'The Curve-Fitting-Method-based consistency inspector. Default: False.', default = False, action = 'store_true')
 parser.add_option('-d', '--dir', dest = 'datafile_directory', help = 'Directory in which data files are stored. Default: Current directory.', default = '.')
+parser.add_option('-e', '--backward', dest = 'backward', help = 'Extract the energy data from the backward direction. Default: False', default = False, action = 'store_true')
 parser.add_option('-f', '--forwrev', dest = 'bForwrev', help = 'Plot the free energy change as a function of time in both directions, with the specified number of points in the time plot. The number of time points (an integer) must be provided. Default: 0', default = 0, type=int)
 parser.add_option('-g', '--breakdown', dest = 'breakdown', help = 'Plot the free energy differences evaluated for each pair of adjacent states for all methods, including the dH/dlambda curve for TI. Default: False.', default = False, action = 'store_true')
 parser.add_option('-i', '--threshold', dest = 'uncorr_threshold', help = 'Proceed with correlated samples if the number of uncorrelated samples is found to be less than this number. If 0 is given, the time series analysis will not be performed at all. Default: 50.', default = 50, type=int)
+parser.add_option('-j', '--resultfilename', dest = 'resultfilename', help = 'custom defined result filename prefix. Default: results', default = 'results')
 parser.add_option('-k', '--koff', dest = 'bSkipLambdaIndex', help = 'Give a string of lambda indices separated by \'-\' and they will be removed from the analysis. (Another approach is to have only the files of interest present in the directory). Default: None.', default = '')
 parser.add_option('-m', '--methods', dest = 'methods', help = 'A list of the methods to esitimate the free energy with. Default: [TI, TI-CUBIC, DEXP, IEXP, BAR, MBAR]. To add/remove methods to the above list provide a string formed of the method strings preceded with +/-. For example, \'-ti_cubic+gdel\' will turn methods into [TI, DEXP, IEXP, BAR, MBAR, GDEL]. \'ti_cubic+gdel\', on the other hand, will call [TI-CUBIC, GDEL]. \'all\' calls the full list of supported methods [TI, TI-CUBIC, DEXP, IEXP, GINS, GDEL, BAR, UBAR, RBAR, MBAR].', default = '')
 parser.add_option('-n', '--uncorr', dest = 'uncorr', help = 'The observable to be used for the autocorrelation analysis; either \'dhdl_all\' (obtained as a sum over all energy components) or \'dhdl\' (obtained as a sum over those energy components that are changing; default) or \'dE\'. In the latter case the energy differences dE_{i,i+1} (dE_{i,i-1} for the last lambda) are used.', default = 'dhdl')
@@ -441,7 +444,6 @@ def TIprelim(lv):
    for k in range(K):
       ave_dhdl[k,:] = P.beta*numpy.average(dhdl[k,:,0:N_k[k]],axis=1)
       std_dhdl[k,:] = P.beta*numpy.std(dhdl[k,:,0:N_k[k]],axis=1)/numpy.sqrt(N_k[k]-1)
-
    return dlam, ave_dhdl, std_dhdl
 
 def getSplines(lchange):
@@ -639,6 +641,7 @@ def totalEnergies():
                      h = numpy.trim_zeros(dlam[:,j])
                      wsum = 0.5*(numpy.append(h,0) + numpy.append(0,h))
                      ddF[name] += numpy.dot(wsum**2,std_dhdl[lj,j]**2)
+ 
             ddF[name] = numpy.sqrt(ddF[name])
 
          else:
@@ -699,7 +702,7 @@ def totalEnergies():
    else:
       printLine('%9s:  ' % segments[-1], str_dat, dFs[-1], ddFs[-1])
    # Store results.
-   outfile = open(os.path.join(P.output_directory, 'results.txt'), 'w')
+   outfile = open(os.path.join(P.output_directory, '%s.txt'%P.resultfilename), 'w')
    outfile.write('# Command line was: %s\n\n' % ' '.join(sys.argv) )
    outfile.writelines(outtext)
    outfile.close()
@@ -711,13 +714,13 @@ def totalEnergies():
    P.ddFs     = ddFs
    P.dFs      = dFs
 
-   outfile = open(os.path.join(P.output_directory, 'results.pickle'), 'w')
+   outfile = open(os.path.join(P.output_directory, '%s.pickle'%P.resultfilename), 'w')
    pickle.dump(P, outfile)
    outfile.close()
 
    print '\n'+w*'*'
-   for i in [" The above table has been stored in ", " "+P.output_directory+"/results.txt ",
-      " while the full-precision data ", " (along with the simulation profile) in ", " "+P.output_directory+"/results.pickle "]:
+   for i in [" The above table has been stored in ", " "+P.output_directory+"/%s.txt "%P.resultfilename,
+      " while the full-precision data ", " (along with the simulation profile) in ", " "+P.output_directory+"/%s.pickle "%P.resultfilename]:
       print str_align.format('{:^40}'.format(i))
    print w*'*'
 
@@ -1244,6 +1247,7 @@ def main():
    #NML: Check for all zeros in data files
    #sliu: change the all zero check to let the calculation continue if there is only dhdlt. 
    all_zeros = not numpy.any(dhdlt) and not numpy.any(u_klt)
+
    if all_zeros == True:
       print "WARNING: Found all 0 in input data."
       zero_output(K,P)
