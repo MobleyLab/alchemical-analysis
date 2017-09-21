@@ -1,4 +1,4 @@
-##Alchemical Analysis: An open tool implementing some recommended practices for analyzing alchemical free energy calculations
+## Alchemical Analysis: An open tool implementing some recommended practices for analyzing alchemical free energy calculations
 
 Analyze alchemical free energy calculations conducted in GROMACS, AMBER or SIRE using recommended best practices from Klimovich et al., JCAMD 29:397-411 (2015).
 
