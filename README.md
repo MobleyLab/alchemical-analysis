@@ -1,4 +1,21 @@
-## Alchemical Analysis: An open tool implementing some recommended practices for analyzing alchemical free energy calculations
+# Alchemical Analysis: An open tool implementing some recommended practices for analyzing alchemical free energy calculations
+
+## Use Alchemlyb instead
+
+We are in the process of migrating all functionality from here to instead use [`alchemlyb`](https://github.com/alchemistry/alchemlyb), which focuses on being a general Python library for performing analysis of alchemical calculations rather than a stand-alone command-line tool for analyzing these calculations.
+We recommend you move to using, and contribute to the development of, `alchemlyb` instead.
+It already has the following advantages, among others:
+- Python 3 compatible
+- Works as a library rather than a stand-alone tool, allowing easier connection with trajectory analysis
+- Has automated testing/continuous integration testing
+- Easily extensible
+
+However, some of the plotting functionality and analysis features available in alchemical analysis are not yet available in `alchemlyb`.
+If there is functionality which is particularly important to you which is missing there, please raise an issue on the `alchemlyb` issue tracker.
+
+In the meantime, Alchemical Analysis is still available but we only perform very minimal updates/maintenance at present.
+
+## About Alchemical Analysis
 
 Analyze alchemical free energy calculations conducted in GROMACS, AMBER or SIRE using recommended best practices from Klimovich et al., JCAMD 29:397-411 (2015).
 
@@ -140,4 +157,4 @@ Help for `alchemical_analysis.py` (obtained with `alchemical_analysis -h`) is:
 
 #### License
 
-GNU LGPL version 2.1. See the supplied license file for additional details. 
+MIT.
