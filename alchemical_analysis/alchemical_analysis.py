@@ -644,6 +644,11 @@ def totalEnergies():
  
             ddF[name] = numpy.sqrt(ddF[name])
 
+         # Use the total energy value and uncertainty that pymbar offers.
+         elif name == 'MBAR':
+            dF[name] = Deltaf_ij[0,-1]
+            ddF[name] = dDeltaf_ij[0,-1]
+
          else:
             for k in range(segstart,segend):
                dF[name] += df_allk[k][name]
