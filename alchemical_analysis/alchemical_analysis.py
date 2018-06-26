@@ -646,8 +646,8 @@ def totalEnergies():
 
          # Use the total energy value and uncertainty that pymbar offers.
          elif name == 'MBAR':
-            dF[name] = Deltaf_ij[0,-1]
-            ddF[name] = dDeltaf_ij[0,-1]
+            dF[name] = Deltaf_ij[segstart,segend]
+            ddF[name] = dDeltaf_ij[segstart,segend]
 
          else:
             for k in range(segstart,segend):
