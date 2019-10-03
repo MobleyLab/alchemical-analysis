@@ -13,7 +13,7 @@ It already has the following advantages, among others:
 However, some of the plotting functionality and analysis features available in alchemical analysis are not yet available in `alchemlyb`.
 If there is functionality which is particularly important to you which is missing there, please raise an issue on the `alchemlyb` issue tracker.
 
-In the meantime, Alchemical Analysis is still available but we only perform very minimal updates/maintenance at present.
+In the meantime, Alchemical Analysis is still available but **deprecated and we discourage its use. Please use alchemlyb instead.** We may occasionally perform minor/critical maintenance here, but intend to cease maintaining this package over time.
 
 ## About Alchemical Analysis
 
